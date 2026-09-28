@@ -112,4 +112,4 @@ Orphaned `robocopy.exe` helpers (if any) are cleaned automatically on scan and o
 ولوحة مساحة ومستعرض ملفات. الواجهة عربية/إنجليزية و3 ثيمات (داكن/أسود/فاتح).
 شغّل `Polar Uninstaller.exe` كمسؤول من صفحة Releases.
 
-Free code signing provided by SignPath.org
+Free code signing provided by [SignPath.org](https://signpath.org/)
