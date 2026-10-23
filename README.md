@@ -30,7 +30,7 @@ Polar Uninstaller is a desktop application for Windows 10 and 11 (64-bit). It br
 - **File Browser** for browsing and managing files
 - **What's New** for the in-app release history
 
-Version **1.0.93** introduces ambient lighting for the Black and Blue themes, refines the White theme, and applies a unified design to panels, buttons, borders, navigation, and lists across the application.
+Version **1.0.94** introduces ambient lighting for the Black and Blue themes, refines the White theme, and applies a unified design to panels, buttons, borders, navigation, and lists across the application.
 
 ### Interface and themes
 
