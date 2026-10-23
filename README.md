@@ -7,7 +7,7 @@
 
 **A bilingual Windows utility for uninstalling applications, cleaning temporary data, inspecting storage, and managing files.**
 
-[![Version](https://img.shields.io/badge/version-1.0.93-blue)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
+[![Version](https://img.shields.io/badge/version-1.0.94-blue)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
 [![Python](https://img.shields.io/badge/python-3.14-yellow)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
