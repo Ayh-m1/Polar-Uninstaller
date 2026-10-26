@@ -1,4 +1,4 @@
-[Polar_Uninstaller_README_v1.0.94.md](https://github.com/user-attachments/files/33858501/Polar_Uninstaller_README_v1.0.94.md)
+[README.md](https://github.com/user-attachments/files/33985183/README.md)
 <div align="center">
 
 <img src="logo.png" width="112" alt="Polar Uninstaller logo">
@@ -7,7 +7,7 @@
 
 **A bilingual Windows utility for uninstalling applications, cleaning temporary data, inspecting storage, and managing files.**
 
-[![Version](https://img.shields.io/badge/version-1.0.94-blue)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
+[![Version](https://img.shields.io/badge/version-1.0.97-blue)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
 [![Python](https://img.shields.io/badge/python-3.14-yellow)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -30,19 +30,7 @@ Polar Uninstaller is a desktop application for Windows 10 and 11 (64-bit). It br
 - **File Browser** for browsing and managing files
 - **What's New** for the in-app release history
 
-Version **1.0.94** improves Steam and Epic Games discovery, reduces duplicate game entries, expands local icon extraction, adds a review step for shortcut cleanup, and fixes the Update tooltip. It also improves cache reliability and refines Home branding. The ambient lighting and unified visual design were introduced in v1.0.93.
-
-### What's new in v1.0.94
-
-- **Fewer duplicate Steam entries:** Uses Steam AppIDs, installation paths, and normalized identities to merge matching records while preserving distinct games.
-- **More reliable game discovery:** Improves Steam and Epic Games metadata integration. Some titles may still depend on available launcher records.
-- **Better local icons:** Improves icon extraction from supported applications and game executables. Exact game artwork is not always available locally.
-- **Shortcut review before cleanup:** Deep Clean Leftovers shows detected shortcuts for review, and deletes only the ones explicitly approved.
-- **Safer shortcut identification:** Uses verified targets and launcher identifiers to reduce accidental matches with unrelated shortcuts.
-- **Update tooltip fix:** Addresses the tooltip sometimes remaining on screen after the pointer moves away.
-- **Cache and UI refinements:** Updates cached application metadata handling and simplifies the Home version/branding area.
-
-See **What's New** in the app for its bilingual release history.
+Version **1.0.97** introduces instant, simultaneous theme switching across all UI elements without delay or partial redraws, permanently eliminates white window border flashes, and preserves scroll positions and selections when toggling between themes (Blue, Black, White). It also features a completely redesigned Feedback & Reports window with an integrated header, wider message input, `Ctrl+Enter` shortcut support, dynamic character counting, and robust Arabic RTL text rendering fixes for notes and feedback.
 
 ### Interface and themes
 
@@ -58,7 +46,7 @@ The interface is available in **Arabic** and **English**. Language and theme sel
 
 ### Screenshots
 
-To show screenshots in this README, add the following images to a `screenshots/` directory. The paths below are suggested filenames, not currently verified repository assets:
+No v1.0.97 screenshot files are present in this repository yet. Add the following files under a `screenshots/` directory, then replace the placeholder rows with relative Markdown images:
 
 | View | Required file | Status |
 |---|---|---|
@@ -82,7 +70,7 @@ Example embed after adding a file:
 Deep Uninstaller lists applications and games discovered from Windows uninstall registry entries and supported launcher libraries. Icons, versions, and installation sizes are shown when available.
 
 - **Uninstall Official** starts the vendor's uninstaller. For supported game launchers, the launcher's own removal flow may be used.
-- **Deep Clean Leftovers** scans common installation and user-data locations, related shortcuts, and registry entries after the official removal. Detected shortcuts are presented for review; only approved shortcuts are deleted.
+- **Deep Clean Leftovers** scans common installation and user-data locations, shortcuts, and related registry entries after the official removal.
 - Shared launcher or game-container folders are protected from cleanup.
 - Leftover results depend on the application, its vendor uninstaller, file permissions, and the Windows installation. Review the Activity Log and the selected items before deleting anything.
 
@@ -130,9 +118,11 @@ Only files with matching content hashes are presented as duplicates. You can sel
 
 What's New is a dedicated bilingual window that shows the current version and the release history. It is opened from the fifth card on Home.
 
-### Download and run
+#### Feedback & Reports
 
-The app can check for updates from GitHub Releases; the **What's New** window shows release notes without requiring users to browse GitHub manually.
+Feedback & Reports is available from Home. Choose a category, write a message of up to 2,000 characters, and send it directly to the Polar team. The window features an integrated header, a wide message box with comfortable line spacing, `Ctrl+Enter` shortcut support, and a dynamic character counter. It validates the report, prevents duplicate submissions while a request is in progress, and preserves the message if sending fails. Arabic text is automatically aligned right-to-left with correct word rendering. Only the category, message, and app version are sent; device identifiers, file paths, and installed-application data are not collected.
+
+### Download and run
 
 1. Open the [latest GitHub Release](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest).
 2. In the release assets, download `Polar Uninstaller.exe`.
@@ -183,11 +173,12 @@ Build the single-file Windows executable:
 ```powershell
 py -m PyInstaller --onefile --noconsole --windowed `
   --name "Polar Uninstaller" --uac-admin --icon="icon.ico" `
+  --version-file "version_info.txt" `
   --distpath "dist" --workpath "$env:TEMP\polar_build" `
   --specpath "$env:TEMP\polar_build" --clean --noconfirm "app.py"
 ```
 
-The output is `dist\Polar Uninstaller.exe`. The embedded manifest requests administrator rights.
+The output is `dist\Polar Uninstaller.exe`. The embedded manifest requests administrator rights and the executable includes file and product version metadata.
 
 Runtime settings, caches, and activity data are stored under:
 
@@ -197,9 +188,9 @@ Runtime settings, caches, and activity data are stored under:
 
 ### How it works
 
-- **Application discovery:** reads Windows uninstall registry entries, including WOW64 entries, and merges supported game libraries using launcher identifiers and installation paths to reduce duplicate entries.
+- **Application discovery:** reads Windows uninstall registry entries, including WOW64 entries, and merges supported game libraries.
 - **Leftover search:** matches application and publisher names in common installation and user-data locations, then checks related shortcuts and registry entries.
-- **Shortcut cleanup:** checks supported desktop, Start Menu, and taskbar shortcut locations using verified targets and launcher identifiers; a review dialog lets users choose which shortcuts to remove.
+- **Shortcut cleanup:** checks desktop, Start Menu, and pinned taskbar shortcuts using name and target-path matching.
 - **Storage analysis:** calculates drive usage and folder sizes in the background. Heavy storage scans are manual and cached.
 - **Duplicate detection:** groups candidates by size, then verifies their contents with SHA-256.
 - **Responsiveness:** long-running work is handled in background threads, while lists use reusable canvas rows for large collections.
@@ -221,7 +212,7 @@ Runtime settings, caches, and activity data are stored under:
 - [Support](https://polarwolves.com/supportus/p1682342912)
 - [Discord](https://discord.gg/plr)
 
-**Developer:** Polar
+**Author:** Polar
 
 ---
 
@@ -237,19 +228,7 @@ Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت
 - **مستعرض الملفات** لاستعراض الملفات وإدارتها
 - **ما الجديد** لسجل التحديثات داخل التطبيق
 
-يركز الإصدار **1.0.94** على تحسين اكتشاف ألعاب Steam وEpic Games، وتقليل تكرار الألعاب في القائمة، وتوسيع دعم الأيقونات المحلية، وإضافة مراجعة للاختصارات قبل حذفها، وإصلاح تلميح زر Update. كما يحسّن التخزين المؤقت وتنسيق معلومات الإصدار في الصفحة الرئيسية. أما الإضاءة المحيطة والتصميم الموحد فقد أُضيفا في الإصدار 1.0.93.
-
-### الجديد في الإصدار v1.0.94
-
-- **تقليل تكرار ألعاب Steam:** استخدام معرّفات AppID ومسارات التثبيت لتجميع السجلات المتطابقة دون دمج الألعاب المختلفة.
-- **تحسين اكتشاف الألعاب:** تحسين التعامل مع بيانات Steam وEpic Games، مع ملاحظة أن اكتشاف بعض الألعاب يعتمد على بيانات المنصة المتاحة.
-- **دعم أيقونات محلية أكثر:** تحسين استخراج أيقونات التطبيقات والألعاب المدعومة من ملفاتها، وقد لا تتوفر الصورة الأصلية لكل لعبة محليًا.
-- **مراجعة الاختصارات قبل التنظيف:** يعرض Deep Clean Leftovers الاختصارات المكتشفة للمراجعة، ولا يحذف إلا الاختصارات التي يوافق عليها المستخدم.
-- **مطابقة أكثر أمانًا للاختصارات:** الاعتماد على أهداف الاختصارات ومعرّفات المنصات لتقليل احتمال مطابقة اختصارات غير مرتبطة.
-- **إصلاح تلميح Update:** معالجة مشكلة بقاء التلميح ظاهرًا بعد إبعاد مؤشر الماوس.
-- **تحسين التخزين المؤقت والواجهة:** تحسين التعامل مع بيانات التطبيقات المخزنة مؤقتًا وتبسيط عرض رقم الإصدار في الرئيسية.
-
-يمكنك قراءة سجل الإصدارات بالعربية والإنجليزية من نافذة **What's New** داخل البرنامج.
+يضيف الإصدار **1.0.97** ميزة التبديل الفوري والمتزامن للثيمات لجميع عناصر الواجهة دفعة واحدة دون تأخير أو رسم جزئي، ويزيل وميض الحواف البيضاء للنوافذ نهائياً، مع الحفاظ على موضع التمرير والعناصر المحددة عند التبديل بين الثيمات (الأزرق، الأسود، الأبيض). كما يتضمن تصميماً جديداً كلياً لنافذة الملاحظات والبلاغات برأس مدمج، ومربع رسالة أوسع يدعم اختصار `Ctrl+Enter` للإرسال، وعداد أحرف تفاعلي، بالإضافة إلى إصلاحات جذرية لعرض النصوص العربية واتجاهها الصحيح (RTL) في النوافذ والبلاغات.
 
 ### الواجهة والثيمات
 
@@ -265,7 +244,7 @@ Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت
 
 ### لقطات الشاشة
 
-لإظهار لقطات الشاشة في README، أضف الصور التالية إلى مجلد `screenshots/`. الأسماء أدناه مقترحة ولم يتم التحقق من وجود هذه الملفات في المستودع:
+ملفات لقطات الشاشة الخاصة بالإصدار 1.0.97 غير موجودة في هذا المستودع بعد. أضف الملفات التالية داخل مجلد `screenshots/` ثم استبدل صفوف العناصر النائبة بصور Markdown نسبية:
 
 | العرض | الملف المطلوب | الحالة |
 |---|---|---|
@@ -289,7 +268,7 @@ Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت
 يعرض هذا القسم التطبيقات والألعاب المكتشفة من مفاتيح إلغاء التثبيت في سجل Windows ومن مكتبات المنصات المدعومة. تظهر الأيقونات والإصدارات وأحجام التثبيت عند توفرها.
 
 - **Uninstall Official** يشغّل برنامج إلغاء التثبيت الرسمي الخاص بالتطبيق. قد تُستخدم طريقة الإزالة الخاصة بمنصة الألعاب عند دعمها.
-- **Deep Clean Leftovers** يفحص مواقع التثبيت الشائعة ومواقع بيانات المستخدم والاختصارات ومدخلات السجل المرتبطة بالتطبيق بعد الإزالة الرسمية. تُعرض الاختصارات المكتشفة للمراجعة، ولا يُحذف منها إلا ما يوافق عليه المستخدم.
+- **Deep Clean Leftovers** يفحص مواقع التثبيت الشائعة ومواقع بيانات المستخدم والاختصارات ومدخلات السجل المرتبطة بالتطبيق بعد الإزالة الرسمية.
 - تُحمى مجلدات منصات الألعاب أو الحاويات المشتركة من التنظيف.
 - تعتمد نتائج البقايا على التطبيق وبرنامج إلغاء التثبيت الخاص به وصلاحيات الملفات وإعدادات Windows. راجع سجل النشاط والعناصر المحددة قبل حذف أي شيء.
 
@@ -337,9 +316,11 @@ Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت
 
 نافذة مستقلة ثنائية اللغة تعرض الإصدار الحالي وسجل الإصدارات السابقة، ويتم فتحها من البطاقة الخامسة في الرئيسية.
 
-### التحميل والتشغيل
+#### الملاحظات والبلاغات
 
-يمكن للتطبيق فحص التحديثات من إصدارات GitHub، وتعرض نافذة **What's New** ملاحظات التحديثات دون الحاجة إلى فتح GitHub يدويًا.
+نافذة الملاحظات والبلاغات متاحة من الرئيسية. اختر الفئة واكتب رسالة لا تتجاوز 2000 حرف وأرسلها مباشرة إلى فريق Polar. تتميز برأس مدمج، ومربع رسالة أوسع مع تباعد أسطر مريح، ودعم لاختصار `Ctrl+Enter` للإرسال، وعداد أحرف تفاعلي. تتحقق النافذة من البلاغ وتمنع الإرسال المتكرر أثناء معالجة الطلب وتحتفظ بالرسالة إذا تعذر الإرسال. يتم إرجاع ترتيب الكلمات واتجاه النصوص العربية تلقائياً من اليمين إلى اليسار. يتم إرسال الفئة والرسالة وإصدار التطبيق فقط؛ لا نجمع معرّفات الجهاز أو مسارات الملفات أو بيانات التطبيقات المثبتة.
+
+### التحميل والتشغيل
 
 1. افتح [أحدث إصدار على GitHub](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest).
 2. من ملفات الإصدار، نزّل `Polar Uninstaller.exe`.
@@ -390,11 +371,12 @@ py app.py
 ```powershell
 py -m PyInstaller --onefile --noconsole --windowed `
   --name "Polar Uninstaller" --uac-admin --icon="icon.ico" `
+  --version-file "version_info.txt" `
   --distpath "dist" --workpath "$env:TEMP\polar_build" `
   --specpath "$env:TEMP\polar_build" --clean --noconfirm "app.py"
 ```
 
-تكون النتيجة في `dist\Polar Uninstaller.exe`، ويتضمن الملف المضمّن طلب صلاحيات المسؤول.
+تكون النتيجة في `dist\Polar Uninstaller.exe`، ويتضمن الملف المضمّن طلب صلاحيات المسؤول وبيانات إصدار الملف والمنتج.
 
 تُحفظ إعدادات التشغيل والملفات المؤقتة وبيانات النشاط في:
 
@@ -404,9 +386,9 @@ py -m PyInstaller --onefile --noconsole --windowed `
 
 ### آلية العمل
 
-- **اكتشاف التطبيقات:** قراءة مفاتيح إلغاء التثبيت في سجل Windows، بما فيها مفاتيح WOW64، ودمج مكتبات الألعاب المدعومة باستخدام معرّفات المنصات ومسارات التثبيت لتقليل التكرار.
+- **اكتشاف التطبيقات:** قراءة مفاتيح إلغاء التثبيت في سجل Windows، بما فيها مفاتيح WOW64، ودمج مكتبات الألعاب المدعومة.
 - **البحث عن البقايا:** مطابقة أسماء التطبيقات والناشرين في مواقع التثبيت وبيانات المستخدم الشائعة، ثم فحص الاختصارات ومدخلات السجل المرتبطة.
-- **تنظيف الاختصارات:** فحص مواقع الاختصارات المدعومة في سطح المكتب وقائمة ابدأ وشريط المهام باستخدام أهداف الاختصارات ومعرّفات المنصات، مع نافذة لمراجعة ما سيُحذف.
+- **تنظيف الاختصارات:** فحص اختصارات سطح المكتب وقائمة ابدأ وشريط المهام المثبتة باستخدام الاسم ومسار الهدف.
 - **تحليل التخزين:** حساب استخدام الأقراص وأحجام المجلدات في الخلفية. عمليات الفحص الثقيلة يدوية وتُخزن نتائجها مؤقتًا.
 - **كشف التكرار:** تجميع المرشحين حسب الحجم ثم التحقق من المحتوى باستخدام SHA-256.
 - **الاستجابة:** تنفيذ العمليات الطويلة في خيوط خلفية، واستخدام صفوف Canvas قابلة لإعادة الاستخدام لعرض القوائم الكبيرة.
