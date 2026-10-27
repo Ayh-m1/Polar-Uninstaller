@@ -1,4 +1,4 @@
-[README.md](https://github.com/user-attachments/files/33985183/README.md)
+[README.md](https://github.com/user-attachments/files/34038159/README.md)
 <div align="center">
 
 <img src="logo.png" width="112" alt="Polar Uninstaller logo">
@@ -7,7 +7,7 @@
 
 **A bilingual Windows utility for uninstalling applications, cleaning temporary data, inspecting storage, and managing files.**
 
-[![Version](https://img.shields.io/badge/version-1.0.97-blue)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
+[![Version](https://img.shields.io/badge/version-1.0.98-blue)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
 [![Python](https://img.shields.io/badge/python-3.14-yellow)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -30,7 +30,7 @@ Polar Uninstaller is a desktop application for Windows 10 and 11 (64-bit). It br
 - **File Browser** for browsing and managing files
 - **What's New** for the in-app release history
 
-Version **1.0.97** introduces instant, simultaneous theme switching across all UI elements without delay or partial redraws, permanently eliminates white window border flashes, and preserves scroll positions and selections when toggling between themes (Blue, Black, White). It also features a completely redesigned Feedback & Reports window with an integrated header, wider message input, `Ctrl+Enter` shortcut support, dynamic character counting, and robust Arabic RTL text rendering fixes for notes and feedback.
+Version **1.0.98** improves navigation and manual resizing, and clarifies application removal. Page switching no longer waits for the previous tab's delayed hide, heavier sections are built when first opened, and the ambient theme stays synchronized during edge resizing while expensive layout work is deferred until release. Main navigation buttons blend with the title bar across themes. Game removal remains on the red game action; regular applications use the other action to launch their official uninstaller, then review and clean verified leftovers and shortcuts.
 
 ### Interface and themes
 
@@ -44,33 +44,16 @@ The ambient backgrounds are shared across Home, Deep Uninstaller, Quick Cleaner,
 
 The interface is available in **Arabic** and **English**. Language and theme selections are saved between sessions.
 
-### Screenshots
-
-No v1.0.97 screenshot files are present in this repository yet. Add the following files under a `screenshots/` directory, then replace the placeholder rows with relative Markdown images:
-
-| View | Required file | Status |
-|---|---|---|
-| Home, Black theme | `screenshots/home-black.png` | Placeholder |
-| Home, Blue theme | `screenshots/home-blue.png` | Placeholder |
-| Deep Uninstaller | `screenshots/deep-uninstaller.png` | Placeholder |
-| Quick Cleaner | `screenshots/quick-cleaner.png` | Placeholder |
-| Dashboard | `screenshots/dashboard.png` | Placeholder |
-| File Browser | `screenshots/file-browser.png` | Placeholder |
-
-Example embed after adding a file:
-
-```markdown
-![Home in the Black theme](screenshots/home-black.png)
-```
-
 ### Main sections
 
 #### Deep Uninstaller
 
 Deep Uninstaller lists applications and games discovered from Windows uninstall registry entries and supported launcher libraries. Icons, versions, and installation sizes are shown when available.
 
-- **Uninstall Official** starts the vendor's uninstaller. For supported game launchers, the launcher's own removal flow may be used.
-- **Deep Clean Leftovers** scans common installation and user-data locations, shortcuts, and related registry entries after the official removal.
+- The red **Uninstall Official (for games)** action is enabled for recognized games and uses the existing game/launcher removal flow.
+- For regular applications, the second action launches the registered official uninstaller. Finish the removal, then select the app again and press the same action to review and clean leftovers.
+- Leftover cleanup checks common installation and user-data locations, related registry entries, and shortcuts. Shortcuts are shown for review before deletion.
+- Cleanup is stopped while the app is still registered as installed, to avoid deleting an active installation. The official uninstaller must finish before leftover cleanup.
 - Shared launcher or game-container folders are protected from cleanup.
 - Leftover results depend on the application, its vendor uninstaller, file permissions, and the Windows installation. Review the Activity Log and the selected items before deleting anything.
 
@@ -120,7 +103,7 @@ What's New is a dedicated bilingual window that shows the current version and th
 
 #### Feedback & Reports
 
-Feedback & Reports is available from Home. Choose a category, write a message of up to 2,000 characters, and send it directly to the Polar team. The window features an integrated header, a wide message box with comfortable line spacing, `Ctrl+Enter` shortcut support, and a dynamic character counter. It validates the report, prevents duplicate submissions while a request is in progress, and preserves the message if sending fails. Arabic text is automatically aligned right-to-left with correct word rendering. Only the category, message, and app version are sent; device identifiers, file paths, and installed-application data are not collected.
+Feedback & Reports is available from Home. Choose a category, write a message of up to 2,000 characters, and send it directly to the Polar team. The window validates the report, prevents duplicate submissions while a request is in progress, and preserves the message if sending fails. The message field automatically aligns Arabic text to the right and English text to the left. Only the category, message, and app version are sent; device identifiers, file paths, and installed-application data are not collected.
 
 ### Download and run
 
@@ -136,7 +119,7 @@ If Windows displays a security prompt, verify the file source and review the pro
 ### Quick start
 
 1. Open Home and choose a main section.
-2. In **Deep Uninstaller**, select an application, then use the official uninstaller or the leftover cleanup action.
+2. In **Deep Uninstaller**, select a game and use the red game action. For a regular application, use the second action to launch its official uninstaller, finish it, then press the second action again to clean leftovers.
 3. In **Quick Cleaner**, select the temporary-data categories and review the result.
 4. In **Dashboard**, select **Rescan** when you want fresh storage results.
 5. In **File Browser**, review files before moving them to the Recycle Bin or deleting them permanently.
@@ -212,7 +195,7 @@ Runtime settings, caches, and activity data are stored under:
 - [Support](https://polarwolves.com/supportus/p1682342912)
 - [Discord](https://discord.gg/plr)
 
-**Author:** Polar
+**Author:** Ayhm
 
 ---
 
@@ -228,7 +211,7 @@ Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت
 - **مستعرض الملفات** لاستعراض الملفات وإدارتها
 - **ما الجديد** لسجل التحديثات داخل التطبيق
 
-يضيف الإصدار **1.0.97** ميزة التبديل الفوري والمتزامن للثيمات لجميع عناصر الواجهة دفعة واحدة دون تأخير أو رسم جزئي، ويزيل وميض الحواف البيضاء للنوافذ نهائياً، مع الحفاظ على موضع التمرير والعناصر المحددة عند التبديل بين الثيمات (الأزرق، الأسود، الأبيض). كما يتضمن تصميماً جديداً كلياً لنافذة الملاحظات والبلاغات برأس مدمج، ومربع رسالة أوسع يدعم اختصار `Ctrl+Enter` للإرسال، وعداد أحرف تفاعلي، بالإضافة إلى إصلاحات جذرية لعرض النصوص العربية واتجاهها الصحيح (RTL) في النوافذ والبلاغات.
+يقدم الإصدار **1.0.98** تنقلاً أسرع وتغييراً أنعم لحجم النافذة يدوياً، ومساراً أوضح لإزالة البرامج والألعاب. لم يعد التبديل ينتظر إخفاء الصفحة السابقة، وتُبنى الأقسام الأثقل عند فتحها لأول مرة، ويبقى تدرج الثيم متناسقاً أثناء تغيير الحجم مع تأجيل إعادة التخطيط المكلفة حتى إفلات الماوس. تتناسق خلفية أزرار التنقل مع شريط العنوان في مختلف الثيمات. بقي زر الإزالة الأحمر مخصصاً للألعاب، بينما يشغّل الزر الآخر مزيل البرنامج الرسمي ثم يتيح مراجعة البقايا والاختصارات وتنظيفها.
 
 ### الواجهة والثيمات
 
@@ -242,33 +225,16 @@ Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت
 
 الواجهة متاحة باللغتين **العربية** و**الإنجليزية**، ويتم حفظ اختيار اللغة والثيم بين جلسات التشغيل.
 
-### لقطات الشاشة
-
-ملفات لقطات الشاشة الخاصة بالإصدار 1.0.97 غير موجودة في هذا المستودع بعد. أضف الملفات التالية داخل مجلد `screenshots/` ثم استبدل صفوف العناصر النائبة بصور Markdown نسبية:
-
-| العرض | الملف المطلوب | الحالة |
-|---|---|---|
-| الرئيسية، ثيم Black | `screenshots/home-black.png` | عنصر نائب |
-| الرئيسية، ثيم Blue | `screenshots/home-blue.png` | عنصر نائب |
-| إزالة التطبيقات والألعاب | `screenshots/deep-uninstaller.png` | عنصر نائب |
-| التنظيف السريع | `screenshots/quick-cleaner.png` | عنصر نائب |
-| لوحة التحكم | `screenshots/dashboard.png` | عنصر نائب |
-| مستعرض الملفات | `screenshots/file-browser.png` | عنصر نائب |
-
-مثال على التضمين بعد إضافة الملف:
-
-```markdown
-![الرئيسية بثيم Black](screenshots/home-black.png)
-```
-
 ### الأقسام الرئيسية
 
 #### إزالة التطبيقات والألعاب
 
 يعرض هذا القسم التطبيقات والألعاب المكتشفة من مفاتيح إلغاء التثبيت في سجل Windows ومن مكتبات المنصات المدعومة. تظهر الأيقونات والإصدارات وأحجام التثبيت عند توفرها.
 
-- **Uninstall Official** يشغّل برنامج إلغاء التثبيت الرسمي الخاص بالتطبيق. قد تُستخدم طريقة الإزالة الخاصة بمنصة الألعاب عند دعمها.
-- **Deep Clean Leftovers** يفحص مواقع التثبيت الشائعة ومواقع بيانات المستخدم والاختصارات ومدخلات السجل المرتبطة بالتطبيق بعد الإزالة الرسمية.
+- زر **Uninstall Official (for games)** الأحمر مخصص للألعاب المعروفة ويستخدم مسار الإزالة الخاص باللعبة أو منصتها.
+- للبرامج العادية، يشغّل الزر الثاني مزيل البرنامج الرسمي. أكمل الإزالة، ثم حدد البرنامج مجدداً واضغط الزر نفسه لمراجعة البقايا وتنظيفها.
+- يفحص التنظيف مواقع التثبيت وبيانات المستخدم ومدخلات السجل والاختصارات المرتبطة. تظهر الاختصارات للمراجعة قبل حذفها.
+- يتوقف التنظيف ما دام البرنامج مسجلاً كتثبيت قائم، لحماية ملفات برنامج ما زال مثبتاً. أكمل الإزالة الرسمية قبل تنظيف البقايا.
 - تُحمى مجلدات منصات الألعاب أو الحاويات المشتركة من التنظيف.
 - تعتمد نتائج البقايا على التطبيق وبرنامج إلغاء التثبيت الخاص به وصلاحيات الملفات وإعدادات Windows. راجع سجل النشاط والعناصر المحددة قبل حذف أي شيء.
 
@@ -318,7 +284,7 @@ Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت
 
 #### الملاحظات والبلاغات
 
-نافذة الملاحظات والبلاغات متاحة من الرئيسية. اختر الفئة واكتب رسالة لا تتجاوز 2000 حرف وأرسلها مباشرة إلى فريق Polar. تتميز برأس مدمج، ومربع رسالة أوسع مع تباعد أسطر مريح، ودعم لاختصار `Ctrl+Enter` للإرسال، وعداد أحرف تفاعلي. تتحقق النافذة من البلاغ وتمنع الإرسال المتكرر أثناء معالجة الطلب وتحتفظ بالرسالة إذا تعذر الإرسال. يتم إرجاع ترتيب الكلمات واتجاه النصوص العربية تلقائياً من اليمين إلى اليسار. يتم إرسال الفئة والرسالة وإصدار التطبيق فقط؛ لا نجمع معرّفات الجهاز أو مسارات الملفات أو بيانات التطبيقات المثبتة.
+نافذة الملاحظات والبلاغات متاحة من الرئيسية. اختر الفئة واكتب رسالة لا تتجاوز 2000 حرف وأرسلها مباشرة إلى فريق Polar. تتحقق النافذة من البلاغ وتمنع الإرسال المتكرر أثناء معالجة الطلب وتحتفظ بالرسالة إذا تعذر الإرسال. يحاذي حقل الرسالة النص العربي تلقائياً إلى اليمين والنص الإنجليزي إلى اليسار. يتم إرسال الفئة والرسالة وإصدار التطبيق فقط؛ لا نجمع معرّفات الجهاز أو مسارات الملفات أو بيانات التطبيقات المثبتة.
 
 ### التحميل والتشغيل
 
@@ -334,7 +300,7 @@ Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت
 ### الاستخدام السريع
 
 1. افتح الرئيسية واختر القسم المطلوب.
-2. في **إزالة التطبيقات والألعاب**، حدد تطبيقًا ثم استخدم أداة الإزالة الرسمية أو تنظيف البقايا.
+2. في **إزالة التطبيقات والألعاب**، استخدم الزر الأحمر للعبة. وللبرنامج العادي، استخدم الزر الثاني لتشغيل مزيله الرسمي، ثم اضغطه مجدداً بعد انتهاء الإزالة لتنظيف البقايا.
 3. في **التنظيف السريع**، حدد فئات الملفات المؤقتة وراجع النتيجة.
 4. في **لوحة التحكم**، اضغط **Rescan** عندما تحتاج إلى نتائج تخزين حديثة.
 5. في **مستعرض الملفات**، راجع الملفات قبل نقلها إلى سلة المحذوفات أو حذفها نهائيًا.
@@ -400,7 +366,6 @@ py -m PyInstaller --onefile --noconsole --windowed `
 | `app.py` | تطبيق Polar Uninstaller الرئيسي. |
 | `dashboard.py` | عارض محلي مستقل للوحة التحكم. |
 | `icon.ico`, `logo.png`, `AppLogo.png` | أيقونة التطبيق وشعاراته. |
-| `screenshots/` | الموقع المتوقع للقطات الشاشة المطلوبة أعلاه. |
 | `dist/` | مخرجات البناء المحلية؛ مستبعدة من Git وتُوزع عبر Releases. |
 
 ### روابط
@@ -410,4 +375,4 @@ py -m PyInstaller --onefile --noconsole --windowed `
 - [الدعم](https://polarwolves.com/supportus/p1682342912)
 - [Discord](https://discord.gg/plr)
 
-**المطور:** Polar
+**المطور:** Ayhm
