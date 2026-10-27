@@ -195,7 +195,7 @@ Runtime settings, caches, and activity data are stored under:
 - [Support](https://polarwolves.com/supportus/p1682342912)
 - [Discord](https://discord.gg/plr)
 
-**Author:** Ayhm
+**Author:** Polar
 
 ---
 
@@ -375,4 +375,4 @@ py -m PyInstaller --onefile --noconsole --windowed `
 - [الدعم](https://polarwolves.com/supportus/p1682342912)
 - [Discord](https://discord.gg/plr)
 
-**المطور:** Ayhm
+**المطور:** Polar
