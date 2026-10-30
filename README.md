@@ -1,4 +1,4 @@
-[README.md](https://github.com/user-attachments/files/34038159/README.md)
+[README.md](https://github.com/user-attachments/files/34175661/README.md)
 <div align="center">
 
 <img src="logo.png" width="112" alt="Polar Uninstaller logo">
@@ -7,7 +7,7 @@
 
 **A bilingual Windows utility for uninstalling applications, cleaning temporary data, inspecting storage, and managing files.**
 
-[![Version](https://img.shields.io/badge/version-1.0.98-blue)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
+[![Version](https://img.shields.io/badge/version-1.0.100-blue)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
 [![Python](https://img.shields.io/badge/python-3.14-yellow)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -30,9 +30,36 @@ Polar Uninstaller is a desktop application for Windows 10 and 11 (64-bit). It br
 - **File Browser** for browsing and managing files
 - **What's New** for the in-app release history
 
-Version **1.0.98** improves navigation and manual resizing, and clarifies application removal. Page switching no longer waits for the previous tab's delayed hide, heavier sections are built when first opened, and the ambient theme stays synchronized during edge resizing while expensive layout work is deferred until release. Main navigation buttons blend with the title bar across themes. Game removal remains on the red game action; regular applications use the other action to launch their official uninstaller, then review and clean verified leftovers and shortcuts.
+Version **1.0.99** improves official game removal. The red game action can send Ubisoft Connect's uninstall request by the registered game ID; Steam keeps its uninstall protocol, and registered per-game uninstall commands are used where available. Epic has no documented external uninstall command, so Polar explains the Library steps. Rockstar uses a registered game uninstaller when available, or opens its launcher. After removal, Polar checks the game's registration before allowing leftover cleanup. The regular-app action continues to launch its registered uninstaller and keeps cleanup as a separate reviewed step.
+
+Version **1.0.98** improved navigation and manual resizing. Page switching no longer waits for the previous tab's delayed hide, heavier sections are built when first opened, and the ambient theme stays synchronized during edge resizing while expensive layout work is deferred until release. Main navigation buttons blend with the title bar across themes.
+
+### What's new in v1.0.100
+
+- Reorganized Home with compact cards and a side navigation bar; removed duplicate navigation icons.
+- Added a subtle glass-style sidebar shine and adjusted navigation and social-link text/icon sizes.
+- Replaced the top search bar with a centered logo and soft glow; placed the application name beside the sidebar logo.
+- Refined Home card spacing, sizes and rounded corners.
+- Matched title-bar controls and page surfaces to the shared ambient background across Blue, Black and White themes, including Arabic layout.
+- Improved File Browser background consistency and slightly enlarged file names.
+- Matched Deep Uninstaller surfaces and Quick Cleaner labels to the ambient background, including first-open rendering.
+- Reduced redundant navigation updates and reused existing pages; optimized rounded-image rendering and caching.
+- Drew Home cards and text on one canvas and coalesced resize layout events; added buffered window rendering to reduce old or duplicated interface fragments.
+- Maximize uses the current monitor's native work area directly, preserving taskbar space and repainting after child layout settles. Manual resizing and minimize behavior are retained.
+- What's New opens without a nested window-creation event loop and renders the complete bilingual history in one scrollable text surface.
+- Introduced a new typography system using Inter for English and Tajawal for Arabic, improving readability and visual consistency across pages, dialogs and themes.
+- Refined the White theme with softer Home cards, clearer icons and text, consistent light scrollable surfaces, and refreshed page backgrounds when switching from a dark theme.
+- Preserved uninstall commands, cleanup rules, shortcut review, file operations and background scans.
+
+See [the bilingual release notes](RELEASE_NOTES_v1.0.100.md) for GitHub release text and validation details.
 
 ### Interface and themes
+
+English text uses bundled **Inter** and Arabic text uses bundled **Tajawal**.
+Mixed text and input fields use a renamed combined font with Inter Latin and
+Tajawal Arabic glyphs. No system font installation is required. Font licensing,
+Windows-native dialog exceptions and verification are documented in
+[FONTS.md](FONTS.md). Build using `Polar Uninstaller.spec` to include the fonts.
 
 | Theme | Design |
 |---|---|
@@ -70,8 +97,10 @@ Each category shows an estimated size when available. Select only the categories
 
 #### Dashboard
 
-The Dashboard presents usage counters and storage information, including:
+The Dashboard presents live usage counters, recent activity and storage information, including:
 
+- Online Now sessions, application opens and total click counters
+- Recent Clicks activity with a clear-cache control
 - Drive capacity, used space, free space, and usage bars
 - Sizes of top-level folders on drive C:
 - Largest files found during the storage scan
@@ -99,7 +128,7 @@ Only files with matching content hashes are presented as duplicates. You can sel
 
 #### What's New
 
-What's New is a dedicated bilingual window that shows the current version and the release history. It is opened from the fifth card on Home.
+What's New is a dedicated bilingual window that shows the current version and the release history. Open it from the sidebar or the fifth card on Home.
 
 #### Feedback & Reports
 
@@ -154,11 +183,7 @@ py app.py
 Build the single-file Windows executable:
 
 ```powershell
-py -m PyInstaller --onefile --noconsole --windowed `
-  --name "Polar Uninstaller" --uac-admin --icon="icon.ico" `
-  --version-file "version_info.txt" `
-  --distpath "dist" --workpath "$env:TEMP\polar_build" `
-  --specpath "$env:TEMP\polar_build" --clean --noconfirm "app.py"
+py -m PyInstaller --clean "Polar Uninstaller.spec"
 ```
 
 The output is `dist\Polar Uninstaller.exe`. The embedded manifest requests administrator rights and the executable includes file and product version metadata.
@@ -195,7 +220,7 @@ Runtime settings, caches, and activity data are stored under:
 - [Support](https://polarwolves.com/supportus/p1682342912)
 - [Discord](https://discord.gg/plr)
 
-**Author:** Polar
+**Author:** Ayhm
 
 ---
 
@@ -211,9 +236,35 @@ Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت
 - **مستعرض الملفات** لاستعراض الملفات وإدارتها
 - **ما الجديد** لسجل التحديثات داخل التطبيق
 
-يقدم الإصدار **1.0.98** تنقلاً أسرع وتغييراً أنعم لحجم النافذة يدوياً، ومساراً أوضح لإزالة البرامج والألعاب. لم يعد التبديل ينتظر إخفاء الصفحة السابقة، وتُبنى الأقسام الأثقل عند فتحها لأول مرة، ويبقى تدرج الثيم متناسقاً أثناء تغيير الحجم مع تأجيل إعادة التخطيط المكلفة حتى إفلات الماوس. تتناسق خلفية أزرار التنقل مع شريط العنوان في مختلف الثيمات. بقي زر الإزالة الأحمر مخصصاً للألعاب، بينما يشغّل الزر الآخر مزيل البرنامج الرسمي ثم يتيح مراجعة البقايا والاختصارات وتنظيفها.
+يضيف الإصدار **1.0.99** تحسينات للإزالة الرسمية للألعاب. يرسل زر الألعاب الأحمر طلب الإزالة إلى Ubisoft Connect باستخدام معرّف اللعبة، وتستمر ألعاب Steam باستخدام رابطها الرسمي. تستخدم أوامر الإزالة المسجّلة للعبة عند توفرها. لا توثّق Epic أمر إزالة خارجيًا، لذلك يعرض Polar خطوات الإزالة من المكتبة؛ ويستخدم مزيل Rockstar المسجّل إن توفر، وإلا يفتح مشغّل Rockstar. بعد الإزالة، يتحقق Polar من اختفاء تسجيل اللعبة قبل السماح بتنظيف البقايا. ويظل زر البرامج يشغّل مزيل البرنامج المسجّل ثم يتيح مراجعة منفصلة للبقايا.
+
+حسّن الإصدار **1.0.98** التنقل وتغيير حجم النافذة يدويًا؛ تجد تفاصيله في سجل «ما الجديد» داخل البرنامج.
+
+### ما الجديد في v1.0.100
+
+- إعادة ترتيب الرئيسية ببطاقات أصغر وشريط تنقل جانبي وإزالة الأيقونات المكررة.
+- إضافة لمعة زجاجية خفيفة للشريط الجانبي وضبط أحجام خطوط وأيقونات التنقل والدسكورد والدعم والاقتراحات.
+- استبدال البحث العلوي بشعار في الوسط بلمعة طفيفة ووضع اسم البرنامج بجانب الشعار الجانبي.
+- ضبط مسافات البطاقات وأحجامها وحوافها المستديرة.
+- توحيد خلفيات شريط العنوان والصفحات مع التدرج العام في الثيم الأزرق والأسود والأبيض، بما فيها الواجهة العربية.
+- تحسين خلفية متصفح الملفات وتكبير أسماء الملفات قليلاً.
+- توحيد خلفيات إزالة البرامج ونصوص التنظيف السريع، بما يشمل العرض الأول للصفحة.
+- تقليل تحديثات التنقل المكررة وإعادة استخدام الصفحات وتحسين رسم الصور المستديرة وتخزينها المؤقت.
+- جمع بطاقات الرئيسية ونصوصها في لوحة رسم واحدة ودمج أحداث تغيير الحجم وتفعيل تجميع الرسم لتقليل بقايا الرسم القديم وتكرار أجزاء الواجهة.
+- استخدام مساحة عمل الشاشة الحالية مباشرةً عند التكبير، مع مراعاة شريط المهام وإعادة الرسم بعد اكتمال التخطيط وإبقاء التحكم اليدوي والتصغير كما هما.
+- تسريع فتح «ما الجديد» بإلغاء حلقة التحديث المتداخلة وعرض سجل الإصدارات كاملاً في مربع نص واحد قابل للتمرير.
+- إضافة نظام خطوط جديد باستخدام Inter للإنجليزية وTajawal للعربية، لتحسين وضوح النصوص وتناسقها في الصفحات والنوافذ والثيمات.
+- تحسين الثيم الأبيض ببطاقات أكثر نعومة في الرئيسية وأيقونات ونصوص أوضح وخلفيات فاتحة متناسقة للمساحات القابلة للتمرير، مع تحديث خلفيات الصفحات عند الانتقال من ثيم داكن.
+- الحفاظ على أوامر الإزالة وقواعد التنظيف ومراجعة الاختصارات وعمليات الملفات والفحص في الخلفية.
+
+نص الإصدار وتفاصيل التحقق متاحة في [ملاحظات الإصدار](RELEASE_NOTES_v1.0.100.md).
 
 ### الواجهة والثيمات
+
+تستخدم النصوص الإنجليزية خط **Inter** والعربية خط **Tajawal** المضمّنين.
+تستخدم النصوص المختلطة وحقول الإدخال خطًا مشتقًا يجمع حروف Inter اللاتينية
+وحروف Tajawal العربية، دون تثبيت عام في Windows. راجع [توثيق الخطوط](FONTS.md)
+للتراخيص واستثناءات حوارات النظام والاختبارات، وابنِ EXE باستخدام ملف spec.
 
 | الثيم | التصميم |
 |---|---|
@@ -251,8 +302,10 @@ Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت
 
 #### لوحة التحكم
 
-تعرض لوحة التحكم عدادات الاستخدام ومعلومات التخزين، ومنها:
+تعرض لوحة التحكم عدادات الاستخدام المباشرة والنشاط الأخير ومعلومات التخزين، ومنها:
 
+- عدد الجلسات المتصلة حاليًا، ومرات فتح التطبيق، وإجمالي النقرات
+- سجل النقرات الأخيرة مع خيار مسح البيانات المؤقتة
 - سعة الأقراص والمساحة المستخدمة والمتاحة وأشرطة الاستخدام
 - أحجام المجلدات الرئيسية على القرص C:
 - أكبر الملفات المكتشفة أثناء فحص التخزين
@@ -335,11 +388,7 @@ py app.py
 لبناء ملف Windows التنفيذي:
 
 ```powershell
-py -m PyInstaller --onefile --noconsole --windowed `
-  --name "Polar Uninstaller" --uac-admin --icon="icon.ico" `
-  --version-file "version_info.txt" `
-  --distpath "dist" --workpath "$env:TEMP\polar_build" `
-  --specpath "$env:TEMP\polar_build" --clean --noconfirm "app.py"
+py -m PyInstaller --clean "Polar Uninstaller.spec"
 ```
 
 تكون النتيجة في `dist\Polar Uninstaller.exe`، ويتضمن الملف المضمّن طلب صلاحيات المسؤول وبيانات إصدار الملف والمنتج.
@@ -375,4 +424,4 @@ py -m PyInstaller --onefile --noconsole --windowed `
 - [الدعم](https://polarwolves.com/supportus/p1682342912)
 - [Discord](https://discord.gg/plr)
 
-**المطور:** Polar
+**المطور:** Ayhm
