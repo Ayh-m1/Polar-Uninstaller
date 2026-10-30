@@ -1,4 +1,4 @@
-[README.md](https://github.com/user-attachments/files/34175661/README.md)
+[README (2).md](https://github.com/user-attachments/files/34176117/README.2.md)
 <div align="center">
 
 <img src="logo.png" width="112" alt="Polar Uninstaller logo">
@@ -213,6 +213,14 @@ Runtime settings, caches, and activity data are stored under:
 | `screenshots/` | Expected location for the documentation screenshots listed above. |
 | `dist/` | Local build output; ignored by Git and distributed through Releases. |
 
+### Credits & Acknowledgments
+
+#### Testing & Quality Assurance
+
+**[MobV2](https://github.com/MobV2)** — **Lead Beta Tester**
+
+Special thanks to MobV2 for extensively testing Polar Uninstaller, reporting bugs, providing valuable suggestions, and helping improve the overall user experience.
+
 ### Links
 
 - [Latest release](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
@@ -416,6 +424,14 @@ py -m PyInstaller --clean "Polar Uninstaller.spec"
 | `dashboard.py` | عارض محلي مستقل للوحة التحكم. |
 | `icon.ico`, `logo.png`, `AppLogo.png` | أيقونة التطبيق وشعاراته. |
 | `dist/` | مخرجات البناء المحلية؛ مستبعدة من Git وتُوزع عبر Releases. |
+
+### الشكر والتقدير
+
+#### الاختبار وضمان الجودة
+
+**[MobV2](https://github.com/MobV2)** — **المختبر الرئيسي للبرنامج (Lead Beta Tester)**
+
+شكر خاص لـ MobV2 على مساهمته الكبيرة في اختبار Polar Uninstaller، والإبلاغ عن المشاكل، وتقديم اقتراحات قيّمة ساعدت في تحسين البرنامج وتطوير تجربة المستخدم.
 
 ### روابط
 
