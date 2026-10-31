@@ -1,13 +1,20 @@
-[README (2).md](https://github.com/user-attachments/files/34176117/README.2.md)
+[README (3).md](https://github.com/user-attachments/files/34216160/README.3.md)
 <div align="center">
 
-<img src="logo.png" width="112" alt="Polar Uninstaller logo">
+<img src="Polar_Logo_Beige_512.png" width="112" alt="Polar Uninstaller PU logo">
 
 # Polar Uninstaller
 
+The PU branding keeps `Polar_Uninstaller_Beige.ico` for Windows. The UI uses the
+transparent PU artwork with cached Blue, silver, dark and original black variants
+for Blue, Black, White and Beige respectively, plus cream/caramel for Dark Beige. Build with `Polar Uninstaller.spec` to embed the four logo
+assets; they do not need to sit beside the final EXE. See [BRANDING.md](BRANDING.md)
+for icon verification, retained legacy assets and the optional Inno Setup
+shortcut configuration.
+
 **A bilingual Windows utility for uninstalling applications, cleaning temporary data, inspecting storage, and managing files.**
 
-[![Version](https://img.shields.io/badge/version-1.0.100-blue)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
+[![Version](https://img.shields.io/badge/version-1.0.101-blue)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
 [![Python](https://img.shields.io/badge/python-3.14-yellow)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -34,6 +41,15 @@ Version **1.0.99** improves official game removal. The red game action can send 
 
 Version **1.0.98** improved navigation and manual resizing. Page switching no longer waits for the previous tab's delayed hide, heavier sections are built when first opened, and the ambient theme stays synchronized during edge resizing while expensive layout work is deferred until release. Main navigation buttons blend with the title bar across themes.
 
+### What's new in v1.0.101
+
+- Added Dark Beige / Espresso to the five-theme preview menu, with cached caramel ambient lighting and transparent cream PU artwork.
+- Drag the sidebar divider to resize it freely. Compact and Icon Only modes, hover labels, saved width and double-click reset support both languages.
+- Deep Uninstall now guides official removal, verifies registration, scans leftovers and offers reviewed cleanup. Settings/saved data and permanent registry cleanup need explicit consent. Vendor prompts may still require input.
+- Retained the prior Beige theme, PU branding, batched theme updates, virtualized lists, page reuse, bilingual RichEdit history, right-side window controls and bounded update checks.
+
+For the main changes and safety limitations, see the sections below. Additional release notes and validation reports may be published separately in the repository.
+
 ### What's new in v1.0.100
 
 - Reorganized Home with compact cards and a side navigation bar; removed duplicate navigation icons.
@@ -47,8 +63,6 @@ Version **1.0.98** improved navigation and manual resizing. Page switching no lo
 - Drew Home cards and text on one canvas and coalesced resize layout events; added buffered window rendering to reduce old or duplicated interface fragments.
 - Maximize uses the current monitor's native work area directly, preserving taskbar space and repainting after child layout settles. Manual resizing and minimize behavior are retained.
 - What's New opens without a nested window-creation event loop and renders the complete bilingual history in one scrollable text surface.
-- Introduced a new typography system using Inter for English and Tajawal for Arabic, improving readability and visual consistency across pages, dialogs and themes.
-- Refined the White theme with softer Home cards, clearer icons and text, consistent light scrollable surfaces, and refreshed page backgrounds when switching from a dark theme.
 - Preserved uninstall commands, cleanup rules, shortcut review, file operations and background scans.
 
 See [the bilingual release notes](RELEASE_NOTES_v1.0.100.md) for GitHub release text and validation details.
@@ -66,10 +80,28 @@ Windows-native dialog exceptions and verification are documented in
 | **Black** | Deep black surfaces with subtle silver-gray ambient lighting. |
 | **Blue** | Deep navy surfaces with soft blue and indigo ambient gradients. |
 | **White** | A light theme with improved text contrast and consistent controls. |
+| **Beige** | Warm cream surfaces, soft upper-left lighting and brown accents, using the same cached ambient renderer. |
+| **Dark Beige / Espresso** | Deep espresso with soft upper-left caramel lighting and cream PU artwork. |
 
 The ambient backgrounds are shared across Home, Deep Uninstaller, Quick Cleaner, Dashboard, and File Browser. They are cached and redrawn only when the layout or theme changes, which helps keep resizing, tab switching, and theme switching visually consistent.
 
 The interface is available in **Arabic** and **English**. Language and theme selections are saved between sessions.
+
+Use **Theme / المظهر** in the title bar to open five compact horizontal previews.
+Each preview uses the real ambient gradient, surface colors and transparent PU
+logo. Select a row to apply and save it immediately; click outside or press
+Escape to dismiss the popup. The menu is an overlay and does not move page content.
+
+UI refinements retain the established palettes and PU variants alongside Espresso. Theme changes batch
+widget redraws and reuse cached ambient images; sidebar hover updates only the
+affected row. Resize handling keeps the native client area, Tk layout and ambient
+surfaces synchronized without hiding the borderless window during theme changes.
+What's New uses a read-only Windows RichEdit surface for Arabic/English direction
+and wrapping, with a Tk fallback. Update checks have a bounded timeout and report
+success, available updates or a retryable failure. See
+[the Arabic validation report](UI_REFINEMENT_REPORT.md) for measurements and limits.
+Window controls stay on the right of the title row in both languages: close is
+the rightmost button, maximize/restore is in the middle, and minimize is to its left.
 
 ### Main sections
 
@@ -78,8 +110,8 @@ The interface is available in **Arabic** and **English**. Language and theme sel
 Deep Uninstaller lists applications and games discovered from Windows uninstall registry entries and supported launcher libraries. Icons, versions, and installation sizes are shown when available.
 
 - The red **Uninstall Official (for games)** action is enabled for recognized games and uses the existing game/launcher removal flow.
-- For regular applications, the second action launches the registered official uninstaller. Finish the removal, then select the app again and press the same action to review and clean leftovers.
-- Leftover cleanup checks common installation and user-data locations, related registry entries, and shortcuts. Shortcuts are shown for review before deletion.
+- **Deep Uninstall** confirms the target once, runs its registered official uninstaller and monitors removal before scanning leftovers automatically. Complete vendor/launcher prompts when required.
+- The review lists exact installation/settings folders, strictly matched shortcuts and exact application registry keys. Nothing is selected automatically; settings/saved data and permanent registry cleanup require explicit consent. Files use the Recycle Bin where supported, with Windows confirmation before a non-recyclable permanent operation.
 - Cleanup is stopped while the app is still registered as installed, to avoid deleting an active installation. The official uninstaller must finish before leftover cleanup.
 - Shared launcher or game-container folders are protected from cleanup.
 - Leftover results depend on the application, its vendor uninstaller, file permissions, and the Windows installation. Review the Activity Log and the selected items before deleting anything.
@@ -97,10 +129,8 @@ Each category shows an estimated size when available. Select only the categories
 
 #### Dashboard
 
-The Dashboard presents live usage counters, recent activity and storage information, including:
+The Dashboard presents usage counters and storage information, including:
 
-- Online Now sessions, application opens and total click counters
-- Recent Clicks activity with a clear-cache control
 - Drive capacity, used space, free space, and usage bars
 - Sizes of top-level folders on drive C:
 - Largest files found during the storage scan
@@ -148,7 +178,7 @@ If Windows displays a security prompt, verify the file source and review the pro
 ### Quick start
 
 1. Open Home and choose a main section.
-2. In **Deep Uninstaller**, select a game and use the red game action. For a regular application, use the second action to launch its official uninstaller, finish it, then press the second action again to clean leftovers.
+2. In **Deep Uninstaller**, select an application and click **Deep Uninstall**. Confirm the target, complete any official uninstaller prompts, then review and select detected leftovers for cleanup. For supported games, the red **Uninstall Official (for games)** action remains available.
 3. In **Quick Cleaner**, select the temporary-data categories and review the result.
 4. In **Dashboard**, select **Rescan** when you want fresh storage results.
 5. In **File Browser**, review files before moving them to the Recycle Bin or deleting them permanently.
@@ -248,6 +278,15 @@ Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت
 
 حسّن الإصدار **1.0.98** التنقل وتغيير حجم النافذة يدويًا؛ تجد تفاصيله في سجل «ما الجديد» داخل البرنامج.
 
+### ما الجديد في v1.0.101
+
+- إضافة البيج الغامق / إسبريسو إلى قائمة المظاهر الخمسة، بلمعة كراميل محفوظة مؤقتًا وشعار PU كريمي شفاف.
+- سحب فاصل الشريط الجانبي للتحكم الحر بالعرض، مع وضع متوسط وأيقونات فقط وتلميحات وحفظ العرض وإعادته بالنقر المزدوج، باللغتين.
+- إزالة عميقة متكاملة تبدأ بالمزيل الرسمي ثم تتحقق وتفحص البقايا وتتيح مراجعة تنظيفها. تتطلب الإعدادات وبيانات الحفظ والحذف الدائم لمفاتيح السجل موافقة صريحة؛ وقد تتطلب أداة الشركة التفاعل.
+- الحفاظ على البيج السابق وهوية PU وتجميع تحديثات المظهر والقوائم الافتراضية وإعادة استخدام الصفحات وسجل RichEdit ثنائي اللغة وأزرار النافذة في اليمين ومهل فحص التحديثات.
+
+للتفاصيل والقيود المتعلقة بالإزالة والتنظيف، راجع الأقسام أدناه. قد تُنشر ملاحظات الإصدار وتقارير الاختبار الإضافية بشكل منفصل في المستودع.
+
 ### ما الجديد في v1.0.100
 
 - إعادة ترتيب الرئيسية ببطاقات أصغر وشريط تنقل جانبي وإزالة الأيقونات المكررة.
@@ -261,8 +300,6 @@ Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت
 - جمع بطاقات الرئيسية ونصوصها في لوحة رسم واحدة ودمج أحداث تغيير الحجم وتفعيل تجميع الرسم لتقليل بقايا الرسم القديم وتكرار أجزاء الواجهة.
 - استخدام مساحة عمل الشاشة الحالية مباشرةً عند التكبير، مع مراعاة شريط المهام وإعادة الرسم بعد اكتمال التخطيط وإبقاء التحكم اليدوي والتصغير كما هما.
 - تسريع فتح «ما الجديد» بإلغاء حلقة التحديث المتداخلة وعرض سجل الإصدارات كاملاً في مربع نص واحد قابل للتمرير.
-- إضافة نظام خطوط جديد باستخدام Inter للإنجليزية وTajawal للعربية، لتحسين وضوح النصوص وتناسقها في الصفحات والنوافذ والثيمات.
-- تحسين الثيم الأبيض ببطاقات أكثر نعومة في الرئيسية وأيقونات ونصوص أوضح وخلفيات فاتحة متناسقة للمساحات القابلة للتمرير، مع تحديث خلفيات الصفحات عند الانتقال من ثيم داكن.
 - الحفاظ على أوامر الإزالة وقواعد التنظيف ومراجعة الاختصارات وعمليات الملفات والفحص في الخلفية.
 
 نص الإصدار وتفاصيل التحقق متاحة في [ملاحظات الإصدار](RELEASE_NOTES_v1.0.100.md).
@@ -279,6 +316,8 @@ Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت
 | **Black** | خلفية سوداء عميقة مع إضاءة محيطة رمادية وفضية خافتة. |
 | **Blue** | خلفية كحلية داكنة مع تدرجات زرقاء ونيلية ناعمة. |
 | **White** | ثيم فاتح مع تحسين تباين النصوص وتناسق عناصر التحكم. |
+| **Beige** | بيج وكريمي دافئ مع إضاءة ناعمة من أعلى اليسار. |
+| **Dark Beige / Espresso** | إسبريسو داكن بلمعة كراميل ناعمة وشعار PU كريمي شفاف. |
 
 تُستخدم الخلفيات المحيطة نفسها في الرئيسية وأقسام إزالة التطبيقات والألعاب، والتنظيف السريع، ولوحة التحكم، ومستعرض الملفات. تُخزن هذه الخلفيات مؤقتًا ولا يُعاد رسمها إلا عند تغير التخطيط أو الثيم، مما يحافظ على تناسق الواجهة عند تغيير الحجم أو التبويب أو الثيم.
 
@@ -291,8 +330,8 @@ Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت
 يعرض هذا القسم التطبيقات والألعاب المكتشفة من مفاتيح إلغاء التثبيت في سجل Windows ومن مكتبات المنصات المدعومة. تظهر الأيقونات والإصدارات وأحجام التثبيت عند توفرها.
 
 - زر **Uninstall Official (for games)** الأحمر مخصص للألعاب المعروفة ويستخدم مسار الإزالة الخاص باللعبة أو منصتها.
-- للبرامج العادية، يشغّل الزر الثاني مزيل البرنامج الرسمي. أكمل الإزالة، ثم حدد البرنامج مجدداً واضغط الزر نفسه لمراجعة البقايا وتنظيفها.
-- يفحص التنظيف مواقع التثبيت وبيانات المستخدم ومدخلات السجل والاختصارات المرتبطة. تظهر الاختصارات للمراجعة قبل حذفها.
+- يؤكد زر **إزالة عميقة** البرنامج مرة واحدة ثم يشغّل مزيله الرسمي ويراقب النتيجة، وبعد التحقق يبدأ فحص البقايا تلقائيًا. أكمل مطالبات الشركة أو اللانشر عند الحاجة.
+- تعرض المراجعة مجلدات التثبيت والإعدادات والاختصارات المطابقة بدقة ومفاتيح التطبيق المحددة. لا تُحدد البقايا تلقائيًا، وتتطلب بيانات الحفظ والإعدادات والحذف الدائم لمفاتيح السجل موافقة صريحة. تُستخدم سلة المحذوفات عند دعمها، مع تأكيد Windows قبل عملية دائمة لا تدعم الاستعادة.
 - يتوقف التنظيف ما دام البرنامج مسجلاً كتثبيت قائم، لحماية ملفات برنامج ما زال مثبتاً. أكمل الإزالة الرسمية قبل تنظيف البقايا.
 - تُحمى مجلدات منصات الألعاب أو الحاويات المشتركة من التنظيف.
 - تعتمد نتائج البقايا على التطبيق وبرنامج إلغاء التثبيت الخاص به وصلاحيات الملفات وإعدادات Windows. راجع سجل النشاط والعناصر المحددة قبل حذف أي شيء.
@@ -310,10 +349,8 @@ Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت
 
 #### لوحة التحكم
 
-تعرض لوحة التحكم عدادات الاستخدام المباشرة والنشاط الأخير ومعلومات التخزين، ومنها:
+تعرض لوحة التحكم عدادات الاستخدام ومعلومات التخزين، ومنها:
 
-- عدد الجلسات المتصلة حاليًا، ومرات فتح التطبيق، وإجمالي النقرات
-- سجل النقرات الأخيرة مع خيار مسح البيانات المؤقتة
 - سعة الأقراص والمساحة المستخدمة والمتاحة وأشرطة الاستخدام
 - أحجام المجلدات الرئيسية على القرص C:
 - أكبر الملفات المكتشفة أثناء فحص التخزين
@@ -361,7 +398,7 @@ Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت
 ### الاستخدام السريع
 
 1. افتح الرئيسية واختر القسم المطلوب.
-2. في **إزالة التطبيقات والألعاب**، استخدم الزر الأحمر للعبة. وللبرنامج العادي، استخدم الزر الثاني لتشغيل مزيله الرسمي، ثم اضغطه مجدداً بعد انتهاء الإزالة لتنظيف البقايا.
+2. في **إزالة التطبيقات والألعاب**، اختر البرنامج واضغط **إزالة عميقة**، ثم أكّد البرنامج وأكمل أي مطالبات من أداة الإزالة الرسمية. بعد ذلك راجع البقايا المكتشفة وحدد ما تريد تنظيفه. ويبقى زر **الإزالة الرسمية للألعاب** الأحمر متاحًا للألعاب المدعومة.
 3. في **التنظيف السريع**، حدد فئات الملفات المؤقتة وراجع النتيجة.
 4. في **لوحة التحكم**، اضغط **Rescan** عندما تحتاج إلى نتائج تخزين حديثة.
 5. في **مستعرض الملفات**، راجع الملفات قبل نقلها إلى سلة المحذوفات أو حذفها نهائيًا.
@@ -425,6 +462,7 @@ py -m PyInstaller --clean "Polar Uninstaller.spec"
 | `icon.ico`, `logo.png`, `AppLogo.png` | أيقونة التطبيق وشعاراته. |
 | `dist/` | مخرجات البناء المحلية؛ مستبعدة من Git وتُوزع عبر Releases. |
 
+
 ### الشكر والتقدير
 
 #### الاختبار وضمان الجودة
@@ -432,6 +470,7 @@ py -m PyInstaller --clean "Polar Uninstaller.spec"
 **[MobV2](https://github.com/MobV2)** — **المختبر الرئيسي للبرنامج (Lead Beta Tester)**
 
 شكر خاص لـ MobV2 على مساهمته الكبيرة في اختبار Polar Uninstaller، والإبلاغ عن المشاكل، وتقديم اقتراحات قيّمة ساعدت في تحسين البرنامج وتطوير تجربة المستخدم.
+
 
 ### روابط
 
