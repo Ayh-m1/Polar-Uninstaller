@@ -1,25 +1,23 @@
-[README (3).md](https://github.com/user-attachments/files/34216160/README.3.md)
+[Uploading README (1).md…]()
 <div align="center">
 
-<img src="Polar_Logo_Beige_512.png" width="112" alt="Polar Uninstaller PU logo">
+<img src="Polar_Logo_Beige_512.png" width="112" alt="Polar Uninstaller logo">
 
 # Polar Uninstaller
 
-The PU branding keeps `Polar_Uninstaller_Beige.ico` for Windows. The UI uses the
-transparent PU artwork with cached Blue, silver, dark and original black variants
-for Blue, Black, White and Beige respectively, plus cream/caramel for Dark Beige. Build with `Polar Uninstaller.spec` to embed the four logo
-assets; they do not need to sit beside the final EXE. See [BRANDING.md](BRANDING.md)
-for icon verification, retained legacy assets and the optional Inno Setup
-shortcut configuration.
+**A modern, bilingual Windows utility for uninstalling apps and games, cleaning temporary files, analyzing storage, and managing files.**
 
-**A bilingual Windows utility for uninstalling applications, cleaning temporary data, inspecting storage, and managing files.**
+**Built with C# • .NET • WPF**
 
-[![Version](https://img.shields.io/badge/version-1.0.101-blue)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
-[![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
-[![Python](https://img.shields.io/badge/python-3.14-yellow)](https://www.python.org/downloads/)
+[![Version](https://img.shields.io/badge/version-1.0.120-00B8F0)](https://github.com/Ayh-m1/Polar-Uninstaller/releases)
+[![Language](https://img.shields.io/badge/language-C%23-512BD4?logo=dotnet&logoColor=white)](https://learn.microsoft.com/dotnet/csharp/)
+[![UI](https://img.shields.io/badge/UI-WPF-0078D4)](https://learn.microsoft.com/dotnet/desktop/wpf/)
+[![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)](https://github.com/Ayh-m1/Polar-Uninstaller/releases)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 [English](#english) | [العربية](#العربية)
+
+[Releases](https://github.com/Ayh-m1/Polar-Uninstaller/releases) · [Report an issue](https://github.com/Ayh-m1/Polar-Uninstaller/issues) · [Discord](https://discord.gg/plr)
 
 </div>
 
@@ -29,236 +27,150 @@ shortcut configuration.
 
 ### Overview
 
-Polar Uninstaller is a desktop application for Windows 10 and 11 (64-bit). It brings five main destinations together in one bilingual interface:
+**Polar Uninstaller v1.0.120** introduces the native **C# / WPF** edition as the main Windows application, replacing the earlier Python-based interface. The new implementation focuses on smooth window resizing, responsive navigation, a consistent theme system, and integrated Windows functionality.
 
-- **Deep Uninstaller** for installed applications and games
-- **Quick Cleaner** for selected temporary-file categories and the Recycle Bin
-- **Dashboard** for usage and storage information
-- **File Browser** for browsing and managing files
-- **What's New** for the in-app release history
+The interface supports **English and Arabic**, with right-to-left layouts where appropriate.
 
-Version **1.0.99** improves official game removal. The red game action can send Ubisoft Connect's uninstall request by the registered game ID; Steam keeps its uninstall protocol, and registered per-game uninstall commands are used where available. Epic has no documented external uninstall command, so Polar explains the Library steps. Rockstar uses a registered game uninstaller when available, or opens its launcher. After removal, Polar checks the game's registration before allowing leftover cleanup. The regular-app action continues to launch its registered uninstaller and keeps cleanup as a separate reviewed step.
+### Highlights in v1.0.120
 
-Version **1.0.98** improved navigation and manual resizing. Page switching no longer waits for the previous tab's delayed hide, heavier sections are built when first opened, and the ambient theme stays synchronized during edge resizing while expensive layout work is deferred until release. Main navigation buttons blend with the title bar across themes.
+- **C# + WPF migration:** native Windows desktop interface, replacing the former Python / CustomTkinter implementation.
+- **Refined UI:** responsive navigation, smoother resizing, improved file-management layout, and consistent styling across themes.
+- **Deep and Official Uninstall:** distinct removal methods with a shared leftover scanner and review window.
+- **Leftover review:** inspect candidate files, folders, shortcuts, and Registry entries before choosing what to remove.
+- **Verification and Rescan:** review an uninstall result again when completion cannot be confirmed automatically.
+- **Application and game icons:** improved icon lookup, including supported launcher metadata and local shortcuts; coverage varies by title.
+- **Modern File Browser:** navigation, sorting, file details, and file operations with confirmation.
+- **Duplicate Finder:** compares file contents using SHA-256 before reporting duplicates.
+- **Portable release:** a self-contained, single-file Windows executable is available in the `Build/SingleFile` output of the WPF project.
 
-### What's new in v1.0.101
-
-- Added Dark Beige / Espresso to the five-theme preview menu, with cached caramel ambient lighting and transparent cream PU artwork.
-- Drag the sidebar divider to resize it freely. Compact and Icon Only modes, hover labels, saved width and double-click reset support both languages.
-- Deep Uninstall now guides official removal, verifies registration, scans leftovers and offers reviewed cleanup. Settings/saved data and permanent registry cleanup need explicit consent. Vendor prompts may still require input.
-- Retained the prior Beige theme, PU branding, batched theme updates, virtualized lists, page reuse, bilingual RichEdit history, right-side window controls and bounded update checks.
-
-For the main changes and safety limitations, see the sections below. Additional release notes and validation reports may be published separately in the repository.
-
-### What's new in v1.0.100
-
-- Reorganized Home with compact cards and a side navigation bar; removed duplicate navigation icons.
-- Added a subtle glass-style sidebar shine and adjusted navigation and social-link text/icon sizes.
-- Replaced the top search bar with a centered logo and soft glow; placed the application name beside the sidebar logo.
-- Refined Home card spacing, sizes and rounded corners.
-- Matched title-bar controls and page surfaces to the shared ambient background across Blue, Black and White themes, including Arabic layout.
-- Improved File Browser background consistency and slightly enlarged file names.
-- Matched Deep Uninstaller surfaces and Quick Cleaner labels to the ambient background, including first-open rendering.
-- Reduced redundant navigation updates and reused existing pages; optimized rounded-image rendering and caching.
-- Drew Home cards and text on one canvas and coalesced resize layout events; added buffered window rendering to reduce old or duplicated interface fragments.
-- Maximize uses the current monitor's native work area directly, preserving taskbar space and repainting after child layout settles. Manual resizing and minimize behavior are retained.
-- What's New opens without a nested window-creation event loop and renders the complete bilingual history in one scrollable text surface.
-- Preserved uninstall commands, cleanup rules, shortcut review, file operations and background scans.
-
-See [the bilingual release notes](RELEASE_NOTES_v1.0.100.md) for GitHub release text and validation details.
-
-### Interface and themes
-
-English text uses bundled **Inter** and Arabic text uses bundled **Tajawal**.
-Mixed text and input fields use a renamed combined font with Inter Latin and
-Tajawal Arabic glyphs. No system font installation is required. Font licensing,
-Windows-native dialog exceptions and verification are documented in
-[FONTS.md](FONTS.md). Build using `Polar Uninstaller.spec` to include the fonts.
-
-| Theme | Design |
-|---|---|
-| **Black** | Deep black surfaces with subtle silver-gray ambient lighting. |
-| **Blue** | Deep navy surfaces with soft blue and indigo ambient gradients. |
-| **White** | A light theme with improved text contrast and consistent controls. |
-| **Beige** | Warm cream surfaces, soft upper-left lighting and brown accents, using the same cached ambient renderer. |
-| **Dark Beige / Espresso** | Deep espresso with soft upper-left caramel lighting and cream PU artwork. |
-
-The ambient backgrounds are shared across Home, Deep Uninstaller, Quick Cleaner, Dashboard, and File Browser. They are cached and redrawn only when the layout or theme changes, which helps keep resizing, tab switching, and theme switching visually consistent.
-
-The interface is available in **Arabic** and **English**. Language and theme selections are saved between sessions.
-
-Use **Theme / المظهر** in the title bar to open five compact horizontal previews.
-Each preview uses the real ambient gradient, surface colors and transparent PU
-logo. Select a row to apply and save it immediately; click outside or press
-Escape to dismiss the popup. The menu is an overlay and does not move page content.
-
-UI refinements retain the established palettes and PU variants alongside Espresso. Theme changes batch
-widget redraws and reuse cached ambient images; sidebar hover updates only the
-affected row. Resize handling keeps the native client area, Tk layout and ambient
-surfaces synchronized without hiding the borderless window during theme changes.
-What's New uses a read-only Windows RichEdit surface for Arabic/English direction
-and wrapping, with a Tk fallback. Update checks have a bounded timeout and report
-success, available updates or a retryable failure. See
-[the Arabic validation report](UI_REFINEMENT_REPORT.md) for measurements and limits.
-Window controls stay on the right of the title row in both languages: close is
-the rightmost button, maximize/restore is in the middle, and minimize is to its left.
-
-### Main sections
+### Features
 
 #### Deep Uninstaller
 
-Deep Uninstaller lists applications and games discovered from Windows uninstall registry entries and supported launcher libraries. Icons, versions, and installation sizes are shown when available.
+Discover installed Windows applications and supported game-library entries. The page displays application names, versions, publishers, sizes, and icons when that information is available.
 
-- The red **Uninstall Official (for games)** action is enabled for recognized games and uses the existing game/launcher removal flow.
-- **Deep Uninstall** confirms the target once, runs its registered official uninstaller and monitors removal before scanning leftovers automatically. Complete vendor/launcher prompts when required.
-- The review lists exact installation/settings folders, strictly matched shortcuts and exact application registry keys. Nothing is selected automatically; settings/saved data and permanent registry cleanup require explicit consent. Files use the Recycle Bin where supported, with Windows confirmation before a non-recyclable permanent operation.
-- Cleanup is stopped while the app is still registered as installed, to avoid deleting an active installation. The official uninstaller must finish before leftover cleanup.
-- Shared launcher or game-container folders are protected from cleanup.
-- Leftover results depend on the application, its vendor uninstaller, file permissions, and the Windows installation. Review the Activity Log and the selected items before deleting anything.
+- **Deep Uninstall** is available for installations that support a verified direct-removal workflow.
+- **Official Uninstall** uses a valid registered uninstall command when direct removal is inappropriate.
+- **Games Uninstall** uses supported launcher or game-specific removal methods when available. Some launchers require you to finish removal in their own interface.
+- Both Deep and Official workflows can use the **same leftover scanner and review window** after removal is verified.
+- Review candidate files, folders, shortcuts, and Registry entries. Candidates are **not preselected**.
+- **Verify / Rescan** helps recheck a removal that could not be confirmed automatically.
+- The application list is refreshed after a removal is verified; the app must not be reported as removed merely because an uninstaller window closed.
+
+**Important:** Detection does not guarantee that every leftover belongs exclusively to the removed program. Shared directories, system components, and unrelated shortcuts must remain protected. Registry changes require careful review and backup.
 
 #### Quick Cleaner
 
-Quick Cleaner provides selectable categories for:
+Select the cleanup categories you want to process, such as:
 
 - User temporary files (`%TEMP%`)
 - Windows temporary files (`C:\Windows\Temp`)
 - Windows Prefetch
 - Recycle Bin
 
-Each category shows an estimated size when available. Select only the categories you want, start the cleanup, and review the result and Activity Log. Files that are in use or protected by permissions may not be removed.
+Results depend on Windows permissions and whether files are in use. Review the selection and Activity Log before and after cleaning.
 
 #### Dashboard
 
-The Dashboard presents usage counters and storage information, including:
-
-- Drive capacity, used space, free space, and usage bars
-- Sizes of top-level folders on drive C:
-- Largest files found during the storage scan
-- Cached results with a manual **Rescan** action
-
-Storage scanning is intentionally manual so it does not run during normal startup. Clicking a folder or file entry opens its location for review.
+View drive capacity, used and available space, and storage information. Start a storage scan when you need a more detailed breakdown of folders and large files. Heavy scans are not required just to open the page.
 
 #### File Browser
 
-File Browser lets you navigate folders, enter a path directly, move back or up, and sort entries by name, size, or type. Folder sizes are calculated in the background.
+Browse directories with an address/path bar, navigation controls, sorting, file metadata, and a details panel. The updated WPF layout supports Arabic paths and file icons.
 
-- **Delete Selected Safely** moves selected files and folders to the Recycle Bin.
-- **Permanent Delete** requires two confirmations and cannot be undone.
-- Deleting a folder also deletes its contents.
-- Review the selection, item count, and total size before confirming.
+File and folder deletion requires confirmation. **Permanent deletion cannot be undone.**
 
 #### Duplicate Finder
 
-Duplicate Finder is available from File Browser. It scans one or more added folders, or the current folder, in two stages:
+Find potential duplicate files by comparing sizes and verifying matching candidates with **SHA-256** hashes. Review each group before selecting extra copies for cleanup; retain at least one copy of important files.
 
-1. Files are grouped by size.
-2. Candidate files are read and verified with a streaming **SHA-256** content hash.
+#### Themes and languages
 
-Only files with matching content hashes are presented as duplicates. You can select extra copies while keeping at least one copy in each group. Duplicate cleanup moves the selected extras to the Recycle Bin and does not fall back to permanent deletion.
+Polar Uninstaller supports **Blue, Black, White, Beige, and Dark Beige / Espresso** themes, with English and Arabic interfaces. Theme and language preferences are designed to remain consistent across the application.
 
-#### What's New
+#### Activity Log, What's New, and Feedback
 
-What's New is a dedicated bilingual window that shows the current version and the release history. Open it from the sidebar or the fifth card on Home.
-
-#### Feedback & Reports
-
-Feedback & Reports is available from Home. Choose a category, write a message of up to 2,000 characters, and send it directly to the Polar team. The window validates the report, prevents duplicate submissions while a request is in progress, and preserves the message if sending fails. The message field automatically aligns Arabic text to the right and English text to the left. Only the category, message, and app version are sent; device identifiers, file paths, and installed-application data are not collected.
+- **Activity Log:** shows progress, outcomes, and relevant warnings.
+- **What's New:** displays release information within the application.
+- **Feedback & Reports:** lets users submit a category, message, and app version. Do not include passwords or other sensitive information in reports.
 
 ### Download and run
 
-1. Open the [latest GitHub Release](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest).
-2. In the release assets, download `Polar Uninstaller.exe`.
-3. Run the EXE. Windows will request administrator rights because cleanup and storage operations may access protected locations.
-4. Accept the UAC prompt only if you trust the file and its source.
+1. Visit the [official Releases page](https://github.com/Ayh-m1/Polar-Uninstaller/releases).
+2. Choose a release explicitly labeled for **C# / WPF v1.0.120 or newer**. Older Python releases are a different application build.
+3. Download the provided portable executable or release package, if published.
+4. For the portable package, extract the archive if necessary, then launch `PolarUninstaller.exe`.
+5. Review any Windows security or administrator-permission prompt before approving it.
 
-The application is distributed as a single EXE and does not require a separate installer. Use only the official repository Releases page rather than third-party download mirrors.
+The current WPF portable build is **self-contained**: users do not need to install the .NET runtime separately. A **Setup installer is planned separately**; do not confuse the portable EXE or ZIP with an installer.
 
-If Windows displays a security prompt, verify the file source and review the prompt before continuing.
-
-### Quick start
-
-1. Open Home and choose a main section.
-2. In **Deep Uninstaller**, select an application and click **Deep Uninstall**. Confirm the target, complete any official uninstaller prompts, then review and select detected leftovers for cleanup. For supported games, the red **Uninstall Official (for games)** action remains available.
-3. In **Quick Cleaner**, select the temporary-data categories and review the result.
-4. In **Dashboard**, select **Rescan** when you want fresh storage results.
-5. In **File Browser**, review files before moving them to the Recycle Bin or deleting them permanently.
-6. Open **What's New** to read the release history.
-
-### Safety and limitations
-
-> **Important:** Review selected files, duplicate groups, leftover candidates, and cleanup results before confirming deletion. File and registry cleanup can be irreversible, especially **Permanent Delete**.
-
-- Back up important files before cleanup.
-- Registry entries and application-data folders may belong to other software or shared components.
-- Cleanup results depend on permissions, the vendor uninstaller, and the Windows installation.
-- Polar Uninstaller does not guarantee complete removal of every file or registry entry, and detection results should not be treated as guaranteed safe to delete.
-- Use the application at your own risk.
+> **Release status:** A successful local build does not mean an installer or GitHub release has already been published. Check the Releases page for what is actually available.
 
 ### Build from source
 
+The current application is written in **C# using WPF and .NET**, targeting **64-bit Windows 10/11**.
+
 Requirements:
 
-- Windows 10 or 11, 64-bit
-- Python 3.14, 64-bit
-- `customtkinter`, `Pillow`, and `psutil`
-- PyInstaller for building the EXE
+- Windows 10 or 11 (64-bit)
+- The .NET SDK version required by the WPF project
+- Visual Studio with .NET desktop development tools, or a suitable .NET CLI environment
 
-Install the dependencies and run the application:
-
-```powershell
-py -m pip install --upgrade customtkinter pillow psutil pyinstaller
-py app.py
-```
-
-Build the single-file Windows executable:
+From the **`Polar-Uninstaller-WPF`** project directory, use the existing release script if it is present:
 
 ```powershell
-py -m PyInstaller --clean "Polar Uninstaller.spec"
+.\Build-Release.ps1
 ```
 
-The output is `dist\Polar Uninstaller.exe`. The embedded manifest requests administrator rights and the executable includes file and product version metadata.
+Alternatively, publish the WPF `.csproj` using the .NET CLI, adjusting the project path and publish options to match the repository:
 
-Runtime settings, caches, and activity data are stored under:
-
-```text
-%APPDATA%\PolarUninstaller
+```powershell
+dotnet publish .\PolarUninstaller.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\Build\SingleFile
 ```
 
-### How it works
+The intended portable output is `Build/SingleFile/PolarUninstaller.exe`. Keep the actual project file name, resource settings, and release-script requirements as the source of truth if they differ from the example command.
 
-- **Application discovery:** reads Windows uninstall registry entries, including WOW64 entries, and merges supported game libraries.
-- **Leftover search:** matches application and publisher names in common installation and user-data locations, then checks related shortcuts and registry entries.
-- **Shortcut cleanup:** checks desktop, Start Menu, and pinned taskbar shortcuts using name and target-path matching.
-- **Storage analysis:** calculates drive usage and folder sizes in the background. Heavy storage scans are manual and cached.
-- **Duplicate detection:** groups candidates by size, then verifies their contents with SHA-256.
-- **Responsiveness:** long-running work is handled in background threads, while lists use reusable canvas rows for large collections.
+**The old Python commands (`app.py`, PyInstaller, `.spec`) apply only to legacy releases and are not used to build the C# edition.**
 
 ### Project structure
 
 | Path | Purpose |
 |---|---|
-| `app.py` | Main Polar Uninstaller desktop application. |
-| `dashboard.py` | Separate local dashboard viewer. |
-| `icon.ico`, `logo.png`, `AppLogo.png` | Application icon and logo assets. |
-| `screenshots/` | Expected location for the documentation screenshots listed above. |
-| `dist/` | Local build output; ignored by Git and distributed through Releases. |
+| `Polar-Uninstaller-WPF/` | C# / WPF application project |
+| `Views/` and WPF `*.xaml` files | Application pages and visual layout, where present |
+| `Services/` | Uninstall, leftover scanning, file-management, and other application services |
+| `Assets/` | Branding, images, release notes, and other bundled resources |
+| `Build/SingleFile/` | Self-contained portable EXE output |
+| `Build/` | Release artifacts and packaging output |
+
+Actual folders may differ as the project evolves. Use the project files in the repository for the definitive layout.
+
+### Safety and limitations
+
+> **Always review selected files, folders, shortcuts, and Registry entries before deletion. Some changes are irreversible.**
+
+- Back up important data before uninstalling software or cleaning files.
+- An application's name or publisher alone is not sufficient proof that a folder or Registry entry is safe to delete.
+- Shared game-library folders, Windows components, drivers, and security software need additional protection.
+- Some games and applications can only be removed through their official launcher or uninstaller.
+- Uninstall verification, artwork discovery, and leftover detection vary by application and system configuration.
+- Do not treat an unsuccessful scan or a closed installer window as proof of successful removal.
 
 ### Credits & Acknowledgments
 
-#### Testing & Quality Assurance
+**[MobV2](https://github.com/MobV2) — Lead Beta Tester**
 
-**[MobV2](https://github.com/MobV2)** — **Lead Beta Tester**
-
-Special thanks to MobV2 for extensively testing Polar Uninstaller, reporting bugs, providing valuable suggestions, and helping improve the overall user experience.
+Special thanks to MobV2 for extensive testing, bug reports, suggestions, and help improving the user experience.
 
 ### Links
 
-- [Latest release](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
-- [Issues](https://github.com/Ayh-m1/Polar-Uninstaller/issues)
+- [GitHub Releases](https://github.com/Ayh-m1/Polar-Uninstaller/releases)
+- [Issues & Bug Reports](https://github.com/Ayh-m1/Polar-Uninstaller/issues)
 - [Support](https://polarwolves.com/supportus/p1682342912)
 - [Discord](https://discord.gg/plr)
 
-**Author:** Ayhm
+**Developer:** Ayhm  
+**License:** MIT
 
 ---
 
@@ -266,217 +178,145 @@ Special thanks to MobV2 for extensively testing Polar Uninstaller, reporting bug
 
 ### نظرة عامة
 
-Polar Uninstaller تطبيق سطح مكتب لنظام Windows 10 و11 (64 بت)، يجمع خمس وجهات رئيسية في واجهة واحدة باللغتين العربية والإنجليزية:
+**Polar Uninstaller v1.0.120** هو الإصدار الرئيسي الجديد المبني باستخدام **C# وWPF و.NET** لنظام Windows، بدل الواجهة السابقة المبنية بلغة Python ومكتبة CustomTkinter.
 
-- **إزالة التطبيقات والألعاب** لإلغاء تثبيت البرامج والألعاب
-- **التنظيف السريع** لتنظيف فئات الملفات المؤقتة المحددة وسلة المحذوفات
-- **لوحة التحكم** لعرض معلومات الاستخدام ومساحة التخزين
-- **مستعرض الملفات** لاستعراض الملفات وإدارتها
-- **ما الجديد** لسجل التحديثات داخل التطبيق
+يركز الإصدار الجديد على **سلاسة تغيير حجم النافذة، وسرعة التنقل، وتناسق المظاهر، وتحسين إدارة الملفات وإزالة البرامج**. يدعم البرنامج **العربية والإنجليزية** مع مراعاة اتجاه الواجهة.
 
-يضيف الإصدار **1.0.99** تحسينات للإزالة الرسمية للألعاب. يرسل زر الألعاب الأحمر طلب الإزالة إلى Ubisoft Connect باستخدام معرّف اللعبة، وتستمر ألعاب Steam باستخدام رابطها الرسمي. تستخدم أوامر الإزالة المسجّلة للعبة عند توفرها. لا توثّق Epic أمر إزالة خارجيًا، لذلك يعرض Polar خطوات الإزالة من المكتبة؛ ويستخدم مزيل Rockstar المسجّل إن توفر، وإلا يفتح مشغّل Rockstar. بعد الإزالة، يتحقق Polar من اختفاء تسجيل اللعبة قبل السماح بتنظيف البقايا. ويظل زر البرامج يشغّل مزيل البرنامج المسجّل ثم يتيح مراجعة منفصلة للبقايا.
+### أبرز تغييرات v1.0.120
 
-حسّن الإصدار **1.0.98** التنقل وتغيير حجم النافذة يدويًا؛ تجد تفاصيله في سجل «ما الجديد» داخل البرنامج.
+- **الانتقال إلى C# وWPF:** واجهة Windows أصلية بدل تنفيذ Python السابق.
+- **واجهة محسّنة:** تغيير حجم أكثر سلاسة، وتنقل أسرع، وتصميم موحّد للمظاهر والصفحات.
+- **الإزالة العميقة والرسمية:** طريقتان للإزالة مع فاحص بقايا ونافذة مراجعة مشتركة.
+- **مراجعة البقايا:** عرض الملفات والمجلدات والاختصارات ومفاتيح Registry المرشحة، مع اختيار العناصر يدويًا.
+- **التحقق وإعادة الفحص:** إعادة التحقق عندما لا يمكن تأكيد اكتمال الإزالة تلقائيًا.
+- **أيقونات البرامج والألعاب:** تحسين اكتشاف الأيقونات من بيانات التثبيت والمنصات والاختصارات المحلية، مع اختلاف الدعم بين الألعاب.
+- **مستعرض ملفات أحدث:** تنقل وترتيب وتفاصيل وعمليات ملفات مع التأكيد قبل الحذف.
+- **كشف الملفات المكررة:** التحقق من تطابق المحتوى باستخدام SHA-256.
+- **نسخة محمولة:** ملف EXE مستقل ضمن مخرجات مشروع WPF في `Build/SingleFile`.
 
-### ما الجديد في v1.0.101
+### مميزات البرنامج
 
-- إضافة البيج الغامق / إسبريسو إلى قائمة المظاهر الخمسة، بلمعة كراميل محفوظة مؤقتًا وشعار PU كريمي شفاف.
-- سحب فاصل الشريط الجانبي للتحكم الحر بالعرض، مع وضع متوسط وأيقونات فقط وتلميحات وحفظ العرض وإعادته بالنقر المزدوج، باللغتين.
-- إزالة عميقة متكاملة تبدأ بالمزيل الرسمي ثم تتحقق وتفحص البقايا وتتيح مراجعة تنظيفها. تتطلب الإعدادات وبيانات الحفظ والحذف الدائم لمفاتيح السجل موافقة صريحة؛ وقد تتطلب أداة الشركة التفاعل.
-- الحفاظ على البيج السابق وهوية PU وتجميع تحديثات المظهر والقوائم الافتراضية وإعادة استخدام الصفحات وسجل RichEdit ثنائي اللغة وأزرار النافذة في اليمين ومهل فحص التحديثات.
+#### الإزالة العميقة والرسمية
 
-للتفاصيل والقيود المتعلقة بالإزالة والتنظيف، راجع الأقسام أدناه. قد تُنشر ملاحظات الإصدار وتقارير الاختبار الإضافية بشكل منفصل في المستودع.
+يعرض القسم البرامج المثبتة وبعض ألعاب المنصات المدعومة، مع الاسم والإصدار والناشر والحجم والأيقونة عند توفر البيانات.
 
-### ما الجديد في v1.0.100
+- **Deep Uninstall:** إزالة مباشرة للتثبيتات التي يتوفر لها مسار حذف موثوق ومتحقق منه.
+- **Official Uninstall:** استخدام أمر الإزالة الرسمي المسجّل للبرامج التي لا يناسبها الحذف المباشر.
+- **Games Uninstall:** استخدام طرق إزالة الألعاب المتاحة حسب المنصة؛ وقد تحتاج لإكمال الإزالة داخل مشغّل الألعاب.
+- يمكن للطريقتين **العميقة والرسمية** تشغيل فاحص البقايا نفسه بعد التحقق من إزالة البرنامج.
+- تُعرض الملفات والمجلدات والاختصارات ومدخلات Registry المرشحة في نافذة مراجعة، **ولا تُحدد تلقائيًا**.
+- يتيح زر **Verify / Rescan** إعادة التحقق والفحص إذا لم تتأكد نتيجة الإزالة.
+- تُحدّث قائمة البرامج بعد التحقق من الإزالة، وليس بمجرد إغلاق نافذة المزيل.
 
-- إعادة ترتيب الرئيسية ببطاقات أصغر وشريط تنقل جانبي وإزالة الأيقونات المكررة.
-- إضافة لمعة زجاجية خفيفة للشريط الجانبي وضبط أحجام خطوط وأيقونات التنقل والدسكورد والدعم والاقتراحات.
-- استبدال البحث العلوي بشعار في الوسط بلمعة طفيفة ووضع اسم البرنامج بجانب الشعار الجانبي.
-- ضبط مسافات البطاقات وأحجامها وحوافها المستديرة.
-- توحيد خلفيات شريط العنوان والصفحات مع التدرج العام في الثيم الأزرق والأسود والأبيض، بما فيها الواجهة العربية.
-- تحسين خلفية متصفح الملفات وتكبير أسماء الملفات قليلاً.
-- توحيد خلفيات إزالة البرامج ونصوص التنظيف السريع، بما يشمل العرض الأول للصفحة.
-- تقليل تحديثات التنقل المكررة وإعادة استخدام الصفحات وتحسين رسم الصور المستديرة وتخزينها المؤقت.
-- جمع بطاقات الرئيسية ونصوصها في لوحة رسم واحدة ودمج أحداث تغيير الحجم وتفعيل تجميع الرسم لتقليل بقايا الرسم القديم وتكرار أجزاء الواجهة.
-- استخدام مساحة عمل الشاشة الحالية مباشرةً عند التكبير، مع مراعاة شريط المهام وإعادة الرسم بعد اكتمال التخطيط وإبقاء التحكم اليدوي والتصغير كما هما.
-- تسريع فتح «ما الجديد» بإلغاء حلقة التحديث المتداخلة وعرض سجل الإصدارات كاملاً في مربع نص واحد قابل للتمرير.
-- الحفاظ على أوامر الإزالة وقواعد التنظيف ومراجعة الاختصارات وعمليات الملفات والفحص في الخلفية.
-
-نص الإصدار وتفاصيل التحقق متاحة في [ملاحظات الإصدار](RELEASE_NOTES_v1.0.100.md).
-
-### الواجهة والثيمات
-
-تستخدم النصوص الإنجليزية خط **Inter** والعربية خط **Tajawal** المضمّنين.
-تستخدم النصوص المختلطة وحقول الإدخال خطًا مشتقًا يجمع حروف Inter اللاتينية
-وحروف Tajawal العربية، دون تثبيت عام في Windows. راجع [توثيق الخطوط](FONTS.md)
-للتراخيص واستثناءات حوارات النظام والاختبارات، وابنِ EXE باستخدام ملف spec.
-
-| الثيم | التصميم |
-|---|---|
-| **Black** | خلفية سوداء عميقة مع إضاءة محيطة رمادية وفضية خافتة. |
-| **Blue** | خلفية كحلية داكنة مع تدرجات زرقاء ونيلية ناعمة. |
-| **White** | ثيم فاتح مع تحسين تباين النصوص وتناسق عناصر التحكم. |
-| **Beige** | بيج وكريمي دافئ مع إضاءة ناعمة من أعلى اليسار. |
-| **Dark Beige / Espresso** | إسبريسو داكن بلمعة كراميل ناعمة وشعار PU كريمي شفاف. |
-
-تُستخدم الخلفيات المحيطة نفسها في الرئيسية وأقسام إزالة التطبيقات والألعاب، والتنظيف السريع، ولوحة التحكم، ومستعرض الملفات. تُخزن هذه الخلفيات مؤقتًا ولا يُعاد رسمها إلا عند تغير التخطيط أو الثيم، مما يحافظ على تناسق الواجهة عند تغيير الحجم أو التبويب أو الثيم.
-
-الواجهة متاحة باللغتين **العربية** و**الإنجليزية**، ويتم حفظ اختيار اللغة والثيم بين جلسات التشغيل.
-
-### الأقسام الرئيسية
-
-#### إزالة التطبيقات والألعاب
-
-يعرض هذا القسم التطبيقات والألعاب المكتشفة من مفاتيح إلغاء التثبيت في سجل Windows ومن مكتبات المنصات المدعومة. تظهر الأيقونات والإصدارات وأحجام التثبيت عند توفرها.
-
-- زر **Uninstall Official (for games)** الأحمر مخصص للألعاب المعروفة ويستخدم مسار الإزالة الخاص باللعبة أو منصتها.
-- يؤكد زر **إزالة عميقة** البرنامج مرة واحدة ثم يشغّل مزيله الرسمي ويراقب النتيجة، وبعد التحقق يبدأ فحص البقايا تلقائيًا. أكمل مطالبات الشركة أو اللانشر عند الحاجة.
-- تعرض المراجعة مجلدات التثبيت والإعدادات والاختصارات المطابقة بدقة ومفاتيح التطبيق المحددة. لا تُحدد البقايا تلقائيًا، وتتطلب بيانات الحفظ والإعدادات والحذف الدائم لمفاتيح السجل موافقة صريحة. تُستخدم سلة المحذوفات عند دعمها، مع تأكيد Windows قبل عملية دائمة لا تدعم الاستعادة.
-- يتوقف التنظيف ما دام البرنامج مسجلاً كتثبيت قائم، لحماية ملفات برنامج ما زال مثبتاً. أكمل الإزالة الرسمية قبل تنظيف البقايا.
-- تُحمى مجلدات منصات الألعاب أو الحاويات المشتركة من التنظيف.
-- تعتمد نتائج البقايا على التطبيق وبرنامج إلغاء التثبيت الخاص به وصلاحيات الملفات وإعدادات Windows. راجع سجل النشاط والعناصر المحددة قبل حذف أي شيء.
+**تنبيه:** ليست كل نتيجة في فحص البقايا آمنة للحذف؛ فقد تكون بعض الملفات أو مفاتيح السجل مشتركة مع برامج أخرى. راجع النتائج جيدًا، مع الاحتفاظ بنسخة احتياطية قبل تعديل Registry.
 
 #### التنظيف السريع
 
-يوفر التنظيف السريع خيارات قابلة للتحديد لكل من:
+يمكن اختيار فئات التنظيف المطلوبة، مثل:
 
-- الملفات المؤقتة للمستخدم (`%TEMP%`)
-- الملفات المؤقتة في Windows (`C:\Windows\Temp`)
-- ملفات Windows Prefetch
+- ملفات المستخدم المؤقتة (`%TEMP%`)
+- ملفات Windows المؤقتة (`C:\Windows\Temp`)
+- ملفات Prefetch
 - سلة المحذوفات
 
-يظهر حجم تقديري لكل فئة عند توفره. حدد الفئات المطلوبة فقط، ثم ابدأ التنظيف وراجع النتيجة وسجل النشاط. قد لا تُحذف الملفات قيد الاستخدام أو المحمية بصلاحيات النظام.
+قد تمنع الصلاحيات أو الملفات قيد الاستخدام حذف بعض العناصر. راجع النتائج وسجل النشاط.
 
 #### لوحة التحكم
 
-تعرض لوحة التحكم عدادات الاستخدام ومعلومات التخزين، ومنها:
-
-- سعة الأقراص والمساحة المستخدمة والمتاحة وأشرطة الاستخدام
-- أحجام المجلدات الرئيسية على القرص C:
-- أكبر الملفات المكتشفة أثناء فحص التخزين
-- نتائج مخزنة مؤقتًا مع زر **Rescan** لإعادة الفحص يدويًا
-
-يتم تشغيل فحص التخزين يدويًا حتى لا يستهلك موارد النظام عند بدء التشغيل العادي. يؤدي الضغط على مجلد أو ملف إلى فتح موقعه لمراجعته.
+عرض معلومات الأقراص والمساحة المستخدمة والمتاحة، مع إمكانية بدء فحص تفصيلي للتخزين والمجلدات والملفات الكبيرة عند الحاجة، دون فرض فحص شامل بمجرد فتح الصفحة.
 
 #### مستعرض الملفات
 
-يتيح مستعرض الملفات التنقل بين المجلدات، وإدخال المسار مباشرة، والرجوع أو الصعود، وترتيب العناصر حسب الاسم أو الحجم أو النوع. تُحسب أحجام المجلدات في الخلفية.
-
-- **Delete Selected Safely** ينقل الملفات والمجلدات المحددة إلى سلة المحذوفات.
-- **Permanent Delete** يتطلب تأكيدين ولا يمكن التراجع عنه.
-- حذف مجلد يحذف محتوياته أيضًا.
-- راجع التحديد وعدد العناصر والحجم الإجمالي قبل التأكيد.
+التنقل بين المجلدات باستخدام شريط المسار وأزرار التنقل، مع الترتيب وتفاصيل الملفات والأيقونات ودعم المسارات العربية. تتطلب عمليات الحذف التأكيد، و**الحذف النهائي لا يمكن التراجع عنه**.
 
 #### مكتشف الملفات المكررة
 
-يتوفر مكتشف الملفات المكررة من داخل مستعرض الملفات. يفحص مجلدًا واحدًا أو أكثر بعد إضافته، أو المجلد الحالي، على مرحلتين:
+يفحص الملفات المرشحة بحسب الحجم ثم يقارن محتواها باستخدام بصمة **SHA-256**. راجع مجموعات التكرار وحدد النسخ الزائدة فقط مع الاحتفاظ بنسخة مهمة على الأقل.
 
-1. تجميع الملفات حسب الحجم.
-2. قراءة الملفات المرشحة والتحقق من محتواها باستخدام بصمة **SHA-256** متدفقة.
+#### المظاهر واللغات
 
-لا تظهر الملفات كمكررة إلا عندما تتطابق بصمات المحتوى. يمكنك تحديد النسخ الزائدة مع الإبقاء على نسخة واحدة على الأقل في كل مجموعة. ينقل تنظيف الملفات المكررة النسخ المحددة إلى سلة المحذوفات، ولا يلجأ إلى الحذف النهائي.
+يدعم البرنامج خمسة مظاهر: **الأزرق، الأسود، الأبيض، البيج، والبيج الغامق / إسبريسو**، مع واجهتين بالعربية والإنجليزية.
 
-#### ما الجديد
+#### سجل النشاط وما الجديد والملاحظات
 
-نافذة مستقلة ثنائية اللغة تعرض الإصدار الحالي وسجل الإصدارات السابقة، ويتم فتحها من البطاقة الخامسة في الرئيسية.
-
-#### الملاحظات والبلاغات
-
-نافذة الملاحظات والبلاغات متاحة من الرئيسية. اختر الفئة واكتب رسالة لا تتجاوز 2000 حرف وأرسلها مباشرة إلى فريق Polar. تتحقق النافذة من البلاغ وتمنع الإرسال المتكرر أثناء معالجة الطلب وتحتفظ بالرسالة إذا تعذر الإرسال. يحاذي حقل الرسالة النص العربي تلقائياً إلى اليمين والنص الإنجليزي إلى اليسار. يتم إرسال الفئة والرسالة وإصدار التطبيق فقط؛ لا نجمع معرّفات الجهاز أو مسارات الملفات أو بيانات التطبيقات المثبتة.
+- **سجل النشاط:** لمتابعة تقدم العمليات ونتائجها والتنبيهات.
+- **ما الجديد:** لعرض معلومات الإصدارات داخل البرنامج.
+- **الملاحظات والبلاغات:** لإرسال نوع البلاغ والرسالة وإصدار البرنامج. تجنب إرسال كلمات المرور أو البيانات الحساسة.
 
 ### التحميل والتشغيل
 
-1. افتح [أحدث إصدار على GitHub](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest).
-2. من ملفات الإصدار، نزّل `Polar Uninstaller.exe`.
-3. شغّل الملف. سيطلب Windows صلاحيات المسؤول لأن التنظيف وعمليات التخزين قد تصل إلى مواقع محمية.
-4. اقبل طلب UAC فقط إذا كنت تثق بالملف ومصدره.
+1. افتح [صفحة الإصدارات الرسمية على GitHub](https://github.com/Ayh-m1/Polar-Uninstaller/releases).
+2. اختر إصدار **C# / WPF v1.0.120 أو أحدث**؛ فإصدارات Python السابقة مختلفة عن هذا البناء.
+3. حمّل النسخة المحمولة أو الحزمة المنشورة، إن كانت متاحة.
+4. إذا كانت الحزمة مضغوطة، فك الضغط ثم شغّل `PolarUninstaller.exe`.
+5. راجع أي طلب صلاحيات أو تحذير أمني من Windows قبل الموافقة.
 
-يُوزع التطبيق كملف EXE واحد ولا يحتاج إلى مثبّت منفصل. استخدم صفحة Releases الرسمية في المستودع فقط، وتجنب مواقع التحميل الخارجية.
+النسخة المحمولة الحالية **مستقلة وتحتوي على متطلبات تشغيل .NET**، فلا يحتاج المستخدم لتثبيت بيئة .NET بشكل منفصل. أما **Setup فهو مشروع منفصل مخطط له**، ولا تُعد الحزمة المحمولة مثبّتًا.
 
-إذا ظهرت رسالة أمان من Windows، فتحقق من مصدر الملف وراجع الرسالة قبل المتابعة.
-
-### الاستخدام السريع
-
-1. افتح الرئيسية واختر القسم المطلوب.
-2. في **إزالة التطبيقات والألعاب**، اختر البرنامج واضغط **إزالة عميقة**، ثم أكّد البرنامج وأكمل أي مطالبات من أداة الإزالة الرسمية. بعد ذلك راجع البقايا المكتشفة وحدد ما تريد تنظيفه. ويبقى زر **الإزالة الرسمية للألعاب** الأحمر متاحًا للألعاب المدعومة.
-3. في **التنظيف السريع**، حدد فئات الملفات المؤقتة وراجع النتيجة.
-4. في **لوحة التحكم**، اضغط **Rescan** عندما تحتاج إلى نتائج تخزين حديثة.
-5. في **مستعرض الملفات**، راجع الملفات قبل نقلها إلى سلة المحذوفات أو حذفها نهائيًا.
-6. افتح **ما الجديد** لقراءة سجل التحديثات.
-
-### الأمان والحدود
-
-> **مهم:** راجع الملفات المحددة ومجموعات الملفات المكررة وعناصر البقايا ونتائج التنظيف قبل تأكيد الحذف. قد يكون حذف الملفات أو تعديل السجل غير قابل للتراجع، خاصة عند استخدام **Permanent Delete**.
-
-- احتفظ بنسخة احتياطية من الملفات المهمة قبل التنظيف.
-- قد تنتمي مدخلات السجل ومجلدات بيانات التطبيقات إلى برامج أخرى أو مكونات مشتركة.
-- تعتمد نتائج التنظيف على الصلاحيات وبرنامج إلغاء التثبيت وإعدادات Windows.
-- لا يضمن Polar Uninstaller حذف كل ملف أو مدخل سجل، ولا ينبغي اعتبار العناصر المكتشفة آمنة للحذف بشكل مؤكد.
-- استخدم التطبيق على مسؤوليتك.
+> **حالة النشر:** نجاح بناء النسخة محليًا لا يعني نشرها تلقائيًا على GitHub. تحقق من صفحة Releases لمعرفة الملفات المنشورة بالفعل.
 
 ### البناء من المصدر
 
+النسخة الحالية مبنية باستخدام **C# وWPF و.NET** لنظام **Windows 10/11 بنواة 64 بت**.
+
 المتطلبات:
 
-- Windows 10 أو 11، إصدار 64 بت
-- Python 3.14، إصدار 64 بت
-- الحزم `customtkinter` و`Pillow` و`psutil`
-- PyInstaller لبناء ملف EXE
+- Windows 10 أو 11 (64 بت)
+- إصدار .NET SDK المتوافق مع مشروع WPF
+- Visual Studio مع أدوات تطوير سطح المكتب لـ .NET، أو بيئة مناسبة لأوامر .NET CLI
 
-ثبّت المتطلبات ثم شغّل التطبيق:
-
-```powershell
-py -m pip install --upgrade customtkinter pillow psutil pyinstaller
-py app.py
-```
-
-لبناء ملف Windows التنفيذي:
+من داخل مجلد المشروع **`Polar-Uninstaller-WPF`**، شغّل سكربت الإصدار الموجود إذا كان متوفرًا:
 
 ```powershell
-py -m PyInstaller --clean "Polar Uninstaller.spec"
+.\Build-Release.ps1
 ```
 
-تكون النتيجة في `dist\Polar Uninstaller.exe`، ويتضمن الملف المضمّن طلب صلاحيات المسؤول وبيانات إصدار الملف والمنتج.
+أو استخدم أمر النشر التالي كمثال، بعد مطابقة اسم ملف المشروع وخيارات البناء مع ملفات المستودع:
 
-تُحفظ إعدادات التشغيل والملفات المؤقتة وبيانات النشاط في:
-
-```text
-%APPDATA%\PolarUninstaller
+```powershell
+dotnet publish .\PolarUninstaller.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o .\Build\SingleFile
 ```
 
-### آلية العمل
+المخرج المستهدف للنسخة المحمولة هو `Build/SingleFile/PolarUninstaller.exe`. إذا اختلف اسم المشروع أو إعدادات الموارد، فاعتمد الملفات الفعلية وسكربت البناء في المستودع.
 
-- **اكتشاف التطبيقات:** قراءة مفاتيح إلغاء التثبيت في سجل Windows، بما فيها مفاتيح WOW64، ودمج مكتبات الألعاب المدعومة.
-- **البحث عن البقايا:** مطابقة أسماء التطبيقات والناشرين في مواقع التثبيت وبيانات المستخدم الشائعة، ثم فحص الاختصارات ومدخلات السجل المرتبطة.
-- **تنظيف الاختصارات:** فحص اختصارات سطح المكتب وقائمة ابدأ وشريط المهام المثبتة باستخدام الاسم ومسار الهدف.
-- **تحليل التخزين:** حساب استخدام الأقراص وأحجام المجلدات في الخلفية. عمليات الفحص الثقيلة يدوية وتُخزن نتائجها مؤقتًا.
-- **كشف التكرار:** تجميع المرشحين حسب الحجم ثم التحقق من المحتوى باستخدام SHA-256.
-- **الاستجابة:** تنفيذ العمليات الطويلة في خيوط خلفية، واستخدام صفوف Canvas قابلة لإعادة الاستخدام لعرض القوائم الكبيرة.
+**أوامر Python وPyInstaller وملفات `.spec` تخص الإصدارات القديمة فقط، ولا تُستخدم لبناء إصدار C#.**
 
 ### بنية المشروع
 
 | المسار | الغرض |
 |---|---|
-| `app.py` | تطبيق Polar Uninstaller الرئيسي. |
-| `dashboard.py` | عارض محلي مستقل للوحة التحكم. |
-| `icon.ico`, `logo.png`, `AppLogo.png` | أيقونة التطبيق وشعاراته. |
-| `dist/` | مخرجات البناء المحلية؛ مستبعدة من Git وتُوزع عبر Releases. |
+| `Polar-Uninstaller-WPF/` | مشروع التطبيق بلغة C# وواجهة WPF |
+| `Views/` وملفات `*.xaml` | الصفحات والتصميم، عند وجودها |
+| `Services/` | خدمات الإزالة وفحص البقايا وإدارة الملفات وغيرها |
+| `Assets/` | الشعارات والصور وبيانات الإصدارات والموارد |
+| `Build/SingleFile/` | ملف EXE المحمول والمستقل |
+| `Build/` | ملفات البناء وحزم الإصدار |
 
+قد تتغير المجلدات أثناء التطوير؛ ملفات المشروع الفعلية هي المرجع النهائي.
+
+### الأمان والقيود
+
+> **مهم:** راجع الملفات والمجلدات والاختصارات ومفاتيح Registry المحددة قبل الحذف. بعض العمليات لا يمكن التراجع عنها.
+
+- احتفظ بنسخة احتياطية من البيانات المهمة قبل إزالة البرامج أو التنظيف.
+- تشابه اسم الملف أو الناشر لا يعني أن العنصر يخص البرنامج المحذوف وحده.
+- يجب حماية ملفات النظام والتعريفات وبرامج الحماية ومجلدات الألعاب المشتركة.
+- بعض البرامج والألعاب تتطلب إكمال الحذف من أداة الإزالة أو المنصة الرسمية.
+- يختلف اكتشاف البقايا والأيقونات والتحقق من الإزالة باختلاف التطبيق والنظام.
+- إغلاق نافذة إزالة البرنامج أو فشل الفحص لا يُعد دليلًا على نجاح الإزالة.
 
 ### الشكر والتقدير
 
-#### الاختبار وضمان الجودة
+**[MobV2](https://github.com/MobV2) — المختبر الرئيسي للبرنامج (Lead Beta Tester)**
 
-**[MobV2](https://github.com/MobV2)** — **المختبر الرئيسي للبرنامج (Lead Beta Tester)**
-
-شكر خاص لـ MobV2 على مساهمته الكبيرة في اختبار Polar Uninstaller، والإبلاغ عن المشاكل، وتقديم اقتراحات قيّمة ساعدت في تحسين البرنامج وتطوير تجربة المستخدم.
-
+شكر خاص لـ MobV2 على اختبار البرنامج، والإبلاغ عن المشاكل، وتقديم الاقتراحات التي ساعدت في تحسين تجربة الاستخدام.
 
 ### روابط
 
-- [أحدث إصدار](https://github.com/Ayh-m1/Polar-Uninstaller/releases/latest)
-- [المشكلات](https://github.com/Ayh-m1/Polar-Uninstaller/issues)
+- [إصدارات GitHub](https://github.com/Ayh-m1/Polar-Uninstaller/releases)
+- [المشكلات والبلاغات](https://github.com/Ayh-m1/Polar-Uninstaller/issues)
 - [الدعم](https://polarwolves.com/supportus/p1682342912)
 - [Discord](https://discord.gg/plr)
 
-**المطور:** Ayhm
+**المطور:** Ayhm  
+**الترخيص:** MIT
