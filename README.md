@@ -1,4 +1,4 @@
-[Uploading README (1).md…]()
+[README_Polar_Uninstaller_v1.0.125.md](https://github.com/user-attachments/files/34551134/README_Polar_Uninstaller_v1.0.125.md)
 <div align="center">
 
 <img src="Polar_Logo_Beige_512.png" width="112" alt="Polar Uninstaller logo">
@@ -9,7 +9,7 @@
 
 **Built with C# • .NET • WPF**
 
-[![Version](https://img.shields.io/badge/version-1.0.120-00B8F0)](https://github.com/Ayh-m1/Polar-Uninstaller/releases)
+[![Version](https://img.shields.io/badge/version-1.0.125-00B8F0)](https://github.com/Ayh-m1/Polar-Uninstaller/releases)
 [![Language](https://img.shields.io/badge/language-C%23-512BD4?logo=dotnet&logoColor=white)](https://learn.microsoft.com/dotnet/csharp/)
 [![UI](https://img.shields.io/badge/UI-WPF-0078D4)](https://learn.microsoft.com/dotnet/desktop/wpf/)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)](https://github.com/Ayh-m1/Polar-Uninstaller/releases)
@@ -27,27 +27,39 @@
 
 ### Overview
 
-**Polar Uninstaller v1.0.120** introduces the native **C# / WPF** edition as the main Windows application, replacing the earlier Python-based interface. The new implementation focuses on smooth window resizing, responsive navigation, a consistent theme system, and integrated Windows functionality.
+**Polar Uninstaller v1.0.125** builds on the native **C# / .NET / WPF** edition introduced in v1.0.120. It improves storage analysis, file browsing, bulk file management, uninstall inventory accuracy, and reliability while retaining the responsive Windows interface and consistent themes.
 
 The interface supports **English and Arabic**, with right-to-left layouts where appropriate.
 
-### Highlights in v1.0.120
+### What's new in v1.0.125
 
-- **C# + WPF migration:** native Windows desktop interface, replacing the former Python / CustomTkinter implementation.
-- **Refined UI:** responsive navigation, smoother resizing, improved file-management layout, and consistent styling across themes.
-- **Deep and Official Uninstall:** distinct removal methods with a shared leftover scanner and review window.
-- **Leftover review:** inspect candidate files, folders, shortcuts, and Registry entries before choosing what to remove.
-- **Verification and Rescan:** review an uninstall result again when completion cannot be confirmed automatically.
-- **Application and game icons:** improved icon lookup, including supported launcher metadata and local shortcuts; coverage varies by title.
-- **Modern File Browser:** navigation, sorting, file details, and file operations with confirmation.
-- **Duplicate Finder:** compares file contents using SHA-256 before reporting duplicates.
-- **Portable release:** a self-contained, single-file Windows executable is available in the `Build/SingleFile` output of the WPF project.
+- **Accurate storage analysis:** the Dashboard separates **Largest Folders** and **Largest Files** into dedicated tabs. Folder results show the immediate children of the scanned location, with cumulative sizes and no repeated nested-folder entries.
+- **Direct Dashboard-to-File-Browser navigation:** open a storage-result folder inside Polar's integrated File Browser to inspect its contents.
+- **Automatic folder sizes:** calculate cumulative folder sizes in the background, update results as sizes become available, and indicate incomplete or inaccessible scans instead of presenting misleading zero-byte results.
+- **File Browser multi-selection:** select multiple files and folders using the selection markers, **Ctrl+Click**, **Shift+Click**, and **Ctrl+A**. Selection click targets are larger without changing the visible marker size.
+- **Batch file operations:** move selected items to the Recycle Bin or permanently delete them after explicit confirmation, with protections for sensitive locations.
+- **Persistent sorting:** remember the selected sort field and direction when navigating between folders and after restarting the application; keep sorting accurate as background size calculations finish.
+- **Improved scan responsiveness:** use asynchronous processing, caching, cancellation, and safeguards against stale results and repeated scanning.
+- **More reliable uninstall history:** reduce false external-removal reports caused by incomplete inventory scans or transient Windows entries.
+- **Consistent installed-app counts:** Home and Deep Uninstaller use the same merged, deduplicated inventory source, including supported game launchers, and exclude Polar's own entries.
+- **Clear Cache improvements:** clear stored scan results and temporary data while resetting locally stored dashboard statistics and removal history.
+- **Bilingual release information:** updated What's New content in English and Arabic, with RTL/LTR interface support preserved.
+
+### Core features
+
+- **Deep, Official, and supported game uninstall workflows**, with verification and optional leftover review.
+- **Quick Cleaner** for selected temporary-file and cleanup categories.
+- **Dashboard** with drive capacity and large-folder/file analysis.
+- **Integrated File Browser** with navigation, folder-size calculation, sorting, multi-selection, and confirmed batch operations.
+- **Duplicate Finder** with SHA-256 content verification.
+- **Five themes**, English/Arabic localization, and an Activity Log.
+- **Portable EXE, portable ZIP, and Windows Setup installer** build options.
 
 ### Features
 
 #### Deep Uninstaller
 
-Discover installed Windows applications and supported game-library entries. The page displays application names, versions, publishers, sizes, and icons when that information is available.
+Discover installed Windows applications and supported game-library entries from Steam, Epic Games, Ubisoft, and Rockstar when detectable. The page displays application names, versions, publishers, sizes, and icons when that information is available. Home and Deep Uninstaller share the same merged inventory and installed-program count.
 
 - **Deep Uninstall** is available for installations that support a verified direct-removal workflow.
 - **Official Uninstall** uses a valid registered uninstall command when direct removal is inappropriate.
@@ -72,13 +84,17 @@ Results depend on Windows permissions and whether files are in use. Review the s
 
 #### Dashboard
 
-View drive capacity, used and available space, and storage information. Start a storage scan when you need a more detailed breakdown of folders and large files. Heavy scans are not required just to open the page.
+View drive capacity, used and available space, and storage information. Scan an entire drive or a chosen folder, then switch between **Largest Folders** and **Largest Files**. Folder results list only the scanned location's immediate child folders, ranked by cumulative size; nested folders are not repeated as separate results in the same list. Set a minimum file-size filter for large-file results and open a listed folder directly in Polar's File Browser.
+
+Scanning runs in the background with progress, cancellation, caching, and partial-result indicators for inaccessible locations. Heavy scans are not required just to open the page.
 
 #### File Browser
 
-Browse directories with an address/path bar, navigation controls, sorting, file metadata, and a details panel. The updated WPF layout supports Arabic paths and file icons.
+Browse directories with an address/path bar, Back/Forward/Up/Refresh navigation, sortable columns, file metadata, and a details panel. Folder sizes are calculated automatically in the background and displayed as they become available. Sorting by size updates as results arrive, and sort preferences persist across navigation and application restarts.
 
-File and folder deletion requires confirmation. **Permanent deletion cannot be undone.**
+Select multiple files and folders using the selection markers, **Ctrl+Click**, **Shift+Click**, or **Ctrl+A**. The markers retain their original appearance while offering a larger click target. Move selected items to the Recycle Bin or permanently delete them with explicit confirmation and safeguards for protected paths. The interface supports Arabic RTL and English LTR.
+
+**Important:** Review every selected path before a batch operation. **Permanent deletion cannot be undone.**
 
 #### Duplicate Finder
 
@@ -91,18 +107,21 @@ Polar Uninstaller supports **Blue, Black, White, Beige, and Dark Beige / Espress
 #### Activity Log, What's New, and Feedback
 
 - **Activity Log:** shows progress, outcomes, and relevant warnings.
+- **Clear Cache:** resets temporary scan data and stored dashboard statistics/history; review the action before confirming.
 - **What's New:** displays release information within the application.
 - **Feedback & Reports:** lets users submit a category, message, and app version. Do not include passwords or other sensitive information in reports.
 
 ### Download and run
 
 1. Visit the [official Releases page](https://github.com/Ayh-m1/Polar-Uninstaller/releases).
-2. Choose a release explicitly labeled for **C# / WPF v1.0.120 or newer**. Older Python releases are a different application build.
-3. Download the provided portable executable or release package, if published.
-4. For the portable package, extract the archive if necessary, then launch `PolarUninstaller.exe`.
-5. Review any Windows security or administrator-permission prompt before approving it.
+2. Choose the latest **C# / WPF** release (v1.0.125 or newer when available). Older Python releases use a different application build.
+3. Choose one of the published assets:
+   - **`PolarUninstaller-Setup-v1.0.125.exe`** — Windows Setup installer.
+   - **`PolarUninstaller-v1.0.125-portable.zip`** — portable archive; extract it and run `PolarUninstaller.exe`.
+   - **`PolarUninstaller.exe`** — standalone single-file executable, when provided as a release asset.
+4. Review any Windows security or administrator-permission prompt before approving it.
 
-The current WPF portable build is **self-contained**: users do not need to install the .NET runtime separately. A **Setup installer is planned separately**; do not confuse the portable EXE or ZIP with an installer.
+The WPF portable builds are packaged with their required .NET runtime components, so a separate .NET runtime installation is not normally needed. The Setup installer is a different distribution format from the portable EXE and ZIP.
 
 > **Release status:** A successful local build does not mean an installer or GitHub release has already been published. Check the Releases page for what is actually available.
 
@@ -113,7 +132,7 @@ The current application is written in **C# using WPF and .NET**, targeting **64-
 Requirements:
 
 - Windows 10 or 11 (64-bit)
-- The .NET SDK version required by the WPF project
+- The .NET 9 SDK (or the SDK version required by the WPF project)
 - Visual Studio with .NET desktop development tools, or a suitable .NET CLI environment
 
 From the **`Polar-Uninstaller-WPF`** project directory, use the existing release script if it is present:
@@ -138,10 +157,10 @@ The intended portable output is `Build/SingleFile/PolarUninstaller.exe`. Keep th
 |---|---|
 | `Polar-Uninstaller-WPF/` | C# / WPF application project |
 | `Views/` and WPF `*.xaml` files | Application pages and visual layout, where present |
-| `Services/` | Uninstall, leftover scanning, file-management, and other application services |
+| `Services/` | Uninstall, shared inventory, storage scanning, folder-size calculation, file management, and other application services |
 | `Assets/` | Branding, images, release notes, and other bundled resources |
 | `Build/SingleFile/` | Self-contained portable EXE output |
-| `Build/` | Release artifacts and packaging output |
+| `Build/` | Release artifacts, portable ZIP, and installer packaging output |
 
 Actual folders may differ as the project evolves. Use the project files in the repository for the definitive layout.
 
@@ -178,27 +197,39 @@ Special thanks to MobV2 for extensive testing, bug reports, suggestions, and hel
 
 ### نظرة عامة
 
-**Polar Uninstaller v1.0.120** هو الإصدار الرئيسي الجديد المبني باستخدام **C# وWPF و.NET** لنظام Windows، بدل الواجهة السابقة المبنية بلغة Python ومكتبة CustomTkinter.
+**Polar Uninstaller v1.0.125** هو تحديث للنسخة الأصلية المبنية باستخدام **C# وWPF و.NET** لنظام Windows، والتي بدأت مع الإصدار v1.0.120 بدل واجهة Python وCustomTkinter السابقة.
 
 يركز الإصدار الجديد على **سلاسة تغيير حجم النافذة، وسرعة التنقل، وتناسق المظاهر، وتحسين إدارة الملفات وإزالة البرامج**. يدعم البرنامج **العربية والإنجليزية** مع مراعاة اتجاه الواجهة.
 
-### أبرز تغييرات v1.0.120
+### أبرز تغييرات v1.0.125
 
-- **الانتقال إلى C# وWPF:** واجهة Windows أصلية بدل تنفيذ Python السابق.
-- **واجهة محسّنة:** تغيير حجم أكثر سلاسة، وتنقل أسرع، وتصميم موحّد للمظاهر والصفحات.
-- **الإزالة العميقة والرسمية:** طريقتان للإزالة مع فاحص بقايا ونافذة مراجعة مشتركة.
-- **مراجعة البقايا:** عرض الملفات والمجلدات والاختصارات ومفاتيح Registry المرشحة، مع اختيار العناصر يدويًا.
-- **التحقق وإعادة الفحص:** إعادة التحقق عندما لا يمكن تأكيد اكتمال الإزالة تلقائيًا.
-- **أيقونات البرامج والألعاب:** تحسين اكتشاف الأيقونات من بيانات التثبيت والمنصات والاختصارات المحلية، مع اختلاف الدعم بين الألعاب.
-- **مستعرض ملفات أحدث:** تنقل وترتيب وتفاصيل وعمليات ملفات مع التأكيد قبل الحذف.
-- **كشف الملفات المكررة:** التحقق من تطابق المحتوى باستخدام SHA-256.
-- **نسخة محمولة:** ملف EXE مستقل ضمن مخرجات مشروع WPF في `Build/SingleFile`.
+- **تحليل تخزين أدق:** فصل **أكبر المجلدات** و**أكبر الملفات** في تبويبين مستقلين. تعرض نتائج المجلدات العناصر الفرعية المباشرة للمسار المفحوص بأحجامها التراكمية، دون تكرار المجلدات المتداخلة.
+- **الانتقال من لوحة المعلومات:** فتح المجلدات الظاهرة في نتائج الفحص مباشرة داخل متصفح ملفات Polar.
+- **حساب أحجام المجلدات تلقائيًا:** حساب الأحجام في الخلفية وتحديث النتائج عند اكتمالها، مع توضيح النتائج الجزئية والمجلدات التي يتعذر الوصول إليها.
+- **التحديد المتعدد:** اختيار عدة ملفات ومجلدات باستخدام علامة التحديد أو **Ctrl+Click** أو **Shift+Click** أو **Ctrl+A**، مع توسيع مساحة الضغط دون تكبير العلامة المرئية.
+- **عمليات الملفات الجماعية:** نقل العناصر المحددة إلى سلة المحذوفات أو حذفها نهائيًا بعد التأكيد، مع إجراءات حماية للمسارات الحساسة.
+- **حفظ الترتيب:** الاحتفاظ بطريقة الترتيب واتجاهه عند الانتقال بين المجلدات وبعد إعادة تشغيل البرنامج، وتحديث الترتيب عند اكتمال حساب الأحجام.
+- **فحص أكثر سلاسة:** معالجة في الخلفية وتخزين مؤقت وإلغاء للعمليات القديمة، مع تقليل الفحص المكرر.
+- **تحسين سجل الإزالة:** تقليل الاكتشافات الخاطئة لعمليات الإزالة الخارجية الناتجة عن فحوص غير مكتملة أو إدخالات Windows المؤقتة.
+- **توحيد عدد البرامج:** الصفحة الرئيسية والإزالة العميقة تستخدمان مصدرًا واحدًا للبرامج والألعاب المدعومة، بعد دمج النتائج وإزالة التكرار واستبعاد إدخالات Polar.
+- **تحسين إزالة الكاش:** مسح بيانات الفحص المؤقتة والنتائج المحفوظة وإعادة تعيين إحصاءات لوحة المعلومات وسجل الإزالة المحلي.
+- **تحديث صفحة ما الجديد:** محتوى جديد بالعربية والإنجليزية مع الحفاظ على دعم RTL/LTR.
+
+### المميزات الأساسية
+
+- الإزالة العميقة والرسمية وإزالة الألعاب المدعومة، مع التحقق من النتائج ومراجعة البقايا.
+- التنظيف السريع لفئات الملفات المؤقتة المختارة.
+- لوحة معلومات تعرض مساحة القرص وأكبر الملفات والمجلدات.
+- متصفح ملفات مدمج يدعم أحجام المجلدات التلقائية والتحديد المتعدد والعمليات الجماعية.
+- مكتشف ملفات مكررة يتحقق من المحتوى باستخدام SHA-256.
+- خمسة مظاهر وواجهتان بالعربية والإنجليزية وسجل نشاط.
+- خيارات إصدار تشمل EXE مستقلًا وZIP محمولًا ومثبت Windows.
 
 ### مميزات البرنامج
 
 #### الإزالة العميقة والرسمية
 
-يعرض القسم البرامج المثبتة وبعض ألعاب المنصات المدعومة، مع الاسم والإصدار والناشر والحجم والأيقونة عند توفر البيانات.
+يعرض القسم البرامج المثبتة وبعض ألعاب Steam وEpic Games وUbisoft وRockstar عند إمكانية اكتشافها، مع الاسم والإصدار والناشر والحجم والأيقونة عند توفر البيانات. ويستخدم مع الصفحة الرئيسية مصدرًا موحدًا لعدد البرامج المثبتة بعد دمج السجلات وإزالة التكرار.
 
 - **Deep Uninstall:** إزالة مباشرة للتثبيتات التي يتوفر لها مسار حذف موثوق ومتحقق منه.
 - **Official Uninstall:** استخدام أمر الإزالة الرسمي المسجّل للبرامج التي لا يناسبها الحذف المباشر.
@@ -223,11 +254,17 @@ Special thanks to MobV2 for extensive testing, bug reports, suggestions, and hel
 
 #### لوحة التحكم
 
-عرض معلومات الأقراص والمساحة المستخدمة والمتاحة، مع إمكانية بدء فحص تفصيلي للتخزين والمجلدات والملفات الكبيرة عند الحاجة، دون فرض فحص شامل بمجرد فتح الصفحة.
+عرض معلومات الأقراص والمساحة المستخدمة والمتاحة، مع فحص القرص أو مجلد محدد وعرض النتائج في تبويبي **أكبر المجلدات** و**أكبر الملفات**. تظهر المجلدات الفرعية المباشرة للمسار المفحوص فقط، مع أحجامها التراكمية، ويمكن تحديد حد أدنى لحجم الملفات وفتح المجلدات داخل متصفح Polar مباشرة.
+
+يعمل الفحص في الخلفية مع دعم الإلغاء والتخزين المؤقت وتوضيح النتائج الجزئية عند تعذر الوصول لبعض المسارات، ولا يبدأ فحص شامل بمجرد فتح الصفحة.
 
 #### مستعرض الملفات
 
-التنقل بين المجلدات باستخدام شريط المسار وأزرار التنقل، مع الترتيب وتفاصيل الملفات والأيقونات ودعم المسارات العربية. تتطلب عمليات الحذف التأكيد، و**الحذف النهائي لا يمكن التراجع عنه**.
+التنقل بين المجلدات باستخدام شريط المسار وأزرار الرجوع والتقدم والأعلى والتحديث، مع أعمدة قابلة للترتيب وتفاصيل الملفات والأيقونات. تُحسب أحجام المجلدات تلقائيًا في الخلفية، ويُحدّث ترتيب الحجم عند وصول النتائج، مع حفظ تفضيلات الترتيب بين المجلدات وبعد إعادة التشغيل.
+
+يدعم تحديد عدة ملفات ومجلدات باستخدام علامات التحديد أو **Ctrl+Click** أو **Shift+Click** أو **Ctrl+A**، مع مساحة ضغط أكبر للعلامة دون تغيير شكلها. يمكن نقل العناصر المحددة إلى سلة المحذوفات أو حذفها نهائيًا بعد تأكيد واضح وحماية المسارات الحساسة، مع دعم العربية والإنجليزية.
+
+**تنبيه:** راجع العناصر المحددة قبل تنفيذ العمليات الجماعية؛ **الحذف النهائي لا يمكن التراجع عنه**.
 
 #### مكتشف الملفات المكررة
 
@@ -240,18 +277,21 @@ Special thanks to MobV2 for extensive testing, bug reports, suggestions, and hel
 #### سجل النشاط وما الجديد والملاحظات
 
 - **سجل النشاط:** لمتابعة تقدم العمليات ونتائجها والتنبيهات.
+- **إزالة الكاش:** مسح بيانات الفحص المؤقتة وإعادة تعيين الإحصاءات والسجل المحلي المحفوظ بعد التأكيد.
 - **ما الجديد:** لعرض معلومات الإصدارات داخل البرنامج.
 - **الملاحظات والبلاغات:** لإرسال نوع البلاغ والرسالة وإصدار البرنامج. تجنب إرسال كلمات المرور أو البيانات الحساسة.
 
 ### التحميل والتشغيل
 
 1. افتح [صفحة الإصدارات الرسمية على GitHub](https://github.com/Ayh-m1/Polar-Uninstaller/releases).
-2. اختر إصدار **C# / WPF v1.0.120 أو أحدث**؛ فإصدارات Python السابقة مختلفة عن هذا البناء.
-3. حمّل النسخة المحمولة أو الحزمة المنشورة، إن كانت متاحة.
-4. إذا كانت الحزمة مضغوطة، فك الضغط ثم شغّل `PolarUninstaller.exe`.
-5. راجع أي طلب صلاحيات أو تحذير أمني من Windows قبل الموافقة.
+2. اختر أحدث إصدار **C# / WPF** (v1.0.125 أو أحدث عند توفره)؛ فإصدارات Python السابقة مختلفة عن هذا البناء.
+3. اختر أحد الملفات المنشورة:
+   - **`PolarUninstaller-Setup-v1.0.125.exe`** — مثبت Windows.
+   - **`PolarUninstaller-v1.0.125-portable.zip`** — نسخة محمولة؛ فك الضغط ثم شغّل `PolarUninstaller.exe`.
+   - **`PolarUninstaller.exe`** — ملف تنفيذي مستقل إذا كان مرفقًا بالإصدار.
+4. راجع أي طلب صلاحيات أو تحذير أمني من Windows قبل الموافقة.
 
-النسخة المحمولة الحالية **مستقلة وتحتوي على متطلبات تشغيل .NET**، فلا يحتاج المستخدم لتثبيت بيئة .NET بشكل منفصل. أما **Setup فهو مشروع منفصل مخطط له**، ولا تُعد الحزمة المحمولة مثبّتًا.
+تحتوي حزم WPF المحمولة على مكونات تشغيل .NET المطلوبة، لذلك لا يلزم عادةً تثبيت .NET بشكل منفصل. ويختلف ملف Setup عن الحزمة المحمولة.
 
 > **حالة النشر:** نجاح بناء النسخة محليًا لا يعني نشرها تلقائيًا على GitHub. تحقق من صفحة Releases لمعرفة الملفات المنشورة بالفعل.
 
@@ -262,7 +302,7 @@ Special thanks to MobV2 for extensive testing, bug reports, suggestions, and hel
 المتطلبات:
 
 - Windows 10 أو 11 (64 بت)
-- إصدار .NET SDK المتوافق مع مشروع WPF
+- .NET 9 SDK (أو الإصدار الذي يتطلبه مشروع WPF)
 - Visual Studio مع أدوات تطوير سطح المكتب لـ .NET، أو بيئة مناسبة لأوامر .NET CLI
 
 من داخل مجلد المشروع **`Polar-Uninstaller-WPF`**، شغّل سكربت الإصدار الموجود إذا كان متوفرًا:
@@ -287,10 +327,10 @@ dotnet publish .\PolarUninstaller.csproj -c Release -r win-x64 --self-contained 
 |---|---|
 | `Polar-Uninstaller-WPF/` | مشروع التطبيق بلغة C# وواجهة WPF |
 | `Views/` وملفات `*.xaml` | الصفحات والتصميم، عند وجودها |
-| `Services/` | خدمات الإزالة وفحص البقايا وإدارة الملفات وغيرها |
+| `Services/` | خدمات الإزالة وجرد البرامج وفحص التخزين وحساب أحجام المجلدات وإدارة الملفات وغيرها |
 | `Assets/` | الشعارات والصور وبيانات الإصدارات والموارد |
 | `Build/SingleFile/` | ملف EXE المحمول والمستقل |
-| `Build/` | ملفات البناء وحزم الإصدار |
+| `Build/` | ملفات البناء والحزمة المحمولة وملفات المثبت |
 
 قد تتغير المجلدات أثناء التطوير؛ ملفات المشروع الفعلية هي المرجع النهائي.
 
