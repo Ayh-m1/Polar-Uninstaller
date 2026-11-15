@@ -238,6 +238,10 @@ Special thanks to MobV2 for extensive testing, bug reports, suggestions, and hel
 **Developer:** Ayhm  
 **License:** MIT
 
+**Code Signing**
+
+Polar Uninstaller is applying for free code signing through the SignPath Foundation. If approved, future official releases will be digitally signed using the SignPath Foundation service.
+
 ---
 
 ## العربية
@@ -454,3 +458,7 @@ dotnet publish .\PolarUninstallerWpf.csproj -c Release -r win-x64 --self-contain
 
 **المطور:** Ayhm  
 **الترخيص:** MIT
+
+**التوقيع الرقمي**
+
+يتقدم برنامج Polar Uninstaller بطلب للحصول على خدمة التوقيع الرقمي المجانية من خلال مؤسسة SignPath. في حال الموافقة، سيتم توقيع الإصدارات الرسمية المستقبلية رقميًا باستخدام خدمة مؤسسة SignPath.
