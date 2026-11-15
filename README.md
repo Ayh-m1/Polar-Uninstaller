@@ -238,9 +238,28 @@ Special thanks to MobV2 for extensive testing, bug reports, suggestions, and hel
 **Developer:** Ayhm  
 **License:** MIT
 
-**Code Signing**
+### Code signing policy
 
-Polar Uninstaller is applying for free code signing through the SignPath Foundation. If approved, future official releases will be digitally signed using the SignPath Foundation service.
+Polar Uninstaller is applying for free code signing through SignPath Foundation. If approved, future official releases will be digitally signed using SignPath.io, with a certificate issued to SignPath Foundation.
+
+**Code Signing Team**
+- Author and Maintainer: [Ayh-m1](https://github.com/Ayh-m1)
+- Reviewer: Ayh-m1
+- Signing Approver: Ayh-m1
+
+**Privacy Policy**
+
+Polar Uninstaller does not intentionally collect personal information, usage analytics, or telemetry.
+
+The application connects to GitHub solely to check for and download software updates. These connections may expose standard network information, such as the user's IP address, to GitHub.
+
+Polar Uninstaller does not otherwise transfer user information to external services unless explicitly requested by the user.
+
+**Build and Signing Process**
+
+Official releases are built from the project's publicly available source code using GitHub Actions. If approved, signing requests will require manual authorization before release.
+
+Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
 ---
 
@@ -459,6 +478,25 @@ dotnet publish .\PolarUninstallerWpf.csproj -c Release -r win-x64 --self-contain
 **المطور:** Ayhm  
 **الترخيص:** MIT
 
-**التوقيع الرقمي**
+### سياسة التوقيع الرقمي
 
-يتقدم برنامج Polar Uninstaller بطلب للحصول على خدمة التوقيع الرقمي المجانية من خلال مؤسسة SignPath. في حال الموافقة، سيتم توقيع الإصدارات الرسمية المستقبلية رقميًا باستخدام خدمة مؤسسة SignPath.
+يتقدم برنامج Polar Uninstaller بطلب للحصول على خدمة التوقيع الرقمي المجانية من مؤسسة SignPath Foundation. وفي حال الموافقة، سيتم توقيع الإصدارات الرسمية المستقبلية رقميًا باستخدام SignPath.io، بشهادة صادرة باسم SignPath Foundation.
+
+**فريق التوقيع الرقمي**
+- المطور والمسؤول عن الصيانة: [Ayh-m1](https://github.com/Ayh-m1)
+- مراجع الكود: Ayh-m1
+- المسؤول عن الموافقة على التوقيع: Ayh-m1
+
+**سياسة الخصوصية**
+
+لا يجمع Polar Uninstaller بيانات شخصية أو إحصائيات استخدام أو بيانات تتبع عن قصد.
+
+يتصل البرنامج بخوادم GitHub فقط للتحقق من تحديثات البرنامج وتنزيلها. وقد تكشف هذه الاتصالات معلومات الشبكة المعتادة، مثل عنوان IP، لخدمة GitHub.
+
+ولا ينقل البرنامج معلومات المستخدم إلى خدمات خارجية أخرى إلا بناءً على طلب صريح من المستخدم.
+
+**عملية البناء والتوقيع**
+
+تُبنى الإصدارات الرسمية من الكود المصدري المنشور على GitHub باستخدام GitHub Actions. وفي حال الموافقة على الطلب، ستتطلب عمليات التوقيع موافقة يدوية قبل نشر الإصدارات.
+
+التوقيع الرقمي المجاني مقدم من SignPath.io، والشهادة باسم SignPath Foundation.
