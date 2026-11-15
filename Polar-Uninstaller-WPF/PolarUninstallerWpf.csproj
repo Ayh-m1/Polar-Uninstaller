@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>PolarUninstaller</AssemblyName>
+    <ApplicationIcon>Assets\Polar.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Build\**</DefaultItemExcludes>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(EpicDirectTrial)' == 'true'">
+    <DefineConstants>$(DefineConstants);EPIC_DIRECT_TRIAL</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(LauncherRemovalTrial)' == 'true'">
+    <DefineConstants>$(DefineConstants);EPIC_DIRECT_TRIAL;LAUNCHER_REMOVAL_TRIAL</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\ReleaseNotes.json" />
+    <Resource Include="Localization\*.json" />
+    <Resource Include="Assets\Polar.ico" />
+    <Resource Include="Assets\PolarLogo.png" />
+    <Resource Include="Assets\Branding\*.png" />
+    <Resource Include="Assets\Fonts\*.ttf" />
+    <Content Include="Assets\Fonts\*-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Tests\**\*.cs" />
+    <Compile Remove="Tests\**\*.csproj" />
+    <EmbeddedResource Remove="Tests\**\*" />
+    <None Remove="Tests\**\*" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="SteamUninstallRegression" />
+  </ItemGroup>
+</Project>

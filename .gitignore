@@ -1,0 +1,49 @@
+# .NET and Visual Studio
+**/bin/
+**/obj/
+**/.vs/
+**/.dotnet/
+**/.nuget/packages/
+**/publish/
+**/artifacts/
+
+# Build output folders
+**/Build/
+**/Build-Release/
+
+# User-specific files
+*.user
+*.suo
+*.cache
+*.tmp
+*.log
+
+# Secrets and certificates
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.key
+
+# Temporary backups
+*.bak
+*.old
+
+# Local .NET SDK and NuGet caches
+**/.dotnet/
+**/.nuget/
+**/packages/
+
+# Generated package files
+*.nupkg
+*.snupkg
+
+# Generated binaries
+*.dll
+*.exe
+*.pdb
+
+# Generated build metadata
+*.deps.json
+*.runtimeconfig.json

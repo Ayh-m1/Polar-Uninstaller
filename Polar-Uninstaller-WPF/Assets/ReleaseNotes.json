@@ -1,0 +1,1072 @@
+[
+    {
+        "version":  "1.0.144",
+        "en":  [
+                   "Improvements: Sharper, larger PU letterforms without a heavy shadow in Windows icons and shortcuts.",
+                   "Improvements: Default Quick Cleaner to User Temp and System Temp, preserve saved choices, and show the selected size estimate.",
+                   "New Features: Show installed-program count and a persistent total of recorded cleanup bytes and known verified uninstall sizes in Dashboard.",
+                   "Fixes: Display readable drive names and highlight storage usage at 85% with a Quick Cleaner shortcut.",
+                   "Improvements: Add helpful loading and empty states with navigation to Deep Uninstaller.",
+                   "Fixes: Align release-note categories and remove repeated category prefixes from displayed entries.",
+                   "Improvements: Refine File Browser layout and discoverable sorting; group duplicate results with filters, smart selection and protected retained copies."
+               ],
+        "ar":  [
+                   "تحسينات: حروف PU أكبر وأوضح دون ظل ثقيل في أيقونات Windows والاختصارات.",
+                   "تحسينات: تحديد ملفات المستخدم والنظام المؤقتة افتراضيًا، مع حفظ الاختيارات وعرض الحجم المتوقع للعناصر المحددة.",
+                   "إضافات جديدة: عرض عدد البرامج المثبّتة وإجمالي محفوظ لمساحة التنظيف المسجّلة وأحجام الإزالة المعروفة والمتحقق منها في لوحة المعلومات.",
+                   "إصلاحات: عرض أسماء الأقراص بوضوح والتحذير عند استخدام 85% مع اختصار للتنظيف السريع.",
+                   "تحسينات: توضيح حالات التحميل والقوائم الفارغة وإضافة انتقال إلى الإزالة العميقة.",
+                   "إصلاحات: محاذاة أقسام ما الجديد وإزالة تكرار أسماء الأقسام من النصوص المعروضة.",
+                   "تحسينات: تحسين تخطيط متصفح الملفات ووضوح الفرز، وتجميع المكررات مع فلاتر وتحديد ذكي وحماية النسخة المحفوظة."
+               ]
+    },
+    {
+        "version":  "1.0.143",
+        "en":  [
+                   "Fixes: Handle Dashboard clicks originating from inline text safely.",
+                   "Improvements: Combine overlapping Dashboard refresh requests and ignore loading results after leaving the page.",
+                   "Performance \u0026 Stability: Preserve the active page when folding the sidebar; avoid reloading the same page on repeated clicks.",
+                   "Performance \u0026 Stability: Batch Activity Log scrolling and keep click-statistics disk writes off the UI lock.",
+                   "Fixes: Guard active operations during navigation and handle unreadable icons without interrupting the page.",
+                   "Improvements: Record local error details to help diagnose unexpected failures.",
+                   "Fixes: Refresh installed Polar icons and matching Windows shortcuts using the official PU artwork without resetting the system icon cache.",
+                   "Fixes: Protect active .NET runtime and updater files during Temp cleanup, skip empty Recycle Bins, and clearly report partial cleanup failures."
+               ],
+        "ar":  [
+                   "إصلاحات: معالجة الضغط على النصوص داخل لوحة المعلومات بأمان.",
+                   "تحسينات: تجميع طلبات تحديث لوحة المعلومات المتداخلة وتجاهل نتائج التحميل بعد مغادرة الصفحة.",
+                   "الأداء والاستقرار: إبقاء الصفحة عند طي الشريط الجانبي ومنع إعادة تحميلها عند الضغط المتكرر عليها.",
+                   "الأداء والاستقرار: تجميع تمرير سجل النشاط وفصل كتابة إحصاءات النقرات عن قفل الواجهة.",
+                   "إصلاحات: حماية العمليات النشطة أثناء التنقل ومعالجة الأيقونات التالفة دون تعطيل الصفحة.",
+                   "تحسينات: تسجيل تفاصيل الأخطاء محليًا للمساعدة في تشخيص الأعطال غير المتوقعة.",
+                   "إصلاحات: تحديث أيقونات Polar المثبّتة واختصارات Windows المطابقة بالشعار الرسمي دون مسح كاش أيقونات النظام.",
+                   "إصلاحات: حماية ملفات تشغيل .NET والتحديث أثناء تنظيف Temp، وتجاوز سلة المحذوفات الفارغة، وتوضيح نتائج التنظيف الجزئي."
+               ]
+    },
+    {
+        "version":  "1.0.142",
+        "en":  [
+                   "Improvements: Refresh the official PU logo and Windows icons with smooth, transparent rounded corners.",
+                   "New Features: Introduce Midnight Champagne as the default theme while preserving saved theme preferences.",
+                   "Improvements: Refine the darker navy background with subtle corner lighting matching the other themes.",
+                   "Fixes: Keep sidebar lighting continuous and navigation text and icons consistent when switching themes."
+               ],
+        "ar":  [
+                   "تحسينات: تحديث شعار PU وأيقونات Windows بزوايا ناعمة وشفافة.",
+                   "إضافات جديدة: اعتماد Midnight Champagne كثيم افتراضي مع الحفاظ على الثيم المحفوظ للمستخدم.",
+                   "تحسينات: خلفية كحلية أغمق قليلًا وإضاءة زوايا خفيفة بنفس أسلوب الثيمات الأخرى.",
+                   "إصلاحات: توحيد الإضاءة خلف الشريط الجانبي وألوان نصوص وأيقونات التنقل عند تبديل الثيم."
+               ]
+    },
+    {
+        "version":  "1.0.141",
+        "en":  [
+                   "New Features: Enable verified Epic game removal in the main application using installed build manifests and exact Epic/EOSH installation records, with metadata backups.",
+                   "Improvements: Use one Polar confirmation to close the verified launcher and continue game removal automatically, including authorized termination of remaining launcher UI processes when needed.",
+                   "Improvements: Add shared close-and-continue handling for supported GOG, Ubisoft, Rockstar, Battle.net, Riot and EA/Origin game-specific uninstall commands; unsupported installations remain blocked.",
+                   "Fixes: Recheck replacement launcher helper processes instead of stopping after the first process snapshot times out.",
+                   "Fixes: Accept valid non-padded Epic installation identifiers and verify build-name aliases against version, launch executable and matching EOSH metadata.",
+                   "Fixes: Match Battle.net and Riot uninstall registrations by exact product identity when InstallLocation is missing; reject conflicting paths and ambiguous product arguments.",
+                   "Performance \u0026 Stability: Verify removal before reporting success, preserve saves and unrelated files, and refuse to treat unreadable launcher registrations as proof of removal.",
+                   "Compatibility: Keep the existing Steam removal workflow unchanged. Third-party uninstallers and Windows may still request their own confirmation."
+               ],
+        "ar":  [
+                   "إضافات جديدة: تفعيل إزالة ألعاب Epic المتحقق منها في البرنامج الأساسي باستخدام قوائم ملفات البناء وسجلات Epic وEOSH المحددة، مع نسخ بيانات التثبيت احتياطيًا.",
+                   "تحسينات: موافقة واحدة داخل Polar لإغلاق اللانشر المتحقق منه ومتابعة إزالة اللعبة تلقائيًا، بما يشمل إنهاء عمليات واجهته المتبقية عند الحاجة ضمن التفويض نفسه.",
+                   "تحسينات: توحيد الإغلاق والمتابعة لأوامر إزالة الألعاب المحددة المدعومة في GOG وUbisoft وRockstar وBattle.net وRiot وEA/Origin، مع إبقاء التثبيتات غير المدعومة محظورة.",
+                   "إصلاحات: إعادة فحص عمليات اللانشر المساعدة البديلة بدل التوقف عند انتهاء مهلة انتظار المجموعة الأولى.",
+                   "إصلاحات: قبول معرّفات تثبيت Epic الصحيحة غير المبطنة بالأصفار، والتحقق من اختلاف اسم البناء باستخدام الإصدار وملف التشغيل وبيانات EOSH المطابقة.",
+                   "إصلاحات: مطابقة أوامر إزالة Battle.net وRiot بمعرّف المنتج الدقيق عند غياب مسار التثبيت، ورفض المسارات المتعارضة والمعرّفات الملتبسة.",
+                   "الأداء والاستقرار: التحقق من الإزالة قبل إعلان نجاحها وحفظ بيانات الألعاب والملفات غير المرتبطة، وعدم اعتبار تعذر قراءة سجلات اللانشر دليلًا على الإزالة.",
+                   "التوافق: الإبقاء على آلية إزالة Steam دون تغيير. قد يطلب Windows أو مزيل اللعبة الرسمي تأكيده الخاص."
+               ]
+    },
+    {
+        "version":  "1.0.140",
+        "en":  [
+                   "New Features: Theme-aware translucent dialogs adapt to all seven themes; Appearance Gallery previews the pending tint immediately and only saves it with Apply.",
+                   "Improvements: Improved Duplicate Finder readability with theme-consistent primary, secondary and accent text colors.",
+                   "Improvements: Simplified duplicate results into a unified virtualized list, keeping verified copies adjacent in a predictable order.",
+                   "Fixes: Fixed low-contrast text in duplicate search results, including Rose Noir, without compromising White or Beige.",
+                   "Fixes: Removed repetitive group labels; clearly mark and protect a retained copy while preserving content revalidation and existing safe cleanup."
+               ],
+        "ar":  [
+                   "إضافات جديدة: نوافذ شفافة تتكيف مع الثيمات السبعة؛ يعاين معرض المظهر اللون المحدد فورًا ولا يحفظه إلا عند التطبيق.",
+                   "تحسينات: تحسين وضوح نتائج الملفات المكررة بألوان متناسقة للنصوص الأساسية والثانوية والعناصر المميزة.",
+                   "تحسينات: تبسيط النتائج إلى قائمة موحدة افتراضية العرض مع إبقاء النسخ المتحقق منها متجاورة بترتيب ثابت.",
+                   "إصلاحات: إصلاح النصوص منخفضة التباين في نتائج البحث، بما فيها الوردي الداكن، مع الحفاظ على وضوح الأبيض والبيج.",
+                   "إصلاحات: إزالة عناوين المجموعات المتكررة وتمييز نسخة محفوظة وحمايتها مع الحفاظ على إعادة التحقق من المحتوى والتنظيف الآمن."
+               ],
+        "highlights":  {
+                           "en":  {
+                                      "features":  [
+                                                       "Theme-aware translucent dialogs with immediate, unsaved Appearance Gallery preview."
+                                                   ],
+                                      "improvements":  [
+                                                           "Readable Duplicate Finder results in a clean unified list with consistent theme colors."
+                                                       ],
+                                      "fixes":  [
+                                                    "Remove low-contrast text and repetitive group labels while protecting a retained, reverified copy."
+                                                ]
+                                  },
+                           "ar":  {
+                                      "features":  [
+                                                       "نوافذ شفافة متوافقة مع الثيمات ومعاينة فورية غير محفوظة داخل معرض المظهر."
+                                                   ],
+                                      "improvements":  [
+                                                           "نتائج مكررات واضحة في قائمة موحدة بألوان متناسقة مع الثيم."
+                                                       ],
+                                      "fixes":  [
+                                                    "إصلاح ضعف التباين وإزالة عناوين المجموعات المتكررة مع حماية نسخة محفوظة وإعادة التحقق منها."
+                                                ]
+                                  }
+                       }
+    },
+    {
+        "version":  "1.0.139",
+        "en":  [
+                   "Read Battle.net Agent product.db installation records independently of Windows uninstall registrations, including custom game locations.",
+                   "Read Epic manifest locations and the launcher installation index; tolerate missing optional names and string-valued sizes while rejecting incomplete or missing installations.",
+                   "Discover GOG installations through both Registry views, per-user and machine registrations, and installed game metadata instead of default folders alone.",
+                   "Expand Ubisoft per-user registration and installation-path support, validate Rockstar game payloads, and prevent a stale Steam manifest from hiding a valid copy in another library.",
+                   "Resolve custom launcher locations and preserve official uninstall routing, shared-component protections and conservative installation verification.",
+                   "Add Activity Log diagnostics for unreadable launcher metadata and launchers with no validated game installations.",
+                   "Centralize Western numeric and Gregorian date formatting across both interface languages and prevent contextual digit substitution without rewriting filenames or user text.",
+                   "Unify Deep Uninstall: run the supported official uninstaller, verify removal, automatically scan and clean eligible leftovers, then verify the final result within one authorized operation.",
+                   "Simplify the page to Deep Uninstall and Games Uninstall. Smart Selection chooses the internal official or safe direct stage instead of a separate Official Uninstall button.",
+                   "Unify official and game launch preparation, preserved installation context, exclusive operation locking, completion monitoring and leftover inspection.",
+                   "Open Ubisoft Connect\u0027s exact-game uninstall URI when registered, preserve Steam\u0027s uninstall protocol, and prefer registered game uninstallers; disclose manual launcher interaction when no verified direct route exists.",
+                   "Provide a Deep Uninstall → Confirm experience for supported normal workflows, while retaining required Windows and third-party confirmations. Reserve Advanced Deep Removal for partial removal, locked eligible resources or incomplete safe cleanup.",
+                   "Do not mistake monitoring timeout, process exit or unverified remaining resources for successful removal; retain authoritative launcher checks and protect shared components and saves.",
+                   "Separate File Browser permanent deletion from verified Windows Shell recycling; never substitute placeholder files or silently change deletion mode.",
+                   "Permanently clean verified application shortcuts after rechecking target/game identity, captured location and content fingerprint; preserve unrelated and retargeted links.",
+                   "Remove the old recycle.txt regression fixture from routine test execution and isolate real recycling checks with unique owned fixtures and restoration."
+               ],
+        "ar":  [
+                   "قراءة سجلات تثبيت Battle.net من قاعدة Agent product.db دون الاعتماد فقط على سجل إزالة Windows، مع دعم مسارات الألعاب المخصصة.",
+                   "توسيع قراءة ملفات Epic وفهرس تثبيت اللانشر، وقبول غياب الأسماء الاختيارية والأحجام النصية مع استبعاد التثبيتات غير المكتملة أو المفقودة.",
+                   "اكتشاف ألعاب GOG من سجلات المستخدم والجهاز بواجهتي Registry وبيانات الألعاب المثبتة بدل الاعتماد على المجلدات الافتراضية فقط.",
+                   "دعم سجلات Ubisoft الخاصة بالمستخدم وحقول مسارات التثبيت الإضافية، والتحقق من ملفات ألعاب Rockstar، ومنع سجل Steam قديم من إخفاء تثبيت صحيح بمكتبة أخرى.",
+                   "تحسين العثور على مسارات اللانشرات المخصصة مع الحفاظ على الإزالة الرسمية وحماية المكونات المشتركة والتحقق المحافظ من انتهاء الإزالة.",
+                   "إضافة تشخيصات لسجل النشاط عند تعذر قراءة بيانات اللانشر أو عدم العثور على ألعاب اجتازت التحقق.",
+                   "توحيد الأرقام الغربية والتواريخ الميلادية في اللغتين ومنع تبديل أشكال الأرقام تلقائيًا دون تغيير أسماء الملفات أو نصوص المستخدم.",
+                   "توحيد الإزالة العميقة: تشغيل المزيل الرسمي المدعوم ثم التحقق من الإزالة وفحص البقايا المؤهلة وتنظيفها تلقائيًا والتحقق من النتيجة النهائية ضمن عملية واحدة مصرح بها.",
+                   "تبسيط الواجهة إلى الإزالة العميقة وإزالة الألعاب. يختار النظام الذكي المرحلة الرسمية أو المباشرة الآمنة داخليًا بدل زر إزالة رسمية منفصل.",
+                   "توحيد تجهيز الإزالة الرسمية وإزالة الألعاب وحفظ سياق التثبيت ومنع تداخل العمليات ومراقبة النتيجة وفحص البقايا.",
+                   "فتح مسار إزالة Ubisoft Connect لمعرف اللعبة عند تسجيل البروتوكول، والحفاظ على بروتوكول Steam وتفضيل مزيلات الألعاب المسجلة، وتوضيح الحاجة للتدخل اليدوي عند غياب مسار مباشر متحقق منه.",
+                   "اعتماد تجربة الإزالة العميقة ثم التأكيد للحالات العادية المدعومة، مع احترام تأكيدات Windows والمزيل الخارجي. تُحفظ الإزالة المتقدمة للإزالة الجزئية والموارد المؤهلة المقفلة وتعذر إكمال التنظيف الآمن.",
+                   "عدم اعتبار انتهاء المراقبة أو خروج العملية أو الموارد غير المتحقق منها دليل نجاح، مع الحفاظ على فحوص اللانشر وحماية المكونات المشتركة وملفات الحفظ.",
+                   "فصل الحذف النهائي في متصفح الملفات عن النقل المتحقق منه إلى سلة Windows، دون ملفات بديلة أو تغيير نمط الحذف عند الفشل.",
+                   "حذف اختصارات البرنامج المتحقق منها نهائيًا بعد إعادة فحص الهدف ومعرف اللعبة والموقع المحفوظ والبصمة، مع حماية الروابط غير المرتبطة أو التي تغير هدفها.",
+                   "عزل فحص النقل الحقيقي للسلة بملفات تجريبية فريدة واستعادتها، وإزالة اختبار recycle.txt القديم من التشغيل الاعتيادي للاختبارات."
+               ],
+        "highlights":  {
+                           "en":  {
+                                      "features":  [
+                                                       "Unified Deep Uninstall combines supported official removal and automatic eligible leftover cleanup after one Polar confirmation."
+                                                   ],
+                                      "improvements":  [
+                                                           "Expand launcher installation metadata discovery and custom-path support.",
+                                                           "Use Western digits and consistent Gregorian dates in Arabic and English.",
+                                                           "Unify official/game removal monitoring and preserved cleanup context.",
+                                                           "Open exact-game Steam and Ubisoft uninstall workflows; prefer registered game uninstallers and disclose manual-only launcher routes."
+                                                       ],
+                                      "fixes":  [
+                                                    "Recover Battle.net games absent from Windows uninstall registrations.",
+                                                    "Handle Epic optional metadata and stale Steam library records correctly.",
+                                                    "Keep new launcher evidence in uninstall verification and Activity Log diagnostics.",
+                                                    "Keep two primary buttons: unified Deep Uninstall for supported applications and Games Uninstall for verified games.",
+                                                    "Reserve advanced cleanup for exceptional recovery; preserve settings, profiles, saves and documents during routine removal.",
+                                                    "Do not treat name/publisher heuristics or monitoring timeout as verified game ownership or removal success.",
+                                                    "Separate permanent File Browser deletion from verified Shell recycling, and isolate recycling fixtures from routine tests.",
+                                                    "Permanently remove verified application shortcuts after target, location and fingerprint revalidation."
+                                                ]
+                                  },
+                           "ar":  {
+                                      "features":  [
+                                                       "إزالة عميقة موحدة تجمع الإزالة الرسمية المدعومة والتنظيف التلقائي للبقايا المؤهلة بعد تأكيد واحد داخل Polar."
+                                                   ],
+                                      "improvements":  [
+                                                           "توسيع اكتشاف بيانات تثبيت اللانشرات ودعم المسارات المخصصة.",
+                                                           "استخدام الأرقام الغربية والتواريخ الميلادية المتسقة في العربية والإنجليزية.",
+                                                           "توحيد مراقبة الإزالة الرسمية وإزالة الألعاب وحفظ سياق التنظيف.",
+                                                           "فتح إزالة اللعبة المحددة في Steam وUbisoft وتفضيل مزيلات الألعاب المسجلة وتوضيح المسارات التي تتطلب تدخلًا يدويًا."
+                                                       ],
+                                      "fixes":  [
+                                                    "اكتشاف ألعاب Battle.net التي لا تظهر في سجل إزالة Windows.",
+                                                    "معالجة بيانات Epic الاختيارية وسجلات مكتبات Steam القديمة.",
+                                                    "ربط مصادر التثبيت الجديدة بمراقبة الإزالة وتشخيصات سجل النشاط.",
+                                                    "إبقاء زرين أساسيين: الإزالة العميقة الموحدة للبرامج المدعومة وإزالة الألعاب المتحقق منها.",
+                                                    "إبقاء التنظيف المتقدم للاستعادة الاستثنائية، وحماية الإعدادات والملفات الشخصية والحفظ والمستندات أثناء الإزالة العادية.",
+                                                    "عدم اعتبار الاسم أو الناشر أو انتهاء مهلة المراقبة إثباتًا لملكية اللعبة أو نجاح الإزالة.",
+                                                    "فصل الحذف النهائي عن النقل المتحقق منه لسلة Windows وعزل ملفات اختبار السلة عن الاختبارات الاعتيادية.",
+                                                    "حذف اختصارات البرنامج المتحقق منها نهائيًا بعد إعادة فحص الهدف والموقع والبصمة."
+                                                ]
+                                  }
+                       }
+    },
+    {
+        "version":  "1.0.138",
+        "en":  [
+                   "Introduced Advanced Deep Removal for stubborn application leftovers.",
+                   "Added a second-stage removal option after incomplete Deep Uninstall operations.",
+                   "Added remaining-item previews and detailed removal summaries.",
+                   "Improved handling of locked files and permission-related failures.",
+                   "Added smart retry and final removal verification.",
+                   "Improved partial-removal result classification.",
+                   "Improved Activity Log reporting.",
+                   "Preserved existing removal safeguards.",
+                   "Maintained Arabic and English support.",
+                   "Unified direct and advanced removal around a verified plan captured before deletion.",
+                   "Official Uninstall now detects and retains leftovers until Advanced Deep Removal is explicitly selected.",
+                   "Preserved cleanup identity across inventory refreshes and prevented cleanup from targeting another selection.",
+                   "Improved per-item retries for locked files, permission failures, and already missing paths.",
+                   "Revalidated Registry ownership and backups before deletion, including changed or upgraded registrations.",
+                   "Corrected removed-file, folder, shortcut and Registry counts and post-removal verification.",
+                   "Integrated Find Duplicate Files into File Browser through its three-dot toolbar menu.",
+                   "Replaced the separate duplicate window with themed, virtualized group results, copy selection and storage summaries.",
+                   "Preserved the current folder, navigation history, results and selections during language and theme changes.",
+                   "Added explicit recursive scanning, SHA-256 verification, progress and cancellation, including empty-file duplicates.",
+                   "Added confirmed Recycle Bin and permanent cleanup actions that revalidate content and preserve a verified copy in every group.",
+                   "Protected system paths, known application installations, binaries, links and files outside the scan scope.",
+                   "Added a centered, translucent Appearance Gallery with seven native interface previews.",
+                   "Added Rose Noir with dark burgundy surfaces and restrained pink lighting.",
+                   "Added Pure Black as a separate monochrome appearance without glow or colored lighting.",
+                   "Added pending selection, Apply and Cancel, bilingual theme names, keyboard navigation and outside-click dismissal.",
+                   "Theme application updates shared resources without rebuilding the current page."
+               ],
+        "ar":  [
+                   "إضافة ميزة الإزالة العميقة المتقدمة للتعامل مع بقايا البرامج العنيدة.",
+                   "إضافة خيار حذف متقدم عند عدم اكتمال الإزالة العميقة المعتادة.",
+                   "عرض معاينة للعناصر المتبقية وتقرير مفصل بنتائج الحذف.",
+                   "تحسين التعامل مع الملفات المستخدمة ومشكلات الصلاحيات.",
+                   "إضافة إعادة المحاولة الذكية والتحقق النهائي من الإزالة.",
+                   "تحسين تحديد نتائج الإزالة الجزئية.",
+                   "تحسين تقارير سجل النشاط.",
+                   "الحفاظ على أنظمة حماية الملفات والريجستري.",
+                   "استمرار دعم العربية والإنجليزية.",
+                   "توحيد الإزالة المباشرة والمتقدمة ضمن خطة متحقق منها تُحفظ قبل بدء الحذف.",
+                   "فحص بقايا الإزالة الرسمية والاحتفاظ بها حتى اختيار الإزالة العميقة المتقدمة صراحةً.",
+                   "الحفاظ على سياق التنظيف عند تحديث القائمة ومنع تطبيقه على برنامج آخر عند تغيير التحديد.",
+                   "تحسين إعادة محاولة العناصر المقفلة وأخطاء الصلاحيات والتعامل مع المسارات المحذوفة مسبقًا.",
+                   "إعادة التحقق من ملكية مفاتيح الريجستري ونسخها احتياطيًا وحماية التسجيلات التي تغيّرت أو ترقّت.",
+                   "تصحيح عدّادات الملفات والمجلدات والاختصارات والريجستري والتحقق النهائي من نتيجة الإزالة.",
+                   "دمج البحث عن الملفات المكررة داخل متصفح الملفات عبر قائمة النقاط الثلاث.",
+                   "استبدال نافذة المكررات المنفصلة بنتائج مجموعات متوافقة مع الثيم وتحديد النسخ وملخص المساحة.",
+                   "الحفاظ على المجلد وسجل التنقل ونتائج الفحص والتحديد عند تبديل اللغة والثيم.",
+                   "إضافة فحص فرعي صريح مع تحقق SHA-256 وتقدم وإلغاء ودعم الملفات الفارغة المتطابقة.",
+                   "إضافة نقل مؤكد إلى السلة وحذف نهائي مع إعادة التحقق من المحتوى وحفظ نسخة سليمة من كل مجموعة.",
+                   "حماية مسارات النظام والتثبيت المعروفة والملفات التنفيذية والوصلات والملفات خارج نطاق الفحص.",
+                   "إضافة معرض مظاهر مركزي شفاف بسبع معاينات مصغرة مرسومة بعناصر WPF.",
+                   "إضافة Rose Noir بأسطح خمريّة داكنة وإضاءة وردية هادئة.",
+                   "إضافة Pure Black كمظهر أحادي اللون مستقل دون توهج أو إضاءة ملوّنة.",
+                   "إضافة اختيار مؤقت وتطبيق وإلغاء وأسماء باللغتين وتنقل بلوحة المفاتيح وإغلاق بالنقر خارج المعرض.",
+                   "تطبيق المظهر عبر الموارد المشتركة دون إعادة إنشاء الصفحة الحالية."
+               ],
+        "highlights":  {
+                           "en":  {
+                                      "features":  [
+                                                       "Introduced Advanced Deep Removal for stubborn application leftovers.",
+                                                       "Added a second-stage removal option after incomplete Deep Uninstall operations.",
+                                                       "Added remaining-item previews and detailed removal summaries.",
+                                                       "Improved handling of locked files and permission-related failures.",
+                                                       "Added smart retry and final removal verification.",
+                                                       "Integrated Find Duplicate Files into File Browser through its three-dot toolbar menu.",
+                                                       "Replaced the separate duplicate window with themed, virtualized group results, copy selection and storage summaries.",
+                                                       "Preserved the current folder, navigation history, results and selections during language and theme changes.",
+                                                       "Added explicit recursive scanning, SHA-256 verification, progress and cancellation, including empty-file duplicates.",
+                                                       "Added confirmed Recycle Bin and permanent cleanup actions that revalidate content and preserve a verified copy in every group.",
+                                                       "Protected system paths, known application installations, binaries, links and files outside the scan scope.",
+                                                       "Added a centered, translucent Appearance Gallery with seven native interface previews.",
+                                                       "Added Rose Noir with dark burgundy surfaces and restrained pink lighting.",
+                                                       "Added Pure Black as a separate monochrome appearance without glow or colored lighting.",
+                                                       "Added pending selection, Apply and Cancel, bilingual theme names, keyboard navigation and outside-click dismissal.",
+                                                       "Theme application updates shared resources without rebuilding the current page."
+                                                   ],
+                                      "improvements":  [
+                                                           "Improved partial-removal result classification.",
+                                                           "Improved Activity Log reporting.",
+                                                           "Preserved existing removal safeguards.",
+                                                           "Maintained Arabic and English support."
+                                                       ],
+                                      "fixes":  [
+                                                    "Unified direct and advanced removal around a verified plan captured before deletion.",
+                                                    "Official Uninstall now detects and retains leftovers until Advanced Deep Removal is explicitly selected.",
+                                                    "Preserved cleanup identity across inventory refreshes and prevented cleanup from targeting another selection.",
+                                                    "Improved per-item retries for locked files, permission failures, and already missing paths.",
+                                                    "Revalidated Registry ownership and backups before deletion, including changed or upgraded registrations.",
+                                                    "Corrected removed-file, folder, shortcut and Registry counts and post-removal verification."
+                                                ]
+                                  },
+                           "ar":  {
+                                      "features":  [
+                                                       "إضافة ميزة الإزالة العميقة المتقدمة للتعامل مع بقايا البرامج العنيدة.",
+                                                       "إضافة خيار حذف متقدم عند عدم اكتمال الإزالة العميقة المعتادة.",
+                                                       "عرض معاينة للعناصر المتبقية وتقرير مفصل بنتائج الحذف.",
+                                                       "تحسين التعامل مع الملفات المستخدمة ومشكلات الصلاحيات.",
+                                                       "إضافة إعادة المحاولة الذكية والتحقق النهائي من الإزالة.",
+                                                       "دمج البحث عن الملفات المكررة داخل متصفح الملفات عبر قائمة النقاط الثلاث.",
+                                                       "استبدال نافذة المكررات المنفصلة بنتائج مجموعات متوافقة مع الثيم وتحديد النسخ وملخص المساحة.",
+                                                       "الحفاظ على المجلد وسجل التنقل ونتائج الفحص والتحديد عند تبديل اللغة والثيم.",
+                                                       "إضافة فحص فرعي صريح مع تحقق SHA-256 وتقدم وإلغاء ودعم الملفات الفارغة المتطابقة.",
+                                                       "إضافة نقل مؤكد إلى السلة وحذف نهائي مع إعادة التحقق من المحتوى وحفظ نسخة سليمة من كل مجموعة.",
+                                                       "حماية مسارات النظام والتثبيت المعروفة والملفات التنفيذية والوصلات والملفات خارج نطاق الفحص.",
+                                                       "إضافة معرض مظاهر مركزي شفاف بسبع معاينات مصغرة مرسومة بعناصر WPF.",
+                                                       "إضافة Rose Noir بأسطح خمريّة داكنة وإضاءة وردية هادئة.",
+                                                       "إضافة Pure Black كمظهر أحادي اللون مستقل دون توهج أو إضاءة ملوّنة.",
+                                                       "إضافة اختيار مؤقت وتطبيق وإلغاء وأسماء باللغتين وتنقل بلوحة المفاتيح وإغلاق بالنقر خارج المعرض.",
+                                                       "تطبيق المظهر عبر الموارد المشتركة دون إعادة إنشاء الصفحة الحالية."
+                                                   ],
+                                      "improvements":  [
+                                                           "تحسين تحديد نتائج الإزالة الجزئية.",
+                                                           "تحسين تقارير سجل النشاط.",
+                                                           "الحفاظ على أنظمة حماية الملفات والريجستري.",
+                                                           "استمرار دعم العربية والإنجليزية."
+                                                       ],
+                                      "fixes":  [
+                                                    "توحيد الإزالة المباشرة والمتقدمة ضمن خطة متحقق منها تُحفظ قبل بدء الحذف.",
+                                                    "فحص بقايا الإزالة الرسمية والاحتفاظ بها حتى اختيار الإزالة العميقة المتقدمة صراحةً.",
+                                                    "الحفاظ على سياق التنظيف عند تحديث القائمة ومنع تطبيقه على برنامج آخر عند تغيير التحديد.",
+                                                    "تحسين إعادة محاولة العناصر المقفلة وأخطاء الصلاحيات والتعامل مع المسارات المحذوفة مسبقًا.",
+                                                    "إعادة التحقق من ملكية مفاتيح الريجستري ونسخها احتياطيًا وحماية التسجيلات التي تغيّرت أو ترقّت.",
+                                                    "تصحيح عدّادات الملفات والمجلدات والاختصارات والريجستري والتحقق النهائي من نتيجة الإزالة."
+                                                ]
+                                  }
+                       }
+    },
+    {
+        "version":  "1.0.137",
+        "en":  [
+                   "Fixed Update Center displaying English when Arabic was selected.",
+                   "Synchronized Update Center language with the main application.",
+                   "Added complete Arabic localization for update notifications, buttons, and progress messages.",
+                   "Improved automatic selection of Arabic and English GitHub release notes.",
+                   "Improved RTL/LTR layouts and mixed-language text rendering.",
+                   "Preserved all existing update functionality and safety mechanisms."
+               ],
+        "ar":  [
+                   "إصلاح ظهور نافذة التحديثات باللغة الإنجليزية رغم اختيار العربية.",
+                   "ربط لغة نافذة التحديثات تلقائيًا باللغة المختارة في البرنامج.",
+                   "تعريب إشعارات التحديث والأزرار ورسائل تقدم التنزيل والتثبيت بالكامل.",
+                   "تحسين عرض وصف تحديثات GitHub باللغة المناسبة.",
+                   "تحسين اتجاه النصوص ودعم العربية والإنجليزية.",
+                   "الحفاظ على وظائف نظام التحديثات وآليات الأمان السابقة."
+               ],
+        "highlights":  {
+                           "en":  {
+                                      "features":  [
+
+                                                   ],
+                                      "improvements":  [
+                                                           "Fixed Update Center displaying English when Arabic was selected.",
+                                                           "Synchronized Update Center language with the main application.",
+                                                           "Added complete Arabic localization for update notifications, buttons, and progress messages.",
+                                                           "Improved automatic selection of Arabic and English GitHub release notes.",
+                                                           "Improved RTL/LTR layouts and mixed-language text rendering.",
+                                                           "Preserved all existing update functionality and safety mechanisms."
+                                                       ],
+                                      "fixes":  [
+
+                                                ]
+                                  },
+                           "ar":  {
+                                      "features":  [
+
+                                                   ],
+                                      "improvements":  [
+                                                           "إصلاح ظهور نافذة التحديثات باللغة الإنجليزية رغم اختيار العربية.",
+                                                           "ربط لغة نافذة التحديثات تلقائيًا باللغة المختارة في البرنامج.",
+                                                           "تعريب إشعارات التحديث والأزرار ورسائل تقدم التنزيل والتثبيت بالكامل.",
+                                                           "تحسين عرض وصف تحديثات GitHub باللغة المناسبة.",
+                                                           "تحسين اتجاه النصوص ودعم العربية والإنجليزية.",
+                                                           "الحفاظ على وظائف نظام التحديثات وآليات الأمان السابقة."
+                                                       ],
+                                      "fixes":  [
+
+                                                ]
+                                  }
+                       }
+    },
+    {
+        "version":  "1.0.136",
+        "en":  [
+                   "Added a new release for testing automatic update detection through GitHub Releases.",
+                   "Enables testing of the redesigned update notification window introduced in v1.0.135.",
+                   "Allows users upgrading from v1.0.135 to read the new release notes before updating.",
+                   "Supports testing the Update Now and Update Later options.",
+                   "Helps verify the update download, installation, and restart process.",
+                   "Preserved all existing features and improvements.",
+                   "Maintained support for Windows 10 and Windows 11.",
+                   "Preserved Arabic and English language support.",
+                   "Maintained all five application themes.",
+                   "No major changes to the uninstalling or cleanup systems."
+               ],
+        "ar":  [
+                   "إضافة إصدار جديد لاختبار اكتشاف التحديثات تلقائيًا عبر GitHub Releases.",
+                   "إتاحة تجربة نافذة إشعارات التحديثات الجديدة التي أُضيفت في v1.0.135.",
+                   "إمكانية قراءة تفاصيل الإصدار الجديد قبل التحديث من v1.0.135.",
+                   "اختبار خياري تحديث الآن وتحديث لاحقًا.",
+                   "التحقق من عملية تنزيل التحديث وتثبيته وإعادة تشغيل البرنامج.",
+                   "الحفاظ على جميع المميزات والتحسينات السابقة.",
+                   "استمرار دعم Windows 10 وWindows 11.",
+                   "الحفاظ على دعم اللغتين العربية والإنجليزية.",
+                   "استمرار دعم الثيمات الخمسة.",
+                   "عدم إجراء تغييرات كبيرة على أنظمة الحذف والتنظيف."
+               ],
+        "highlights":  {
+                           "en":  {
+                                      "features":  [
+                                                       "A new release for testing automatic update detection through GitHub Releases.",
+                                                       "Tests the redesigned update notification window introduced in v1.0.135.",
+                                                       "Read the new release notes before updating from v1.0.135.",
+                                                       "Test the Update Now and Update Later options."
+                                                   ],
+                                      "improvements":  [
+                                                           "All existing features and improvements are preserved.",
+                                                           "Windows 10 and Windows 11 remain supported.",
+                                                           "Arabic and English language support is preserved.",
+                                                           "All five application themes remain available."
+                                                       ],
+                                      "fixes":  [
+
+                                                ]
+                                  },
+                           "ar":  {
+                                      "features":  [
+                                                       "إصدار جديد لاختبار اكتشاف التحديثات تلقائيًا عبر GitHub Releases.",
+                                                       "اختبار نافذة إشعارات التحديثات المُعاد تصميمها في v1.0.135.",
+                                                       "قراءة تفاصيل الإصدار الجديد قبل التحديث من v1.0.135.",
+                                                       "اختبار خياري تحديث الآن وتحديث لاحقًا."
+                                                   ],
+                                      "improvements":  [
+                                                           "الحفاظ على جميع المميزات والتحسينات السابقة.",
+                                                           "استمرار دعم Windows 10 وWindows 11.",
+                                                           "الحفاظ على دعم اللغتين العربية والإنجليزية.",
+                                                           "استمرار دعم الثيمات الخمسة."
+                                                       ],
+                                      "fixes":  [
+
+                                                ]
+                                  }
+                       }
+    },
+    {
+        "version":  "1.0.135",
+        "en":  [
+                   "Automatic updates: Added a dedicated update notification window that appears automatically when a newer version is available.",
+                   "Automatic updates: Review the latest features, improvements, and bug fixes before deciding to update.",
+                   "Automatic updates: Added Update Now and Update Later options.",
+                   "Automatic updates: Update notifications appear only once per application session.",
+                   "Automatic updates: The update window supports minimize, maximize, restore, move, and manual resizing.",
+                   "What\u0027s New: The page now focuses exclusively on the currently installed version.",
+                   "What\u0027s New: The Previous Releases section was removed for a cleaner experience.",
+                   "What\u0027s New: The Show All Changes expandable section is preserved.",
+                   "What\u0027s New: Release note presentation and readability were improved.",
+                   "Safer updates: Verification now uses SHA-256, file size, executable format, and version checks.",
+                   "Safer updates: The existing backup and rollback mechanisms are preserved.",
+                   "Safer updates: Update installation and automatic application restart were improved.",
+                   "Safer updates: Update checks run asynchronously without interrupting application startup.",
+                   "Release notes: GitHub release notes support Markdown headings, lists, links, and code blocks.",
+                   "Release notes: Improved scrolling and text wrapping for longer descriptions.",
+                   "Release notes: Improved Arabic and English support, including RTL and LTR layouts.",
+                   "UI and stability: Improved window resizing and layout responsiveness.",
+                   "UI and stability: Compatibility with Blue, Black, White, Beige, and Espresso themes is maintained.",
+                   "UI and stability: Existing application features and functionality are preserved."
+               ],
+        "ar":  [
+                   "التحديثات التلقائية: إضافة نافذة مستقلة لإشعار التحديث تظهر تلقائيًا عند توفر إصدار جديد.",
+                   "التحديثات التلقائية: إمكانية الاطلاع على المميزات والتحسينات وإصلاحات الأخطاء قبل اتخاذ قرار التحديث.",
+                   "التحديثات التلقائية: إضافة خياري تحديث الآن وتحديث لاحقًا.",
+                   "التحديثات التلقائية: يظهر إشعار التحديث التلقائي مرة واحدة فقط خلال جلسة تشغيل البرنامج.",
+                   "التحديثات التلقائية: دعم تصغير نافذة التحديث وتكبيرها واستعادتها وتحريكها وتغيير حجمها يدويًا.",
+                   "صفحة What\u0027s New: إعادة تنظيم الصفحة لعرض تغييرات الإصدار المثبّت حاليًا فقط.",
+                   "صفحة What\u0027s New: إزالة قسم الإصدارات السابقة لتبسيط الواجهة.",
+                   "صفحة What\u0027s New: الحفاظ على قسم Show All Changes لعرض جميع تغييرات الإصدار الحالي.",
+                   "صفحة What\u0027s New: تحسين طريقة عرض ملاحظات الإصدار وسهولة قراءتها.",
+                   "تحديثات أكثر أمانًا: تحسين التحقق من ملفات التحديث باستخدام SHA-256 وحجم الملف وصيغته ورقم الإصدار.",
+                   "تحديثات أكثر أمانًا: الحفاظ على نظام النسخ الاحتياطي واستعادة الإصدار السابق عند فشل التحديث.",
+                   "تحديثات أكثر أمانًا: تحسين عملية تثبيت التحديث وإعادة تشغيل البرنامج تلقائيًا.",
+                   "تحديثات أكثر أمانًا: إجراء فحص التحديثات في الخلفية دون التأثير على سرعة تشغيل البرنامج.",
+                   "ملاحظات الإصدار: دعم عرض وصف التحديث المنشور على GitHub بتنسيق Markdown.",
+                   "ملاحظات الإصدار: تحسين عرض العناوين والقوائم والروابط والنصوص البرمجية.",
+                   "ملاحظات الإصدار: دعم التمرير لقراءة أوصاف التحديثات الطويلة.",
+                   "ملاحظات الإصدار: تحسين دعم العربية والإنجليزية واتجاه النصوص.",
+                   "الواجهة والاستقرار: تحسين سلاسة تغيير حجم نافذة التحديث وتوافق العناصر مع أحجام النوافذ المختلفة.",
+                   "الواجهة والاستقرار: دعم الثيمات الخمسة Blue وBlack وWhite وBeige وEspresso.",
+                   "الواجهة والاستقرار: الحفاظ على جميع وظائف البرنامج وتحسيناته السابقة."
+               ],
+        "highlights":  {
+                           "en":  {
+                                      "features":  [
+                                                       "A dedicated update window appears automatically when a newer version is available.",
+                                                       "Review the latest features, improvements, and fixes before updating.",
+                                                       "Update Now and Update Later choices in one clear window.",
+                                                       "The update window supports minimize, maximize, restore, move, and resize."
+                                                   ],
+                                      "improvements":  [
+                                                           "Update checks run asynchronously and appear only once per session.",
+                                                           "SHA-256, size, executable format, and version verification with backup and rollback.",
+                                                           "Markdown release notes with headings, lists, links, code blocks, and smooth scrolling.",
+                                                           "What\u0027s New now shows only the installed version while keeping Show All Changes."
+                                                       ],
+                                      "fixes":  [
+
+                                                ]
+                                  },
+                           "ar":  {
+                                      "features":  [
+                                                       "تظهر نافذة تحديث مستقلة تلقائيًا عند توفر إصدار أحدث.",
+                                                       "الاطلاع على المميزات والتحسينات والإصلاحات قبل اتخاذ قرار التحديث.",
+                                                       "خيارا تحديث الآن وتحديث لاحقًا في نافذة واحدة واضحة.",
+                                                       "دعم تصغير نافذة التحديث وتكبيرها واستعادتها وتحريكها وتغيير حجمها."
+                                                   ],
+                                      "improvements":  [
+                                                           "فحص التحديثات في الخلفية ويظهر الإشعار مرة واحدة فقط في الجلسة.",
+                                                           "التحقق عبر SHA-256 والحجم والصيغة والإصدار مع النسخ الاحتياطي والاستعادة.",
+                                                           "ملاحظات Markdown مع العناوين والقوائم والروابط وكتل الشيفرة والتمرير السلس.",
+                                                           "صفحة What\u0027s New تعرض الإصدار المثبّت فقط مع الحفاظ على Show All Changes."
+                                                       ],
+                                      "fixes":  [
+
+                                                ]
+                                  }
+                       }
+    },
+    {
+        "version":  "1.0.134",
+        "en":  [
+                   "Polar Uninstaller v1.0.134 — Game Detection \u0026 Games Uninstall Improvements",
+                   "Roblox Player is now recognized as a game and routed through Games Uninstall instead of Deep Uninstall.",
+                   "Roblox Studio is correctly excluded so it is not treated as a game.",
+                   "Game classification now uses verified publisher and executable evidence, improving detection of standalone games installed outside launchers.",
+                   "Direct removal failures report their underlying cause instead of a generic stopped message.",
+                   "All existing launcher integrations, safety checks, and four-state uninstall reporting remain intact.",
+                   "Standalone game detection now uses evidence-based classification to recognize more independently installed games while keeping false positives low.",
+                   "Epic Games Store discovery now scans committed and pending manifests, so games such as Rocket League appear and are routed through Games Uninstall.",
+                   "Steam discovery continues to use verified App IDs and library manifests across multiple libraries and drives."
+               ],
+        "ar":  [
+                   "Polar Uninstaller v1.0.134 — تحسينات كشف الألعاب وإزالة الألعاب",
+                   "أصبح Roblox Player يُكتشف ك لعبة ويُوجَّه عبر إزالة الألعاب بدلاً من الإزالة العميقة.",
+                   "Roblox Studio مستثنى بشكل صحيح ولا يُعامل ك لعبة.",
+                   "تصنيف الألعاب يستخدم الآن أدلة مُتحقق منها من الناشر والملف التنفيذي، مما يحسن كشف الألعاب المستقلة المثبتة خارج اللانشرات.",
+                   "فشل الإزالة المباشرة يوضح السبب الأساسي بدلاً من رسالة إيقاف عامة.",
+                   "جميع تكاملات اللانشرات الحالية وفحوصات الأمان وتقارير الإزالة ذات الحالات الأربعة تبقى سليمة.",
+                   "كشف الألعاب المستقلة يستخدم الآن تصنيفًا قائمًا على الأدلة للاعتراف بمزيد من الألعاب المثبتة بشكل مستقل مع الحفاظ على انخفاض الإيجابيات الخاطئة.",
+                   "اكتشاف Epic Games Store يفحص الآن البيانات الملتزم بها والقيد الانتظار، لذا تظهر ألعاب مثل Rocket League وتُوجَّه عبر إزالة الألعاب.",
+                   "اكتشاف Steam يواصل استخدام معرفات App ID المُتحقق منها وبيانات المكتبات عبر مكتبات وأقراص متعددة."
+               ]
+    },
+    {
+        "version":  "1.0.133",
+        "en":  [
+                   "Polar Uninstaller v1.0.133 — Deep Uninstaller Reliability, Registry Cleanup \u0026 Riot Games",
+                   "Deep Uninstaller now verifies every removal against the Windows uninstall registrations, the installation folder and the main executable before it reports a result.",
+                   "Each removal ends in one of four states: Successfully Removed, Removed with Leftovers, Verification Incomplete, or Uninstall Failed, with a detailed bilingual report in the Activity Log.",
+                   "Launcher-managed games are confirmed through their own records — Steam appmanifests, Epic manifests, Battle.net, Ubisoft, Rockstar and Riot registrations — so an opened launcher or an exited process is never mistaken for a completed uninstall.",
+                   "Application-owned Registry settings and uninstall registrations are backed up with reg.exe, deleted only after ownership is verified, and re-checked afterwards; shared Windows, system and Riot Client keys are never touched.",
+                   "Leftover cleanup now covers installation folders, AppData, ProgramData and shortcuts on any drive, skips reparse points and shared folders, and keeps user data unless removal is authorized.",
+                   "VALORANT, League of Legends and other verified Riot Games titles are now detected and removed through the official Riot uninstaller; Riot Client and Riot Vanguard are protected shared components and are never deleted directly."
+               ],
+        "ar":  [
+                   "Polar Uninstaller v1.0.133 — موثوقية الإزالة العميقة وتنظيف الريجستري وألعاب Riot",
+                   "يتحقق الإزالة العميقة الآن من كل عملية إزالة مقابل تسجيلات إلغاء التثبيت في Windows ومجلد التثبيت والملف التنفيذي الرئيسي قبل عرض النتيجة.",
+                   "تنتهي كل عملية إزالة بإحدى أربع حالات: أُزيل بنجاح، أُزيل مع بقايا، التحقق غير مكتمل، أو فشلت الإزالة، مع تقرير مفصّل بالعربية والإنجليزية في سجل النشاط.",
+                   "تُؤكَّد إزالة الألعاب التي يديرها لانشر عبر سجلاتها الخاصة — ملفات appmanifest في Steam وملفات Epic وتسجيلات Battle.net وUbisoft وRockstar وRiot — فلا يُعد فتح اللانشر أو انتهاء العملية إزالةً مكتملة.",
+                   "تُنسخ مفاتيح الريجستري وتسجيلات إلغاء التثبيت التابعة للتطبيق احتياطيًا عبر reg.exe، ولا تُحذف إلا بعد التحقق من ملكيتها، ثم يُعاد التحقق منها؛ ولا تُمس مفاتيح Windows المشتركة أو مفاتيح Riot Client أبدًا.",
+                   "يشمل تنظيف البقايا الآن مجلدات التثبيت و AppData و ProgramData والاختصارات على أي قرص، ويتجاوز نقاط إعادة التحليل والمجلدات المشتركة، ويحتفظ ببيانات المستخدم ما لم تُصرَّح الإزالة.",
+                   "أصبحت VALORANT و League of Legends وألعاب Riot Games المتحقق منها تُكتشف وتُزال عبر مزيل التثبيت الرسمي لـ Riot؛ ويُعد Riot Client و Riot Vanguard مكونات مشتركة محمية لا تُحذف مباشرة أبدًا."
+               ]
+    },
+    {
+        "version":  "1.0.132",
+        "en":  [
+                   "Polar Uninstaller v1.0.132 — Update Center Testing \u0026 Stability",
+                   "Prepared a new release to validate the redesigned Polar Update Center.",
+                   "Improved update interface consistency and responsiveness.",
+                   "Verified window resizing, maximize/restore, and fullscreen behavior.",
+                   "Tested the EXE-only automatic update workflow.",
+                   "Preserved automatic restart and rollback protection."
+               ],
+        "ar":  [
+                   "Polar Uninstaller v1.0.132 — اختبار مركز التحديث وتحسين الاستقرار",
+                   "تجهيز إصدار جديد لاختبار واجهة مركز التحديث المحسّنة.",
+                   "تحسين توافق واجهة التحديث وسلاستها.",
+                   "التحقق من تغيير حجم النافذة والتكبير والاستعادة ووضع ملء الشاشة.",
+                   "اختبار نظام التحديث التلقائي باستخدام ملف EXE دون الحاجة إلى Setup.",
+                   "الحفاظ على إعادة التشغيل التلقائي والحماية من فشل التحديث."
+               ]
+    },
+    {
+        "version":  "1.0.131",
+        "en":  [
+                   "Steam game recognition now reads Steam\u0027s libraryfolders.vdf and appmanifest files through a proper Valve KeyValues parser, so games installed on secondary libraries and games whose folder names differ from their titles are identified by their real AppID.",
+                   "Verified Steam games expose their App ID in Deep Uninstaller, can be opened in SteamDB, and use official Steam uninstall (steam://uninstall); direct folder deletion is never enabled for them.",
+                   "Battle.net games such as Overwatch are now recognized as verified Battle.net games using their Windows uninstall registration and Blizzard Uninstaller UID, with official removal routing and direct-removal protection.",
+                   "Application and game sizes are now calculated accurately using a recursive, cache-backed filesystem measurement with reparse-point protection, and shown as Calculating… until the measurement completes.",
+                   "The Polar Update Center has been redesigned with a modern responsive layout, manual resizing, maximize/restore, F11 fullscreen, persisted window state, and full theme and Arabic/English support.",
+                   "Steam games are never removed directly: Polar keeps Steam\u0027s official uninstall behavior and only monitors removal after Steam handles it."
+               ],
+        "ar":  [
+                   "أصبح التعرف على ألعاب Steam يقرأ ملفات libraryfolders.vdf و appmanifest عبر محلل Valve KeyValues مناسب، لذا تُعرّف الألعاب المثبتة على مكتبات ثانوية والألعاب التي تختلف أسماء مجلداتها عن عناوينها بمعرف AppID الحقيقي.",
+                   "تعرض الألعاب المتحقق منها في Steam معرف App ID في الإزالة العميقة ويمكن فتحها في SteamDB، وتستخدم إلغاء تثبيت Steam الرسمي (steam://uninstall)؛ ولا يُفعَّل حذف المجلد مباشرة أبدًا.",
+                   "أصبحت ألعاب Battle.net مثل Overwatch تُعرّف كألعاب Battle.net متحقق منها عبر تسجيل إلغاء تثبيت Windows و UID الخاص بـ Blizzard Uninstaller، مع توجيه إلغاء التثبيت الرسمي وحماية من الحذف المباشر.",
+                   "أصبحت أحجام التطبيقات والألعاب تُحسب بدقة عبر قياس نظام ملفات تكراري مع تخزين مؤقت وحماية من نقاط إعادة التحليل، وتُعرض كـ \"جارٍ الحساب…\" حتى اكتمال القياس.",
+                   "أُعيد تصميم مركز تحديث Polar بواجهة حديثة ومتجاوبة، مع تغيير الحجم يدويًا، والتكبير/الاستعادة، والملء F11، وحفظ حالة النافذة، ودعم كامل للمظاهر والعربية/الإنجليزية.",
+                   "لا تُزال ألعاب Steam مباشرة أبدًا: يحتفظ Polar بسلوك إلغاء التثبيت الرسمي في Steam ويراقب الإزالة فقط بعد أن يتعامل معها Steam."
+               ]
+    },
+    {
+        "version":  "1.0.130",
+        "en":  [
+                   "Polar Uninstaller now updates itself by replacing only the standalone PolarUninstaller.exe, so future releases no longer require running Setup.",
+                   "The updater verifies the downloaded EXE against the published GitHub asset, replaces the running executable through a helper process, keeps a backup, and rolls back automatically if the update fails.",
+                   "Existing v1.0.129 installations receive this update automatically from the Update Center; settings, shortcuts, and installation metadata are preserved."
+               ],
+        "ar":  [
+                   "أصبح Polar Uninstaller يحدّث نفسه عبر استبدال ملف PolarUninstaller.exe المستقل فقط، لذا لن تتطلب الإصدارات القادمة تشغيل برنامج التثبيت.",
+                   "يتحقق المحدّث من ملف EXE الذي تم تنزيله مقابل الملف المنشور على GitHub، ويستبدل الملف التنفيذي قيد التشغيل عبر عملية مساعدة، ويحتفظ بنسخة احتياطية ويعيد الحالة تلقائيًا إذا فشل التحديث.",
+                   "تتلقى إصدارات v1.0.129 المثبتة هذا التحديث تلقائيًا من مركز التحديث، مع الحفاظ على الإعدادات والاختصارات وبيانات التثبيت."
+               ]
+    },
+    {
+        "version":  "1.0.129",
+        "en":  [
+                   "This is the one-time migration release for existing v1.0.127 installations. It includes the new EXE-only automatic updater and is installed through the existing Setup-based update path.",
+                   "After this release, future updates can be delivered as a standalone PolarUninstaller.exe without running Setup.",
+                   "Settings, installation location, shortcuts, and Windows installed-app metadata are preserved during the upgrade."
+               ],
+        "ar":  [
+                   "هذا هو إصدار الترحيل لمرة واحدة لإصدارات v1.0.127 المثبتة. يتضمن المحدّث التلقائي الجديد الذي يعتمد على ملف EXE فقط ويُثبّت عبر مسار التحديث الحالي القائم على برنامج التثبيت.",
+                   "بعد هذا الإصدار، يمكن تسليم التحديثات القادمة كملف PolarUninstaller.exe مستقل دون تشغيل برنامج التثبيت.",
+                   "يتم الحفاظ على الإعدادات وموقع التثبيت والاختصارات وبيانات التطبيق المثبت في Windows أثناء الترقية."
+               ]
+    },
+    {
+        "version":  "1.0.128",
+        "en":  [
+                   "Automatic updates now support GitHub releases that contain only PolarUninstaller.exe, for both installed and portable copies.",
+                   "Updates are downloaded to a temporary staging folder, verified against the published GitHub asset, and applied by a separate helper process with backup and rollback.",
+                   "Existing v1.0.127 installations need a one-time manual migration to this build because the older updater only accepted Setup packages."
+               ],
+        "ar":  [
+                   "يدعم التحديث التلقائي الآن إصدارات GitHub التي تحتوي على PolarUninstaller.exe فقط، للنسخ المثبتة والمحمولة.",
+                   "يتم تنزيل التحديثات إلى مجلد مؤقت والتحقق منها مقابل الملف المنشور على GitHub ثم تطبيقها عبر عملية مساعدة منفصلة مع نسخ احتياطي واستعادة.",
+                   "تحتاج إصدارات v1.0.127 الحالية إلى ترقية يدوية لمرة واحدة إلى هذا الإصدار لأن نظام التحديث القديم كان يقبل حزم التثبيت فقط."
+               ]
+    },
+    {
+        "version":  "1.0.127",
+        "en":  [
+                   "Deep Uninstall now performs verified leftover cleanup automatically after successful removal, with no secondary review window.",
+                   "Improved game detection and official uninstall handling for Riot Games, Rockstar, Epic Games, Ubisoft, and GOG Galaxy.",
+                   "Games Uninstall now uses intelligent internal routing with one button and preserves Steam behavior.",
+                   "Quick Cleaner now resolves the actual temporary directory, enumerates nested contents more reliably, and reports skipped or failed deletions accurately.",
+                   "Epic Games uninstall routing now searches additional launcher locations and reports unsupported removals clearly.",
+                   "Version metadata and release artifacts are updated to v1.0.127.",
+                   "Theme \u0026 Visual Improvements:",
+                   "Redesigned Theme Lighting: Introduced smooth, diffused lighting effects extending from the top-left and bottom-right corners of the application.",
+                   "Improved Black Theme: Refined the true-black background with subtle white lighting while preserving its deep-black appearance.",
+                   "Enhanced Blue Theme: Improved the blue lighting gradients for a more balanced and elegant visual experience.",
+                   "Refined Beige Theme: Introduced the Warm Sand Glow design, combining soft ivory lighting in the upper-left corner with warm sand lighting in the lower-right.",
+                   "Unified Glass Surfaces: Updated cards, panels, and navigation highlights with subtle theme-aware transparency, allowing them to blend naturally with the background.",
+                   "Softer Borders: Reduced border intensity to create a cleaner and more consistent appearance.",
+                   "Improved Visual Consistency: Applied the shared surface and lighting design across the existing themes while preserving their individual color identities."
+               ],
+        "ar":  [
+                   "الإزالة العميقة تنظّف الآن البقايا المُتحقق منها تلقائيًا بعد الإزالة الناجحة، دون نافذة مراجعة ثانوية.",
+                   "تحسين اكتشاف الألعاب والتعامل مع الإزالة الرسمية لـ Riot Games وRockstar وEpic Games وUbisoft وGOG Galaxy.",
+                   "الإزالة للألعاب تستخدم الآن توجيهًا داخليًا ذكيًا بزر واحد مع الحفاظ على سلوك Steam.",
+                   "التنظيف السريع يُحدّد الآن مجلدًا مؤقتًا الفعلي ويفحص المحتويات المتداخلة بشكل أكثر موثوقية ويُبلّغ عن التخطي أو فشل الحذف بدقة.",
+                   "التوجيه لإزالة Epic Games يبحث الآن في مواقع لانشر إضافية ويُبلّغ عن الإزالات غير المدعومة بوضوح.",
+                   "حُدّثت بيانات الإصدار وملفات الإصدار إلى v1.0.127.",
+                   "تحسينات المظاهر والتصميم:",
+                   "إعادة تصميم الإضاءة: إضافة تأثيرات إضاءة ناعمة ومتدرجة تمتد من الزاويتين العلوية اليسرى والسفلية اليمنى للبرنامج.",
+                   "تحسين المظهر الأسود: تطوير الخلفية السوداء الداكنة مع إضاءة بيضاء خفيفة تحافظ على عمق اللون الأسود.",
+                   "تحسين المظهر الأزرق: تحسين تدرجات الإضاءة الزرقاء لتصبح أكثر توازنًا وأناقة.",
+                   "تطوير المظهر البيج: إضافة تصميم Warm Sand Glow الذي يجمع بين الإضاءة العاجية الناعمة أعلى اليسار والإضاءة الرملية الدافئة أسفل اليمين.",
+                   "توحيد تصميم البطاقات: اعتماد خلفيات شبه شفافة للبطاقات واللوحات وعناصر التنقل لتنسجم مع ألوان المظهر والخلفية.",
+                   "تحسين حدود الإطارات: تخفيف وضوح الحدود للحصول على تصميم أكثر نعومة وتناسقًا.",
+                   "تحسين التناسق البصري: تطبيق أسلوب الإضاءة والشفافية الموحد على المظاهر المختلفة مع الحفاظ على هوية كل لون."
+               ]
+    },
+    {
+        "version":  "1.0.126",
+        "en":  [
+                   "Feedback submissions now report the actual running application version, fixing incorrect 2.0.0 values.",
+                   "Application version management is centralized through the authoritative build version source.",
+                   "Home screen, sidebar, What\u0027s New, update checker, feedback submissions, metadata, installer, and release packages now use the same version.",
+                   "Release artifacts and installer metadata are updated to v1.0.126."
+               ],
+        "ar":  [
+                   "إرسالات الملاحظات تُبلّغ الآن إصدار التطبيق الفعلي، مما يُصلح قيم 2.0.0 غير الصحيحة.",
+                   "أصبحت إدارة إصدار التطبيق موحدة عبر مصدر إصدار البناء الموثوق.",
+                   "الشاشة الرئيسية والشريط الجانبي وما الجديد وفحص التحديثات وإرسالات الملاحظات والبيانات والتنصيبي وحزم الإصدار تستخدم الآن الإصدار نفسه.",
+                   "حُدّثت ملفات الإصدار وبيانات التنصيبي إلى v1.0.126."
+               ]
+    },
+    {
+        "version":  "1.0.125",
+        "en":  [
+                   "Largest Folders and Largest Files are now independent rankings, so large files never take slots from important folders.",
+                   "Largest Folders lists every accessible immediate top-level folder with its full cumulative recursive size, largest first, and never repeats nested descendants.",
+                   "Largest Files lists individual files by actual size, with a configurable minimum-size filter and a Show more button for longer results.",
+                   "Clicking a Dashboard folder opens that exact folder in Polar\u0027s built-in File Browser for browsing and size inspection.",
+                   "Partial scans now report the exact number of inaccessible items, mark results as incomplete, and show affected folder sizes as minimum values.",
+                   "Fixed drive-root and absolute-path handling so top-level folder detection remains correct on every drive.",
+                   "Clear Cache now also removes cached drive and folder scans, saved Largest Folders and Largest Files results, and manually added Dashboard scan items.",
+                   "Clear Cache never deletes personal files; it only removes Polar Uninstaller\u0027s own cached data, scan metadata, and history.",
+                   "Clear Cache still resets launch counters, click statistics, recent uninstalls, and creates a fresh inventory baseline.",
+                   "File Browser supports Ctrl+Click, Shift+Click, and Ctrl+A multi-selection with visible row indicators, selected counts, and combined known sizes.",
+                   "Batch operations move multiple items to the Recycle Bin or delete them permanently with count-aware confirmation, per-item results, and nested-selection deduplication.",
+                   "File Browser sorting is remembered across folders, Back/Forward/Up navigation, page changes, and application restarts.",
+                   "Column headers now show the active sort direction, equal values use a stable secondary order, and folders with unknown sizes never break the ordering.",
+                   "File Browser now calculates folder sizes automatically after opening any folder, including every nested file and subfolder, so Calculate Folder Size is no longer required for each folder.",
+                   "Folder sizes show a temporary loading indicator and then update in place in KB, MB, GB, or TB; inaccessible or partially readable folders show a lower-bound or unavailable state instead of a false exact size.",
+                   "Background size scans are limited to four concurrent folders, prioritize visible rows, reuse a five-minute cache, cancel obsolete work when navigating away, and never follow junctions or symbolic links.",
+                   "When Size sorting is active, rows re-sort automatically as measured sizes arrive while the current selection stays intact.",
+                   "Protected paths, locked files, and partial deletion failures are handled safely without weakening existing safeguards.",
+                   "External uninstall detection now verifies removals, ignores Windows updates, and tolerates temporary scan failures.",
+                   "Home and Deep Uninstaller now share one authoritative installed-program inventory, so their displayed counts always agree.",
+                   "Dashboard buttons, tabs, and selection highlights keep their themed hover and pressed states in Blue, Black, White, Beige, and Espresso.",
+                   "Arabic RTL and English LTR layouts remain fully supported across the Dashboard and File Browser."
+               ],
+        "ar":  [
+                   "أكبر المجلدات وأكبر الملفات أصبحا تصنيفين مستقلين، بحيث لا تستهلك الملفات الكبيرة أماكن مخصصة للمجلدات المهمة.",
+                   "يعرض أكبر المجلدات كل مجلد فرعي مباشر متاح مع حجمه التراكمي الكامل، من الأكبر إلى الأصغر، دون تكرار المجلدات المتداخلة.",
+                   "يعرض أكبر الملفات الملفات الفردية بحجمها الفعلي، مع حد أدنى قابل للتخصيص وزر عرض المزيد للنتائج الأطول.",
+                   "النقر على مجلد في لوحة المعلومات يفتح المجلد نفسه في متصفح ملفات Polar المدمج لاستعراضه وفحص أحجامه.",
+                   "الفحص الجزئي يعرض الآن العدد الدقيق للعناصر المتعذر الوصول إليها، ويوسم النتائج بأنها غير مكتملة، ويعرض أحجام المجلدات المتأثرة كحد أدنى.",
+                   "إصلاح التعامل مع جذور الأقراص والمسارات المطلقة بحيث يبقى اكتشاف المجلدات العليا صحيحًا على كل قرص.",
+                   "إزالة الكاش تزيل الآن أيضًا نتائج فحص الأقراص والمجلدات المحفوظة، ونتائج أكبر المجلدات وأكبر الملفات، وعناصر الفحص المضافة يدويًا.",
+                   "إزالة الكاش لا تحذف الملفات الشخصية أبدًا؛ فهي تزيل فقط بيانات Polar Uninstaller المؤقتة وبيانات الفحص والسجل.",
+                   "تظل إزالة الكاش تعيد تعيين عدادات الفتح وإحصاءات النقر وآخر عمليات الإزالة وتنشئ خط أساس جديدًا للمخزون.",
+                   "متصفح الملفات يدعم التحديد المتعدد عبر Ctrl+Click وShift+Click وCtrl+A مع مؤشرات واضحة لكل صف وعدد العناصر المحددة والأحجام المعروفة المجمعة.",
+                   "العمليات الجماعية تنقل عدة عناصر إلى سلة المحذوفات أو تحذفها نهائيًا مع تأكيد يوضح العدد ونتائج لكل عنصر وإزالة التحديدات المتداخلة.",
+                   "يُحفظ ترتيب متصفح الملفات عبر المجلدات والتنقل للخلف والأمام والأعلى وبين الصفحات وبعد إعادة تشغيل التطبيق.",
+                   "تعرض رؤوس الأعمدة اتجاه الترتيب النشط، وتستخدم القيم المتساوية ترتيبًا ثانويًا ثابتًا، ولا تكسر أحجام المجلدات غير المعروفة الترتيب.",
+                   "يحسب متصفح الملفات الآن أحجام المجلدات تلقائيًا بعد فتح أي مجلد، بما يشمل كل الملفات والمجلدات الفرعية المتداخلة، دون الحاجة إلى زر حساب حجم المجلد لكل مجلد.",
+                   "تظهر أحجام المجلدات كمؤشر تحميل مؤقت ثم تُحدَّث في مكانها بوحدات KB أو MB أو GB أو TB؛ وتُعرض المجلدات المتعذر الوصول إليها أو المقروءة جزئيًا كحد أدنى أو كحالة غير متاحة بدلًا من حجم دقيق مضلل.",
+                   "فحوص الأحجام في الخلفية محدودة بأربعة مجلدات متزامنة، وتُعطي الأولوية للصفوف الظاهرة، وتعيد استخدام ذاكرة مؤقتة لخمس دقائق، وتُلغي العمل القديم عند التنقل، ولا تتبع نقاط إعادة التحليل أو الروابط الرمزية.",
+                   "عند تفعيل الترتيب حسب الحجم، تُعاد ترتيب الصفوف تلقائيًا مع وصول الأحجام المحسوبة مع الحفاظ على التحديد الحالي.",
+                   "تُعالج المسارات المحمية والملفات المقفلة وفشل الحذف الجزئي بأمان دون إضعاف الحمايات الحالية.",
+                   "اكتشاف الإزالة الخارجية يتحقق من عمليات الإزالة ويتجاهل تحديثات Windows ويتحمل فشل الفحص المؤقت.",
+                   "تستخدم الرئيسية وإزالة البرامج العميقة الآن مخزونًا واحدًا موثوقًا للبرامج المثبتة، لذا تتفق أعدادها المعروضة دائمًا.",
+                   "أزرار لوحة المعلومات وتبويباتها وتمييز التحديد تحافظ على حالات التمرير والضغط المنسقة في المظاهر الزرقاء والسوداء والبيضاء والبيج والإسبريسو.",
+                   "يظل دعم تخطيط العربية من اليمين إلى اليسار والإنجليزية من اليسار إلى اليمين كاملًا في لوحة المعلومات ومتصفح الملفات."
+               ],
+        "highlights":  {
+                           "en":  {
+                                      "features":  [
+                                                       "Separate Largest Folders and Largest Files rankings with configurable file-size filtering.",
+                                                       "Automatic cumulative folder sizes in the File Browser with no manual calculation required.",
+                                                       "File Browser multi-selection with batch Recycle Bin and permanent deletion.",
+                                                       "Sorting preferences that persist across folders and restarts.",
+                                                       "Dashboard folders open directly in the built-in File Browser."
+                                                   ],
+                                      "improvements":  [
+                                                           "Largest Folders lists every accessible immediate child with cumulative sizes.",
+                                                           "Partial scans report inaccessible items and mark folder sizes as minimum values.",
+                                                           "Clear Cache removes cached scans and saved scan items without touching personal files.",
+                                                           "Column headers show the active sort direction with stable secondary ordering.",
+                                                           "Folder sizes stream in asynchronously with visible-row priority, caching, and automatic re-sorting.",
+                                                           "Theme-matched tabs, buttons, and selection highlights in every theme.",
+                                                           "External uninstall detection verifies removals and avoids false positives."
+                                                       ],
+                                      "fixes":  [
+                                                    "Fixed drive-root and absolute-path handling for top-level folder detection.",
+                                                    "Nested Dashboard folders no longer appear as overlapping duplicate results.",
+                                                    "Fixed sorting resetting when navigating between folders.",
+                                                    "Fixed File Browser folder sizes staying blank and size sorting ignoring newly calculated folders.",
+                                                    "Fixed Clear Cache so cleared scan data cannot return after restart.",
+                                                    "Batch deletion deduplicates folder and descendant selections."
+                                                ]
+                                  },
+                           "ar":  {
+                                      "features":  [
+                                                       "تصنيفان مستقلان لأكبر المجلدات وأكبر الملفات مع حد أدنى قابل للتخصيص لحجم الملف.",
+                                                       "أحجام مجلدات تراكمية تلقائية في متصفح الملفات دون الحاجة إلى حساب يدوي.",
+                                                       "تحديد متعدد في متصفح الملفات مع نقل جماعي إلى السلة أو حذف نهائي.",
+                                                       "تفضيلات ترتيب تُحفظ عبر المجلدات وإعادة التشغيل.",
+                                                       "مجلدات لوحة المعلومات تُفتح مباشرة في متصفح الملفات المدمج."
+                                                   ],
+                                      "improvements":  [
+                                                           "أكبر المجلدات يعرض كل مجلد فرعي مباشر متاح مع الأحجام التراكمية.",
+                                                           "الفحص الجزئي يعرض العناصر المتعذر الوصول إليها ويوسم أحجام المجلدات كحد أدنى.",
+                                                           "إزالة الكاش تزيل نتائج الفحص وعناصر الفحص المحفوظة دون المساس بالملفات الشخصية.",
+                                                           "رؤوس الأعمدة تعرض اتجاه الترتيب النشط مع ترتيب ثانوي ثابت.",
+                                                           "تصل أحجام المجلدات بشكل غير متزامن مع أولوية للصفوف الظاهرة وذاكرة مؤقتة وإعادة ترتيب تلقائية.",
+                                                           "تبويبات وأزرار وتمييز تحديد منسقة مع المظهر في كل المظاهر.",
+                                                           "اكتشاف الإزالة الخارجية يتحقق من العمليات ويتجنب النتائج الخاطئة."
+                                                       ],
+                                      "fixes":  [
+                                                    "إصلاح التعامل مع جذور الأقراص والمسارات المطلقة لاكتشاف المجلدات العليا.",
+                                                    "لم تعد المجلدات المتداخلة تظهر كنتائج مكررة متداخلة في لوحة المعلومات.",
+                                                    "إصلاح إعادة تعيين الترتيب عند التنقل بين المجلدات.",
+                                                    "إصلاح بقاء أحجام مجلدات متصفح الملفات فارغة وتجاهل الترتيب حسب الحجم للمجلدات المحسوبة حديثًا.",
+                                                    "إصلاح إزالة الكاش بحيث لا تعود بيانات الفحص المحذوفة بعد إعادة التشغيل.",
+                                                    "الحذف الجماعي يزيل التحديدات المتداخلة للمجلد وابنه."
+                                                ]
+                                  }
+                       }
+    },
+    {
+        "version":  "1.0.124",
+        "en":  [
+                   "Removed unnecessary backgrounds behind Publisher and Size values.",
+                   "Improved Refresh and Sort control sizes and clickability.",
+                   "Made Refresh button transparent and theme-aware.",
+                   "Improved application and game icon detection and caching."
+               ],
+        "ar":  [
+                   "إزالة الخلفيات غير الضرورية خلف قيم الناشر والحجم.",
+                   "تحسين حجم وأزرار التحكم في التحديث والترتيب وسهولة النقر.",
+                   "جعل زر التحديث شفافًا ومنسقًا مع المظهر.",
+                   "تحسين التعرف على شعارات البرامج والألعاب وتخزينها."
+               ],
+        "highlights":  {
+                           "en":  {
+                                      "features":  [
+
+                                                   ],
+                                      "improvements":  [
+                                                           "Improved Refresh and Sort control usability.",
+                                                           "Cleaner Deep Uninstaller row presentation."
+                                                       ],
+                                      "fixes":  [
+
+                                                ]
+                                  },
+                           "ar":  {
+                                      "features":  [
+
+                                                   ],
+                                      "improvements":  [
+                                                           "تحسين usability أزرار التحديث والترتيب.",
+                                                           "عرض أنظف لصفوف الإزالة العميقة."
+                                                       ],
+                                      "fixes":  [
+
+                                                ]
+                                  }
+                       }
+    },
+    {
+        "version":  "1.0.123",
+        "en":  [
+                   "Added application and game sorting by size.",
+                   "Improved application and game icon detection.",
+                   "Improved Deep Uninstaller theme integration.",
+                   "Improved MB, GB, and TB size formatting.",
+                   "Improved application inventory synchronization.",
+                   "Fixed uninstall detection issues affecting some games.",
+                   "Improved Recent Uninstalls history synchronization."
+               ],
+        "ar":  [
+                   "إضافة ترتيب البرامج والألعاب حسب الحجم.",
+                   "تحسين التعرف على شعارات البرامج والألعاب.",
+                   "تحسين توافق قائمة الإزالة العميقة مع المظاهر.",
+                   "تحسين عرض الأحجام بوحدات MB وGB وTB.",
+                   "تحسين مزامنة قائمة البرامج والألعاب المثبتة.",
+                   "إصلاح مشاكل اكتشاف إزالة بعض الألعاب.",
+                   "تحسين مزامنة سجل آخر عمليات الإزالة مع لوحة المعلومات."
+               ],
+        "highlights":  {
+                           "en":  {
+                                      "features":  [
+                                                       "Added application and game sorting by size."
+                                                   ],
+                                      "improvements":  [
+                                                           "Improved icon detection and theme integration.",
+                                                           "Improved size formatting and inventory sync."
+                                                       ],
+                                      "fixes":  [
+                                                    "Fixed uninstall detection and history sync."
+                                                ]
+                                  },
+                           "ar":  {
+                                      "features":  [
+                                                       "إضافة ترتيب البرامج والألعاب حسب الحجم."
+                                                   ],
+                                      "improvements":  [
+                                                           "تحسين التعرف على الشعارات والتوافق مع المظاهر.",
+                                                           "تحسين عرض الأحجام ومزامنة القائمة."
+                                                       ],
+                                      "fixes":  [
+                                                    "إصلاح مشاكل اكتشاف الإزالة ومزامنة السجل."
+                                                ]
+                                  }
+                       }
+    },
+    {
+        "version":  "1.0.122",
+        "en":  [
+                   "What\u0027s New page redesigned with a transparent, theme-aware, three-column changelog and collapsible release history.",
+                   "Sidebar icons were replaced with consistent vector outline icons; Discord uses the official logo.",
+                   "Dashboard: added a persistent Recent Uninstalls section with app icon, size before removal, date/time and source; newest five first.",
+                   "Dashboard, Quick Cleaner and File Browser surfaces now blend with the active theme; solid dark patches were removed.",
+                   "File Browser: themed context menu and scrollbar; removed duplicate redundant commands and added size sorting in both directions.",
+                   "File Browser size sorting uses known sizes first and calculates folder sizes asynchronously without freezing the UI."
+               ],
+        "ar":  [
+                   "إعادة تصميم صفحة ما الجديد مع سجل تغييرات شفاف منسق مع المظهر وثلاثة أعمدة وتاريخ إصدارات قابل للطي.",
+                   "أُبدلت أيقونات الشريط الجانبي بأيقونات متجهية متناسقة؛ يستخدم Discord الشعار الرسمي.",
+                   "لوحة المعلومات: أُضيف قسم \"آخر عمليات الإزالة\" مع أيقونة التطبيق والحجم قبل الإزالة والتاريخ/الوقت والمصدر؛ أحدث خمسة أولاً.",
+                   "أسطح لوحة المعلومات والتنظيف السريع ومتصفح الملفات تندمج الآن مع المظهر النشط؛ أُزيلت البقع الداكنة.",
+                   "متصفح الملفات: قائمة سياق وشريط تمرير منسقان مع المظهر؛ أُزيلت الأوامر المكررة/غير المفيدة؛ أُضيف ترتيب حسب الحجم في كلا الاتجاهين.",
+                   "ترتيب الحجم في متصفح الملفات يستخدم الأحجام المعروفة أولاً ويحسب أحجام المجلدات غير متزامنًا دون تجميد الواجهة."
+               ],
+        "highlights":  {
+                           "en":  {
+                                      "features":  [
+                                                       "What\u0027s New page redesigned with readable layout.",
+                                                       "Dashboard shows your last five uninstalls.",
+                                                       "Sidebar icons replaced with modern vectors."
+                                                   ],
+                                      "improvements":  [
+                                                           "Dashboard, Quick Cleaner, File Browser blend with theme.",
+                                                           "File Browser gained themed menu and size sorting.",
+                                                           "Size sorting calculates folder sizes asynchronously."
+                                                       ],
+                                      "fixes":  [
+                                                    "Removed duplicate File Browser context commands."
+                                                ]
+                                  },
+                           "ar":  {
+                                      "features":  [
+                                                       "إعادة تصميم صفحة ما الجديد بتنسيق مقروء.",
+                                                       "لوحة المعلومات تعرض آخر 5 عمليات إزالة.",
+                                                       "أيقونات الشريط الجانبي حُدّثت لمتجهات حديثة."
+                                                   ],
+                                      "improvements":  [
+                                                           "لوحة المعلومات والتنظيف والمتصفح تندمج مع المظهر.",
+                                                           "متصفح الملفات اكتسب قائمة منسقة وترتيب حسب الحجم.",
+                                                           "ترتيب الحجم يحسب أحجام المجلدات غير متزامنًا."
+                                                       ],
+                                      "fixes":  [
+                                                    "أُزيلت أوامر مكررة من قائمة الملفات."
+                                                ]
+                                  }
+                       }
+    },
+    {
+        "version":  "1.0.121",
+        "en":  [
+                   "Quick Cleaner: numbers, file counts and storage units now use consistent culture-stable formatting and are isolated from RTL text in Arabic.",
+                   "Quick Cleaner: each run reports the storage actually cleaned (KB / MB / GB), including skipped items, and clearly states when nothing could be removed.",
+                   "Quick Cleaner: the four category selections are saved in application settings and restored after restarting, navigating between pages or changing themes.",
+                   "Quick Cleaner: category card borders now blend with the page background in every theme.",
+                   "Dashboard: removed the 7-day activity chart and the current-session activity panel; Storage Overview and Largest Files \u0026 Folders now share the full workspace in a responsive two-column layout.",
+                   "Storage Overview: redesigned with a themed drive selector, circular usage gauge, wide usage bar and used / available / total statistics that update accurately when the selected drive changes.",
+                   "Largest Files \u0026 Folders: real recursive folder sizes with no double counting, safe handling and reporting of reparse points and inaccessible paths, cancellable scans with progress and correct KB / MB / GB / TB units.",
+                   "Clicking a file or folder in the Dashboard opens Polar\u0027s built-in File Browser, navigates to its location and selects the exact item instead of opening Windows Explorer.",
+                   "Clear Cache now lists the Polar-owned temporary locations, shows the estimated recoverable space, asks for confirmation, protects active downloads and reports the space actually recovered.",
+                   "The File Browser and Dashboard refresh after a successful deletion; deletion still requires explicit confirmation and prefers the Recycle Bin.",
+                   "Fixed Steam game uninstallation: uses the official steam://uninstall/{App ID} protocol instead of an unsupported command.",
+                   "Steam App ID 0 and missing/invalid IDs are now filtered out and never sent to Steam.",
+                   "Uninstall completion is now detected automatically in the background using launcher manifests, registry records and installation folders.",
+                   "Removed the Verify / Rescan button: the game disappears from the list as soon as its removal is confirmed.",
+                   "Added a non-blocking \"Unable to confirm removal\" status instead of a manual rescan or indefinite waiting.",
+                   "Fixed corrupted Arabic text in the uninstall confirmation and status messages.",
+                   "Cancelling monitoring keeps the game listed and restores the normal UI state."
+               ],
+        "ar":  [
+                   "التنظيف السريع: الأرقام وعدد الملفات ووحدات التخزين تُعرض الآن بتنسيق ثابت وواضح ومعزولة عن النص العربي في الاتجاه من اليمين إلى اليسار.",
+                   "التنظيف السريع: تعرض كل عملية المساحة التي تم تنظيفها فعليًا (كيلوبايت / ميجابايت / جيجابايت) مع العناصر المتجاوزة، وتوضح بوضوح عند عدم إزالة أي ملف.",
+                   "التنظيف السريع: تُحفظ الفئات الأربع المحددة في إعدادات التطبيق وتُستعاد بعد إعادة التشغيل والتنقل بين الصفحات وتغيير المظهر.",
+                   "التنظيف السريع: حدود بطاقات الفئات تندمج الآن مع خلفية الصفحة في جميع المظاهر.",
+                   "لوحة المعلومات: أُزيل مخطط النشاط لآخر 7 أيام ولوحة نشاط الجلسة الحالية؛ تتشارك نظرة التخزين وأكبر الملفات والمجلدات المساحة الكاملة في تخطيط عمودين متجاوب.",
+                   "نظرة التخزين: تصميم جديد مع قائمة أقراص منسقة ومؤشر دائري للاستخدام وشريط استخدام عريض وإحصاءات مستخدم ومتاح وإجمالي تتحدث بدقة عند تغيير القرص.",
+                   "أكبر الملفات والمجلدات: حساب حقيقي لأحجام المجلدات دون احتساب مزدوج، ومعالجة آمنة للنقاط الارتباطية والمسارات المتعذر الوصول إليها والإبلاغ عنها، وفحص قابل للإلغاء مع تقدم ووحدات KB/MB/GB/TB صحيحة.",
+                   "النقر على ملف أو مجلد في لوحة المعلومات يفتح متصفح ملفات Polar المدمج وينتقل إلى موقعه ويحدد العنصر نفسه بدلاً من فتح مستكشف Windows.",
+                   "إزالة الكاش: تعرض الآن مواقع Polar المؤقتة المؤهلة والمساحة المتوقعة، وتطلب التأكيد، وتحمي التنزيلات النشطة، وتُبلغ عن المساحة المستردة فعليًا.",
+                   "يتحدث متصفح الملفات ولوحة المعلومات بعد نجاح الحذف؛ ويظل الحذف يتطلب تأكيدًا صريحًا ويفضل سلة المحذوفات.",
+                   "إزالة ألعاب Steam: يستخدم البروتوكول الرسمي steam://uninstall/{معرف التطبيق} بدلاً من أمر غير مدعوم.",
+                   "يتم تصفية معرف التطبيق 0 والمعرفات المفقودة أو غير الصالحة في Steam ولا تُرسل إلى Steam أبدًا.",
+                   "يُكتشف اكتمال الإزالة تلقائيًا في الخلفية عبر ملفات اللانشرات وإدخالات الريجستري ومجلدات التثبيت.",
+                   "أُزيل زر التحقق / إعادة الفحص: تختفي اللعبة من القائمة فور تأكيد إزالتها.",
+                   "أُضيفت حالة غير معطلة بعنوان \"تعذر تأكيد الإزالة\" بدلاً من إعادة الفحص اليدوي أو الانتظار غير المحدود.",
+                   "إصلاح النص العربي التالف في رسائل تأكيد الإزالة والرسائل الحالة.",
+                   "إلغاء المراقبة يُبقي اللعبة في القائمة ويعيد الواجهة إلى حالتها الطبيعية."
+               ],
+        "highlights":  {
+                           "en":  {
+                                      "features":  [
+                                                       "Quick Cleaner saves category selections.",
+                                                       "Dashboard opens items in File Browser."
+                                                   ],
+                                      "improvements":  [
+                                                           "Quick Cleaner reports actually cleaned storage.",
+                                                           "Dashboard storage overview redesigned.",
+                                                           "File Browser gains async folder sizes."
+                                                       ],
+                                      "fixes":  [
+                                                    "Steam uninstall uses official protocol.",
+                                                    "Fixed corrupted Arabic uninstall text."
+                                                ]
+                                  },
+                           "ar":  {
+                                      "features":  [
+                                                       "التنظيف السريع يحفظ الفئات المحددة.",
+                                                       "لوحة المعلومات تفتح العناصر في المتصفح."
+                                                   ],
+                                      "improvements":  [
+                                                           "التنظيف السريع يُبلغ عن المساحة المنظفة.",
+                                                           "نظرة التخزين أُعيد تصميمها.",
+                                                           "متصفح الملفات يحسب الأحجام غير متزامنًا."
+                                                       ],
+                                      "fixes":  [
+                                                    "إزالة Steam تستخدم البروتوكول الرسمي.",
+                                                    "إصلاح نص عربي تالف في الإزالة."
+                                                ]
+                                  }
+                       }
+    },
+    {
+        "version":  "1.0.120",
+        "en":  [
+                   "Interface: native WPF pages for Home, Deep Uninstaller, Quick Cleaner, Dashboard and File Browser, with Inter / Tajawal typography, five themes and Arabic / English layouts.",
+                   "File Browser: compact navigation, editable breadcrumbs, separate file cards, selection actions, collapsible details, asynchronous folder sizes and duplicate detection.",
+                   "Uninstall review: shared leftover scanner for direct and verified official removal, visible Verify / Rescan feedback, unchecked review candidates, selected-only cleanup and Registry backups.",
+                   "Shortcuts: Unicode target inspection, application / game ownership verification, content fingerprint checks and selected shortcut recycling without deleting shortcut targets.",
+                   "Icons: asynchronous application and local launcher metadata resolution, reusable image caching and theme-compatible fallback glyphs.",
+                   "Packaging: unified product metadata and version, official PU icon, bundled fonts and private runtime packaging. Setup and automatic installer handoff remain separate release steps."
+               ],
+        "ar":  [
+                   "الواجهة: صفحات WPF أصلية للرئيسية والإزالة العميقة والتنظيف السريع ولوحة المعلومات ومتصفح الملفات، مع خطي Inter وTajawal والثيمات الخمسة ودعم العربية والإنجليزية.",
+                   "متصفح الملفات: تنقل مختصر ومسار قابل للتحرير وبطاقات مستقلة وإجراءات للتحديد وتفاصيل قابلة للإخفاء وحساب غير متزامن لأحجام المجلدات واكتشاف المكررات.",
+                   "مراجعة الإزالة: فاحص بقايا مشترك للإزالة المباشرة والإزالة الرسمية المتحقق منها، وإظهار نتيجة التحقق وإعادة الفحص، وعناصر غير محددة افتراضيًا وتنظيف المحدد ونسخ الريجستري احتياطيًا.",
+                   "الاختصارات: قراءة أهداف Unicode والتحقق من ملكية البرنامج أو اللعبة وبصمة المحتوى ونقل الاختصارات المحددة إلى السلة دون حذف أهدافها.",
+                   "الأيقونات: استخراج غير متزامن من البرامج وبيانات اللانشرات المحلية مع إعادة استخدام الصور ورمز بديل يتناسق مع الثيم.",
+                   "التجهيز: توحيد هوية المنتج والإصدار وأيقونة PU الرسمية والخطوط وتضمين بيئة تشغيل خاصة. يظل Setup وتسليم التحديث إلى المثبت خطوتين منفصلتين لتجهيز الإصدار."
+               ],
+        "highlights":  {
+                           "en":  {
+                                      "features":  [
+                                                       "Native WPF pages for all main sections.",
+                                                       "File Browser gains navigation and details."
+                                                   ],
+                                      "improvements":  [
+                                                           "Asynchronous icon resolution and caching.",
+                                                           "Private runtime packaging for setup."
+                                                       ],
+                                      "fixes":  [
+                                                    "Shared leftover scanner for uninstall review."
+                                                ]
+                                  },
+                           "ar":  {
+                                      "features":  [
+                                                       "صفحات WPF أصلية لجميع الأقسام.",
+                                                       "متصفح الملفات اكتسب تنقلًا وتفاصيل."
+                                                   ],
+                                      "improvements":  [
+                                                           "استخراج الأيقونات غير متزامن مع التخزين.",
+                                                           "تضمين بيئة تشغيل خاصة للتثبيت."
+                                                       ],
+                                      "fixes":  [
+                                                    "فاحص بقايا مشترك لمراجعة الإزالة."
+                                                ]
+                                  }
+                       }
+    }
+]

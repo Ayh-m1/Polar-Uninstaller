@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <Version>1.0.144</Version>
+    <AssemblyVersion>$(Version).0</AssemblyVersion>
+    <FileVersion>$(Version).0</FileVersion>
+    <Product>Polar Uninstaller</Product>
+    <Company>Polar</Company>
+    <Authors>Polar</Authors>
+    <Title>Polar Uninstaller</Title>
+    <Description>Polar Uninstaller for Windows</Description>
+    <Copyright>Copyright Ac 2026 Polar</Copyright>
+  </PropertyGroup>
+</Project>
