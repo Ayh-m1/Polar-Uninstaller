@@ -12,16 +12,21 @@ namespace PolarUninstallerWpf;
 
 public partial class DeepUninstallerView : UserControl
 {
-    private readonly bool arabic;
+    private bool arabic;
+    private readonly LocalizedPresentation language = new();
+    private bool batchActive;
+    private CancellationTokenSource? batchCancellation;
+    private Task? monitorTask;
+    private BatchItemOutcome operationOutcome=BatchItemOutcome.Failed;
     private readonly ActivityLogService activity;
     private readonly ApplicationInventoryService inventory;
     private readonly SettingsService settingsService;
-    private readonly CancellationTokenSource cancellation = new();
+    private CancellationTokenSource cancellation = new();
     private CancellationTokenSource sizeCancellation = new();
     private string deepSort = "name";
     private ICollectionView? view;
     private bool busy;
-    public bool IsOperationActive => busy;
+    public bool IsOperationActive => busy||batchActive;
     private static readonly SemaphoreSlim Operation = new(1, 1);
     private CancellationTokenSource? directCancellation;
     private CancellationTokenSource? monitorCancellation;
@@ -32,47 +37,78 @@ public partial class DeepUninstallerView : UserControl
     private RemovalPlan? advancedPlan;
     private RemovalPlan? officialPlan;
     private HashSet<string>? advancedScope;
-    private bool refreshingInventory;
+    private bool refreshingInventory;private int scanGeneration;
     private UninstallReport? lastDirectReport;
     private readonly UninstallHistoryService history = new();
-    private string L(string en, string ar) => arabic ? ar : en;
+    private string L(string en, string ar) => BidiText.Localize(arabic,en,ar);
 
     public DeepUninstallerView(bool arabic, ActivityLogService activity, ApplicationInventoryService inventory, SettingsService? settingsService=null)
     {
         this.arabic = arabic; this.activity = activity; this.inventory = inventory;
         this.settingsService=settingsService??new SettingsService();
-        InitializeComponent();
+        InitializeComponent();UiPerformanceProbe.Attach(this);
+        language.Refresh(arabic);
         FlowDirection = arabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
         deepSort = this.settingsService.Load().DeepUninstallerSort ?? "name";
         ConfigureSortSelector();
-        Heading.Text = L("Deep Uninstaller", "الإزالة العميقة"); RefreshButton.Content = L("Refresh", "تحديث");
-        Search.ToolTip = L("Search installed applications", "البحث في البرامج المثبتة");
-        Games.Content = L("Games Uninstall", "إزالة الألعاب"); Deep.Content = L("Deep Uninstall", "الإزالة العميقة");
-        SteamDb.Content = L("Open in SteamDB", "فتح في SteamDB");
+        InitializeSelectionControls();
+        language.Set(Heading,TextBlock.TextProperty, lang => BidiText.Localize(lang,"Deep Uninstaller", "الإزالة العميقة")); language.Set(RefreshButton,ContentControl.ContentProperty, lang => BidiText.Localize(lang,"Refresh", "تحديث"));
+        language.Set(Search,ToolTipProperty, lang => BidiText.Localize(lang,"Search installed applications", "البحث في البرامج المثبتة"));
+        language.Set(Games,ContentControl.ContentProperty, lang => BidiText.Localize(lang,"Games Uninstall", "إزالة الألعاب")); language.Set(Deep,ContentControl.ContentProperty, lang => BidiText.Localize(lang,"Deep Uninstall", "الإزالة العميقة"));
+        language.Set(SteamDb,ContentControl.ContentProperty, lang => BidiText.Localize(lang,"Open in SteamDB", "فتح في SteamDB"));
         Deep.Click += DeepClick;
-        cancelRemoval.Content=L("Cancel removal","إلغاء الإزالة");cancelRemoval.Style=(Style)Application.Current.Resources["ChromeButton"];cancelRemoval.Visibility=Visibility.Collapsed;
-        cancelRemoval.Click+=(_,_)=>{ if(monitorCancellation!=null)CancelMonitoring(); else directCancellation?.Cancel(); };
+        language.Set(cancelRemoval,ContentControl.ContentProperty, lang => BidiText.Localize(lang,"Cancel removal","إلغاء الإزالة"));cancelRemoval.Style=(Style)Application.Current.Resources["ChromeButton"];cancelRemoval.Visibility=Visibility.Collapsed;
+        cancelRemoval.Click+=(_,_)=>{batchCancellation?.Cancel(); if(monitorCancellation!=null)CancelMonitoring(); directCancellation?.Cancel();};
         DockPanel.SetDock(cancelRemoval,Dock.Right);((DockPanel)Deep.Parent).Children.Insert(0,cancelRemoval);
-advancedDeepRemoval.Content=L("Advanced Deep Removal","الإزالة العميقة المتقدمة");advancedDeepRemoval.Style=Deep.Style;advancedDeepRemoval.Margin=new Thickness(0,0,8,0);advancedDeepRemoval.Visibility=Visibility.Collapsed;
-advancedDeepRemoval.Click+=async(_,_)=>await AdvancedDeepRemovalAsync();
+language.Set(advancedDeepRemoval,ContentControl.ContentProperty, lang => BidiText.Localize(lang,"Advanced Deep Removal","الإزالة العميقة المتقدمة"));advancedDeepRemoval.Style=Deep.Style;advancedDeepRemoval.Margin=new Thickness(0,0,8,0);advancedDeepRemoval.Visibility=Visibility.Collapsed;
+advancedDeepRemoval.Click+=async(_,_)=>await RunRemovalActionAsync(AdvancedDeepRemovalAsync);
 DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Children.Insert(0,advancedDeepRemoval);
-        Loaded += async (_, _) => await Refresh();
+        Loaded += async (_, _) => {ResetLifetime();await Refresh();};
         Unloaded += (_, _) => { cancellation.Cancel(); sizeCancellation.Cancel(); monitorCancellation?.Cancel(); directCancellation?.Cancel(); };
     }
+    public void SetLanguage(bool value)
+    {
+        arabic=value;
+        FlowDirection=value?FlowDirection.RightToLeft:FlowDirection.LeftToRight;
+        language.Refresh(value);
+        ConfigureSortSelector();
+        if(kindSelector!=null)
+        {
+            // Replace the display labels without changing the selected filter.
+            int selected = kindFilter switch { "programs" => 1, "games" => 2, _ => 0 };
+            updatingKindLanguage = true;
+            try
+            {
+                kindSelector.Items.Clear();
+                foreach (string label in new[]{ L("All","الكل"), L("Programs","البرامج"), L("Games","الألعاب") })
+                    kindSelector.Items.Add(label);
+                kindSelector.SelectedIndex = selected;
+                kindSelector.ToolTip = L("Filter applications","تصفية البرامج");
+            }
+            finally { updatingKindLanguage = false; }
+        }
+        if (List.ItemsSource is not IEnumerable<ProgramCard> cards) return;
+        foreach (var card in cards) card.SetLanguage(value);
+
+    }
+
+    private bool updatingKindLanguage;
+    private void SetStatus(Func<bool,string> text) => language.Set(Status,TextBlock.TextProperty,text);
+    private void ResetLifetime(){if(cancellation.IsCancellationRequested){cancellation.Dispose();cancellation=new();scanGeneration++;refreshingInventory=false;}}
     private async void RefreshClick(object sender, RoutedEventArgs e) => await Refresh();
-    private bool FilterCard(object value) => value is ProgramCard card && (card.Name.Contains(Search.Text, StringComparison.CurrentCultureIgnoreCase) || card.Details.Contains(Search.Text, StringComparison.CurrentCultureIgnoreCase));
+    private bool FilterCard(object value) => value is ProgramCard card && (kindFilter=="all"||kindFilter=="games"&&IsGame(card.Program)||kindFilter=="programs"&&!IsGame(card.Program)) && (card.Name.Contains(Search.Text, StringComparison.CurrentCultureIgnoreCase) || card.Details.Contains(Search.Text, StringComparison.CurrentCultureIgnoreCase));
     private async Task Refresh()
     {
-        if(refreshingInventory)return;
-        refreshingInventory = true;
+        if(refreshingInventory||busy||batchActive)return;
+        refreshingInventory = true;int request=++scanGeneration;var scanToken=cancellation.Token;
         sizeCancellation.Cancel();
         sizeCancellation = new CancellationTokenSource();
-        RefreshButton.IsEnabled = false; Status.Text = L("Scanning…", "جارٍ الفحص…"); activity.Write("INFO", "Application and launcher scan started.");
+        RefreshButton.IsEnabled = false; language.Text(Status,"Scanning…","جارٍ الفحص…"); activity.Write("INFO",L("Application and launcher scan started.","بدأ فحص البرامج والألعاب."));
         try
         {
-            var previous = InventorySnapshotService.Load();
-            var snapshot = await inventory.RefreshAsync(cancellation.Token);
-            if (cancellation.IsCancellationRequested || !inventory.IsCurrent(snapshot)) return;
+            var previous = await Task.Run(()=>InventorySnapshotService.Load(),scanToken);
+            var snapshot = await inventory.RefreshAsync(scanToken);
+            if (scanToken.IsCancellationRequested || request!=scanGeneration || !inventory.IsCurrent(snapshot)) return;
 
             // Only compare inventories when the new scan is complete enough to
             // be trusted. A failed registry/launcher read must never look like a
@@ -82,13 +118,12 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
             else if (previous.Count > 0)
                 activity.Write("WARNING", "Application scan was incomplete; external removals were not evaluated.");
 
-            var selected = (List.SelectedItem as ProgramCard)?.Program;
+            if(scanToken.IsCancellationRequested||request!=scanGeneration)return;
+            var selected = List.SelectedItems.Cast<ProgramCard>().Select(c=>c.Program).ToArray();
+            // One INFO summary per scan plus one line per failed icon; lazy rows are
+            // counted as pending, never as a permanent failure.
+            IconDiagnostics.Begin(snapshot.Programs, activity);
             var result = snapshot.Programs.Select(item => new ProgramCard(item, arabic)).ToList();
-            foreach (var card in result)
-            {
-                var cached = ApplicationIconResolver.TryLoadCached(card.Program);
-                if (cached is not null) card.SetIcon(cached);
-            }
             List.ItemsSource = result; view = CollectionViewSource.GetDefaultView(result);
             view.Filter = FilterCard;
             ApplyDeepSort(result);
@@ -100,7 +135,7 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
             {
                 if (card.Program.SizeKb.HasValue && card.Program.SizeKb.Value > 0) continue;
                 string key = ApplicationSizeService.NormalizeKey(card.Program.Location);
-                if (key.Length == 0 || !Directory.Exists(key)) continue;
+                if (key.Length == 0) continue;
                 if (ApplicationSizeService.TryGetCached(card.Program.Location, out long? cached))
                 {
                     card.UpdateSize(cached.HasValue ? cached.Value / 1024 : null);
@@ -112,9 +147,10 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
                 _ = Task.Run(async () =>
                 {
                     long? measured = null;
-                    try { measured = await ApplicationSizeService.MeasureAsync(capturedLocation, sizeToken); }
+                    try { if(Directory.Exists(capturedLocation))measured = await ApplicationSizeService.MeasureAsync(capturedLocation, sizeToken); }
                     catch (OperationCanceledException) { return; }
                     if (sizeToken.IsCancellationRequested) return;
+                    if(Dispatcher.HasShutdownStarted)return;
                     await Dispatcher.InvokeAsync(() =>
                     {
                         if (sizeToken.IsCancellationRequested) return;
@@ -122,22 +158,22 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
                     });
                 }, sizeToken);
             }
-            if (selected != null) List.SelectedItem = result.FirstOrDefault(x => InventoryMerger.NormalizePath(selected.Location) is string p && p.Length > 0 && string.Equals(p, InventoryMerger.NormalizePath(x.Program.Location), StringComparison.OrdinalIgnoreCase) || selected.Identifier.Length > 0 && selected.Identifier == x.Program.Identifier && (string.IsNullOrWhiteSpace(selected.Location) || string.IsNullOrWhiteSpace(x.Program.Location) || string.Equals(InventoryMerger.NormalizePath(selected.Location), InventoryMerger.NormalizePath(x.Program.Location), StringComparison.OrdinalIgnoreCase)));
+            foreach(var card in result)if(selected.Any(p=>SameSelection(p,card.Program)))List.SelectedItems.Add(card);
             // The count is the authoritative unfiltered inventory total. The
             // search box only filters the visible collection view below.
-            CountText.Text = snapshot.IsComplete ? L($"{snapshot.Count} items", $"{snapshot.Count} عنصر") : "—";
-            Status.Text = snapshot.IsComplete
-                ? L("Select an item to view available actions.", "اختر عنصرًا لعرض الإجراءات المتاحة.")
-                : L("Scan incomplete; showing partial results.", "الفحص غير مكتمل؛ تُعرض نتائج جزئية.");
-            activity.Write(snapshot.IsComplete ? "SUCCESS" : "WARNING", $"Application scan completed: {snapshot.Count} entries; complete={snapshot.IsComplete}.");
+            language.Set(CountText,TextBlock.TextProperty,lang=>snapshot.IsComplete ? BidiText.Localize(lang,$"{snapshot.Count} items",$"العناصر: {snapshot.Count}") : "—");
+            SetStatus(lang=>snapshot.IsComplete
+                ? BidiText.Localize(lang,"Select an item to view available actions.", "اختر عنصرًا لعرض الإجراءات المتاحة.")
+                : BidiText.Localize(lang,"Scan incomplete; showing partial results.", "الفحص غير مكتمل؛ تُعرض نتائج جزئية."));
+            activity.Write(snapshot.IsComplete ? "INFO" : "WARNING",L($"Application scan completed: {snapshot.Count} entries.","اكتمل فحص البرامج. العناصر: "+DisplayFormat.Isolate(DisplayFormat.Number(snapshot.Count))));
 
             // Preserve the previous snapshot when this scan was incomplete so the
             // next successful scan can still evaluate removals correctly.
-            if (snapshot.IsComplete) InventorySnapshotService.Save(null, snapshot.Programs);
+            if (snapshot.IsComplete) await Task.Run(()=>InventorySnapshotService.Save(null,snapshot.Programs));
         }
         catch (OperationCanceledException) { activity.Write("INFO", "Application scan cancelled."); }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or ArgumentException) { Status.Text = L("Scanning failed.", "تعذر الفحص."); activity.Write("WARNING", "Application scan failed."); }
-        finally { refreshingInventory=false; UpdateActions(); }
+        catch (Exception ex) { language.Text(Status,"Could not load applications. Refresh and check access permissions.","تعذر تحميل البرامج. حدّث القائمة وتحقق من صلاحيات الوصول."); activity.Write("ERROR",Status.Text);CrashDiagnostics.Record("Inventory refresh",ex); }
+        finally { if(request==scanGeneration){refreshingInventory=false; UpdateActions();} }
     }
 
     /// <summary>
@@ -221,26 +257,28 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
         if (await history.RecordAsync(capture))
             activity.Write("INFO", "Recorded external removal: " + item.Name);
     }
-    private void SearchChanged(object sender, TextChangedEventArgs e) => view?.Refresh();
+    private void SearchChanged(object sender, TextChangedEventArgs e) => RefreshFilter();
 
     private void ConfigureSortSelector()
     {
+        updatingSortLanguage=true;
         SortSelector.Items.Clear();
         SortSelector.Items.Add(L("Name (A–Z)", "الاسم (أ–ي)"));
         SortSelector.Items.Add(L("Largest First", "الأكبر حجمًا أولًا"));
         SortSelector.Items.Add(L("Smallest First", "الأصغر حجمًا أولًا"));
         SortSelector.SelectedIndex = deepSort switch { "sizeDesc" => 1, "sizeAsc" => 2, _ => 0 };
+        updatingSortLanguage=false;
     }
 
+    private bool updatingSortLanguage;
     private void SortChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (SortSelector.SelectedIndex < 0) return;
+        if (updatingSortLanguage || SortSelector.SelectedIndex < 0) return;
         deepSort = SortSelector.SelectedIndex switch { 1 => "sizeDesc", 2 => "sizeAsc", _ => "name" };
         try
         {
             var current = settingsService.Load();
-            settingsService.Save(new AppSettings(current.Theme, current.Arabic, current.SidebarCollapsed,
-                current.CleanerCategories, deepSort, current.FileBrowserSort, current.FileBrowserSortDirection));
+            settingsService.Save(current with{DeepUninstallerSort=deepSort});
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { }
         if (List.ItemsSource is IEnumerable<ProgramCard> cards) ApplyDeepSort(cards.ToList());
@@ -252,8 +290,8 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
         {
             if (deepSort == "sizeDesc" || deepSort == "sizeAsc")
             {
-                bool aKnown = a.Program.SizeKb.HasValue;
-                bool bKnown = b.Program.SizeKb.HasValue;
+                bool aKnown = a.MeasuredSizeKb.HasValue;
+                bool bKnown = b.MeasuredSizeKb.HasValue;
                 if (!aKnown && !bKnown) return string.Compare(a.Name, b.Name, StringComparison.CurrentCultureIgnoreCase);
                 if (!aKnown) return 1;
                 if (!bKnown) return -1;
@@ -263,7 +301,9 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
             }
             return string.Compare(a.Name, b.Name, StringComparison.CurrentCultureIgnoreCase);
         });
+        var selected=List.SelectedItems.Cast<ProgramCard>().Select(c=>c.Program).ToArray();
         List.ItemsSource = cards;
+        foreach(var card in cards)if(selected.Any(p=>SameSelection(p,card.Program)))List.SelectedItems.Add(card);
         view = CollectionViewSource.GetDefaultView(cards);
         view.Filter = FilterCard;
         view.Refresh();
@@ -292,12 +332,14 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
         Games.IsEnabled=Deep.IsEnabled=false;
         ToolTipService.SetShowOnDisabled(Games,true);ToolTipService.SetShowOnDisabled(Deep,true);
         SelectedDetails.Text="";SteamDb.Visibility=Visibility.Collapsed;selectionDecision=null;
-        if(card==null||busy||refreshingInventory||monitorCancellation!=null)return;
+        SelectedDetails.Text=L("Selected: ","المحدد: ")+DisplayFormat.Isolate(DisplayFormat.Number(List.SelectedItems.Count));
+        if(card==null||busy||batchActive||refreshingInventory||monitorCancellation!=null)return;
+        if(List.SelectedItems.Count>1){await EvaluateBatchActionsAsync(revision);return;}
         var records=(List.ItemsSource as IEnumerable<ProgramCard>??Array.Empty<ProgramCard>()).Select(c=>c.Program).ToArray();
         try
         {
             var decision=await Task.Run(()=>SmartUninstallSelectionService.Evaluate(card.Program,records),cancellation.Token);
-            if(revision!=selectionRevision||busy||refreshingInventory||cancellation.IsCancellationRequested||!ReferenceEquals(List.SelectedItem,card))return;
+            if(revision!=selectionRevision||busy||batchActive||refreshingInventory||cancellation.IsCancellationRequested||!ReferenceEquals(List.SelectedItem,card))return;
             selectionDecision=decision;
             Games.IsEnabled=decision.GamesEnabled&&!advancedRelevant;
             Deep.IsEnabled=decision.DeepEnabled&&!advancedRelevant;
@@ -305,30 +347,31 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
             Games.ToolTip=decision.Tooltip(UninstallMethod.Games,arabic);
             Deep.ToolTip=decision.Tooltip(UninstallMethod.Deep,arabic);
 
-            if(e?.AddedItems.Count>0)Status.Text=decision.Explanation(arabic);
+            if(e?.AddedItems.Count>0)SetStatus(decision.Explanation);
             if(IsVerifiedSteamGame(card.Program))
             {
-                SelectedDetails.Text=L("Steam App ID: ","معرف Steam App ID: ")+card.Program.Identifier[6..];SteamDb.Visibility=Visibility.Visible;
+                SelectedDetails.Text=L("Steam App ID: ","معرف Steam App ID: ")+DisplayFormat.Isolate(card.Program.Identifier[6..]);SteamDb.Visibility=Visibility.Visible;
             }
         }
         catch(OperationCanceledException){ }
-        catch(Exception ex)when(LauncherMetadataDiscovery.ReadFailure(ex))
+        catch(Exception ex)
         {
             if(revision!=selectionRevision)return;
-            Status.Text=L("Removal capabilities could not be verified. Refresh the inventory.","تعذر التحقق من طرق الإزالة. حدّث قائمة البرامج.");
+            language.Text(Status,"Removal capabilities could not be verified. Refresh the inventory.","تعذر التحقق من طرق الإزالة. حدّث قائمة البرامج.");
             activity.Write("WARNING","Smart uninstall selection failed: "+ex.GetType().Name);
+            CrashDiagnostics.Record("Removal selection",ex);
         }
     }
     private async void DeepClick(object sender,RoutedEventArgs e)
     {
         if(!Deep.IsEnabled)return;
-        await Uninstall(true);
+        await UninstallSelectionAsync(true);
     }
     private async Task AdvancedDeepRemovalAsync()
     {
         if(busy||monitorCancellation!=null||advancedCard is null||advancedPlan is null)return;
         if(!Operation.Wait(0))
-        {Status.Text=L("Another removal or its official uninstaller is still running. Close or finish it before recovery.","ما زالت إزالة أخرى أو مزيلها الرسمي قيد التشغيل. أكملها أو أغلقها قبل الاستعادة.");activity.Write("INFO",Status.Text);return;}
+        {language.Text(Status,"Another removal or its official uninstaller is still running. Close or finish it before recovery.","ما زالت إزالة أخرى أو مزيلها الرسمي قيد التشغيل. أكملها أو أغلقها قبل الاستعادة.");activity.Write("INFO",Status.Text);return;}
         if(List.SelectedItem is ProgramCard selected&&!UninstallVerificationService.Matches(selected.Program,advancedCard.Program))
         {Operation.Release();return;}
         await RunDirectPassAsync(advancedCard, advancedPlan);
@@ -337,8 +380,8 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
     private async Task RunDirectPassAsync(ProgramCard card,RemovalPlan? retry,RemovalPlan? preparedPlan=null,IReadOnlyList<InstalledProgram>? preparedInventory=null,bool failedOfficialFallback=false)
     {
         busy=true; UpdateActions();
-        using var cts=new CancellationTokenSource();directCancellation=cts;
-        cancelRemoval.Content=L("Cancel removal","إلغاء الإزالة");cancelRemoval.Visibility=Visibility.Visible;
+        using var cts=CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token,batchCancellation?.Token??CancellationToken.None);directCancellation=cts;
+        language.Set(cancelRemoval,ContentControl.ContentProperty, lang => BidiText.Localize(lang,"Cancel removal","إلغاء الإزالة"));cancelRemoval.Visibility=Visibility.Visible;
         RemovalPlan? plan=retry??preparedPlan;
         try
         {
@@ -346,19 +389,16 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
             if(retry==null)
             {
                 var decision=await Task.Run(()=>SmartUninstallSelectionService.Evaluate(card.Program,current),cts.Token);
-                if(!decision.DeepEnabled||(decision.UsesOfficialUninstaller&&!failedOfficialFallback)){Status.Text=decision.Explanation(arabic);return;}
+                if(!decision.DeepEnabled||(decision.UsesOfficialUninstaller&&!failedOfficialFallback)){SetStatus(decision.Explanation);return;}
             }
             var engine=new RemovalEngine();
             if(plan==null)
             {
                 // Planning is read-only. Capture every identity before the first deletion.
-                Status.Text=L("Preparing verified removal plan…","جارٍ تجهيز خطة الإزالة المتحقق منها…");
+                language.Text(Status,"Preparing verified removal plan…","جارٍ تجهيز خطة الإزالة المتحقق منها…");
                 var snapshot=await new SharedLeftoverScanner().CaptureAsync(card.Program,cts.Token);
                 plan=await engine.PlanAsync(snapshot,current,true,cts.Token);
-                var prompt=L("Permanently remove the verified application-owned resources without running its uninstaller?\n\n",
-                    "إزالة موارد البرنامج المتحقق منها نهائيًا دون تشغيل مزيله؟\n\n")+card.Name+"\n"+plan.Root+
-                    L($"\nPlanned installation files: {plan.Files.Count:N0}","\nملفات التثبيت المخطط حذفها: "+plan.Files.Count.ToString("N0"));
-                if(MessageBox.Show(Window.GetWindow(this),prompt,"Polar Uninstaller",MessageBoxButton.YesNo,MessageBoxImage.Warning)!=MessageBoxResult.Yes)return;
+
             }
             HashSet<string>? authorizedCleanup=null;
             if(retry!=null)
@@ -400,10 +440,10 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
                         }
                 }
             }
-            cancelRemoval.Content=L("Cancel removal","إلغاء الإزالة");cancelRemoval.Visibility=Visibility.Visible;
-            Status.Text=L("Removing verified resources…","جارٍ إزالة الموارد المتحقق منها…");
+            language.Set(cancelRemoval,ContentControl.ContentProperty, lang => BidiText.Localize(lang,"Cancel removal","إلغاء الإزالة"));cancelRemoval.Visibility=Visibility.Visible;
+            language.Text(Status,"Removing verified resources…","جارٍ إزالة الموارد المتحقق منها…");
             activity.Write("INFO",L("Removal plan: ","خطة الإزالة: ")+card.Name+" · "+card.Program.Publisher+" · "+(plan.Root??card.Program.Location));
-            var progress=new Progress<string>(n=>Status.Text=L("Removed files: ","الملفات المحذوفة: ")+n);
+            var progress=new Progress<string>(n=>SetStatus(lang => BidiText.Localize(lang,"Removed files: ","الملفات المحذوفة: ") + DisplayFormat.Directional(n,lang)));
             var pass=await engine.ExecuteAsync(plan,current,progress,cts.Token,authorizedCleanup);
             await Task.Run(()=>
             {
@@ -414,20 +454,20 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
         }
         catch(OperationCanceledException)
         {
-            Status.Text=L("Removal cancelled. Completed deletions cannot be undone.","أُلغيت الإزالة. لا يمكن التراجع عن العناصر المحذوفة.");
+            language.Text(Status,"Removal cancelled. Completed deletions cannot be undone.","أُلغيت الإزالة. لا يمكن التراجع عن العناصر المحذوفة.");
             activity.Write("WARNING",Status.Text);
             if(plan!=null)await RetainEligibleContextAsync(card,plan);
         }
         catch(Exception ex)when(RemovalEngine.IsItemError(ex)||ex is Win32Exception)
         {
-            Status.Text=L("Removal could not be completed. Review the Activity Log.","تعذر إكمال الإزالة. راجع سجل النشاط.");
+            language.Text(Status,"Removal could not be completed. Review the Activity Log.","تعذر إكمال الإزالة. راجع سجل النشاط.");
             activity.Write("ERROR",LocalizeRemovalMessage(RemovalEngine.Reason(ex)));
             if(plan!=null)await RetainEligibleContextAsync(card,plan);
         }
         finally
         {
             directCancellation=null;cancelRemoval.Visibility=Visibility.Collapsed;busy=false;Operation.Release();
-            RefreshButton.IsEnabled=List.IsEnabled=true;UpdateActions();
+            UpdateActions();
         }
     }
 
@@ -469,19 +509,20 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
         var report=UninstallReportService.FromProbe(card.Program,probe,pass.Cleanup,
             "Unified verified direct removal",verification.Incomplete||pass.Plan.Notes.Count>0);
         lastDirectReport=report;
-        foreach(var line in report.LogLines(arabic))activity.Write(report.Severity,line);
+        WriteReport(report);
         // The final inventory was already read above. Preserve the current
         // rows/context; RemoveCard publishes a verified removal and refreshes
         // the shared inventory without rebuilding this page a second time.
         bool gone=!verification.Incomplete&&probe.Confirmed&&!executable;
         if(gone)
         {
-            RemoveCard(card);
+            operationOutcome=BatchItemOutcome.Succeeded;
+            RemoveCard(card,pass.Plan.Snapshot.Executables);
             if(capture!=null)await RecordHistoryAsync(card,capture);
         }
         var remaining=await new RemovalEngine().InspectAsync(pass.Plan,current,token);
         SetAdvancedContext(card,pass.Plan,remaining.Count>0,remaining);
-        Status.Text=report.Summary(arabic);
+        SetStatus(report.Summary);
     }
 
     private string LocalizeRemovalMessage(string message)=>!arabic?message:
@@ -494,7 +535,9 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
     private void UpdateActions()
     {
         SelectionChanged(this,null!);
-        List.IsEnabled=!busy;RefreshButton.IsEnabled=!busy&&!refreshingInventory;
+        List.IsEnabled=!busy&&!batchActive;RefreshButton.IsEnabled=!busy&&!batchActive&&!refreshingInventory;
+        Search.IsEnabled=SortSelector.IsEnabled=!busy&&!batchActive;
+        if(kindSelector!=null)kindSelector.IsEnabled=!busy&&!batchActive;
     }
 
     private void SteamDbClick(object sender, RoutedEventArgs e)
@@ -507,7 +550,7 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
     }
 
     private async void GamesClick(object sender, RoutedEventArgs e)
-        => await Uninstall(false);
+        => await UninstallSelectionAsync(false);
 
     // --- Automatic uninstall completion monitoring -------------------------
     // The Verify / Rescan button has been removed. Completion is detected in
@@ -515,13 +558,13 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
     // installation folders. Opening a launcher never counts as success.
     private void StartMonitoring(ProgramCard card, UninstallSnapshot? snapshot, UninstallHistoryCapture? historyCapture, bool ownsOperation=false)
     {
-        if(!ownsOperation&&!Operation.Wait(0)){Status.Text=L("Another removal is running; monitoring was not started.","توجد إزالة أخرى جارية؛ لم تبدأ المراقبة.");return;}
+        if(!ownsOperation&&!Operation.Wait(0)){language.Text(Status,"Another removal is running; monitoring was not started.","توجد إزالة أخرى جارية؛ لم تبدأ المراقبة.");return;}
         var cts = new CancellationTokenSource();
         monitorCancellation = cts;
         busy=true;UpdateActions();
-        cancelRemoval.Content = L("Cancel monitoring", "إلغاء المراقبة");
+        language.Set(cancelRemoval,ContentControl.ContentProperty, lang => BidiText.Localize(lang,"Cancel monitoring", "إلغاء المراقبة"));
         cancelRemoval.Visibility = Visibility.Visible;
-        _ = MonitorRemovalAsync(card, snapshot, historyCapture, cts);
+        monitorTask = MonitorRemovalAsync(card, snapshot, historyCapture, cts);
     }
 
     private void StopMonitoring()
@@ -536,7 +579,7 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
         if (monitorCancellation == null) return;
         monitorCancellation.Cancel();
         cancelRemoval.Visibility = Visibility.Collapsed;
-        Status.Text = L("Monitoring cancelled. The game remains listed.", "أُلغيت المراقبة. تبقى اللعبة في القائمة.");
+        language.Text(Status,"Monitoring stopped. The application remains listed; its uninstaller may still be running.","توقفت المراقبة. يبقى البرنامج في القائمة، وقد يظل مزيله قيد التشغيل.");
         activity.Write("INFO", "Removal monitoring cancelled by the user.");
     }
 
@@ -547,7 +590,7 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
         var attempt = 0;
         try
         {
-            Status.Text = L("Waiting for the official uninstaller to finish…", "بانتظار انتهاء مزيل التثبيت الرسمي…");
+            language.Text(Status,"Waiting for the official uninstaller to finish…","بانتظار انتهاء مزيل التثبيت الرسمي…");
             activity.Write("INFO", "Automatic removal monitoring started: " + card.Program.Name);
             while (!token.IsCancellationRequested)
             {
@@ -558,19 +601,19 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
                 if(officialProcessExit is {IsCompleted:false})
                     probe=probe with{Confirmed=false,Detail="The launched official uninstaller process is still running."};
                 if (token.IsCancellationRequested) return;
-                if (UninstallHistoryService.ShouldRecordMonitored(probe) || expired)
+                if (UninstallHistoryService.ShouldRecordMonitored(probe) || expired || officialProcessExit?.IsCompletedSuccessfully==true)
                 {
                     await CompleteRemovalAsync(card, probe, historyCapture, snapshot, token);
                     return;
                 }
-                Status.Text = L("Checking removal progress… ", "جارٍ التحقق من تقدم الإزالة… ") + LocalizeProbe(probe);
+                SetStatus(lang => BidiText.Localize(lang,"Checking removal progress… ", "جارٍ التحقق من تقدم الإزالة… ") + LocalizeProbe(probe,lang));
             }
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or ArgumentException or InvalidOperationException)
         {
-            Status.Text = L("Unable to confirm removal. The game remains listed.", "تعذر تأكيد الإزالة. تبقى اللعبة في القائمة.");
-            activity.Write("WARNING", "Removal monitoring stopped: " + ex.GetType().Name);
+            language.Text(Status,"Unable to confirm removal. The application remains listed. Refresh after its uninstaller closes.","تعذر تأكيد الإزالة. يبقى البرنامج في القائمة. حدّثها بعد إغلاق مزيله.");
+            activity.Write("WARNING",Status.Text);CrashDiagnostics.Record("Removal monitoring",ex);
         }
         finally
         {
@@ -584,16 +627,16 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
         }
     }
 
-    private string LocalizeProbe(RemovalProbe probe) => !arabic
+    private string LocalizeProbe(RemovalProbe probe, bool? languageOverride=null) => !(languageOverride ?? arabic)
         ? probe.Detail
         : probe.Detail.StartsWith("Probe error:",StringComparison.Ordinal)
             ? "تعذر قراءة بيانات التثبيت؛ لم يمكن تأكيد الإزالة."
         : probe.Detail=="The launched official uninstaller process is still running."
             ? "ما زال مزيل التثبيت الرسمي الذي بدأه Polar قيد التشغيل."
         : probe.LauncherRecordPresent
-            ? "ما زال اللانشر يسجل اللعبة."
+            ? "ما زال سجل التثبيت المحدد موجودًا."
             : probe.InstallationFolderPresent
-                ? "أُزيل تسجيل اللانشر وما زال مجلد اللعبة موجودًا."
+                ? "أُزيل سجل التثبيت، وما زالت بعض ملفات البرنامج موجودة."
                 : "ما زال التحقق جاريًا.";
 
     /// <summary>
@@ -605,12 +648,12 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
     {
         if(original==null)
         {
-            Status.Text=L("Removal verification is incomplete: no original identity was captured.","التحقق غير مكتمل: لم تُحفظ هوية التثبيت الأصلية.");activity.Write("WARNING",Status.Text);return;
+            language.Text(Status,"Removal verification is incomplete: no original identity was captured.","التحقق غير مكتمل: لم تُحفظ هوية التثبيت الأصلية.");activity.Write("WARNING",Status.Text);return;
         }
         RemovalPlan? plan=officialPlan;
         try
         {
-            Status.Text=L("Verifying removal…","جارٍ التحقق من الإزالة…");
+            language.Text(Status,"Verifying removal…","جارٍ التحقق من الإزالة…");
             var current=await ReadRemovalInventoryAsync(token);
             if(probe.Confirmed)probe=await Task.Run(()=>UninstallMonitorService.Probe(card.Program,original),token);
             string originalRoot=InventoryMerger.NormalizePath(original.Program.Location);
@@ -621,47 +664,48 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
             if(!probe.Confirmed)
             {
                 var incomplete=UninstallReportService.FromProbe(card.Program,probe,null,probe.Detail,true);
-                foreach(var line in incomplete.LogLines(arabic))activity.Write(incomplete.Severity,line);
+                WriteReport(incomplete);
                 // Recovery is read-only until the explicit Advanced action. A
                 // managed/game root that cannot pass direct validation stays blocked.
                 if(plan.Root!=null)await RetainEligibleContextAsync(card,plan);
-                Status.Text=incomplete.Summary(arabic)+" · "+LocalizeProbe(probe);return;
+                SetStatus(lang=>incomplete.Summary(lang)+" · "+LocalizeProbe(probe,lang));return;
             }
-            Status.Text=L("Scanning eligible leftovers…","جارٍ فحص البقايا المؤهلة…");
+            language.Text(Status,"Scanning eligible leftovers…","جارٍ فحص البقايا المؤهلة…");
             activity.Write("INFO",L("Verified main removal; starting authorized leftover cleanup: ","تأكدت إزالة البرنامج الأساسي؛ يبدأ تنظيف البقايا المصرح به: ")+card.Name);
-            var progress=new Progress<string>(count=>Status.Text=L("Cleaning verified leftovers… ","جارٍ تنظيف البقايا المتحقق منها… ")+count);
-            Status.Text=L("Cleaning verified leftovers…","جارٍ تنظيف البقايا المتحقق منها…");
+            var progress=new Progress<string>(count=>SetStatus(lang => BidiText.Localize(lang,"Cleaning verified leftovers… ","جارٍ تنظيف البقايا المتحقق منها… ") + DisplayFormat.Directional(count,lang)));
+            language.Text(Status,"Cleaning verified leftovers…","جارٍ تنظيف البقايا المتحقق منها…");
             var pass=await new RemovalEngine().ExecuteAsync(plan,current,progress,token);
             foreach(var message in pass.Cleanup.Messages)activity.Write(message.StartsWith("Removed",StringComparison.Ordinal)?"INFO":"WARNING",LocalizeRemovalMessage(message));
-            Status.Text=L("Final verification…","جارٍ التحقق النهائي…");
+            language.Text(Status,"Final verification…","جارٍ التحقق النهائي…");
             current=await ReadRemovalInventoryAsync(token);
             var finalProbe=await Task.Run(()=>UninstallMonitorService.Probe(card.Program,original),token);
             var report=UninstallReportService.FromProbe(card.Program,finalProbe,pass.Cleanup,finalProbe.Detail,plan.Notes.Count>0);
-            foreach(var line in report.LogLines(arabic))activity.Write(report.Severity,line);
+            WriteReport(report);
             if(finalProbe.Confirmed&&!finalProbe.MainExecutablePresent)
             {
-                RemoveCard(card);if(historyCapture!=null)await RecordHistoryAsync(card,historyCapture);
+                operationOutcome=BatchItemOutcome.Succeeded;
+                RemoveCard(card,original.Executables);if(historyCapture!=null)await RecordHistoryAsync(card,historyCapture);
             }
             // Changed/uncertain data is reported, but is not by itself authority
             // to offer a destructive retry. Locked verified targets remain eligible.
             bool recovery=pass.Remaining.Count>0||pass.Cleanup.FailedPaths.Count>0;
             SetAdvancedContext(card,plan,recovery,pass.Remaining);
             if(recovery)advancedDeepRemoval.ToolTip=L("Eligible resources remain after cleanup. Retry only the preserved verified scope: ","بقيت موارد مؤهلة بعد التنظيف. أعد المحاولة ضمن النطاق المتحقق منه المحفوظ: ")+card.Name;
-            Status.Text=report.Summary(arabic);
+            SetStatus(report.Summary);
         }
         catch(OperationCanceledException)
         {
             if(plan!=null)await RetainEligibleContextAsync(card,plan);
-            Status.Text=L("Cleanup cancelled. Completed deletions cannot be undone; personal data is preserved.","أُلغي التنظيف. لا يمكن التراجع عن المحذوف؛ البيانات الشخصية محفوظة.");activity.Write("WARNING",Status.Text);
+            language.Text(Status,"Cleanup cancelled. Completed deletions cannot be undone; personal data is preserved.","أُلغي التنظيف. لا يمكن التراجع عن المحذوف؛ البيانات الشخصية محفوظة.");activity.Write("WARNING",Status.Text);
         }
         catch(Exception ex)when(RemovalEngine.IsItemError(ex)||ex is Win32Exception)
         {
             if(plan!=null)await RetainEligibleContextAsync(card,plan);
-            Status.Text=L("Removal or cleanup verification is incomplete. Review the Activity Log; eligible recovery remains available.","التحقق من الإزالة أو التنظيف غير مكتمل. راجع سجل النشاط؛ تبقى الاستعادة المؤهلة متاحة.");activity.Write("WARNING",Status.Text+" · "+ex.GetType().Name);
+            language.Text(Status,"Removal or cleanup verification is incomplete. Review the Activity Log; eligible recovery remains available.","التحقق من الإزالة أو التنظيف غير مكتمل. راجع سجل النشاط؛ تبقى الاستعادة المؤهلة متاحة.");activity.Write("WARNING",Status.Text+" · "+ex.GetType().Name);
         }
         finally{officialPlan=null;}
     }
-    private void RemoveCard(ProgramCard card)
+    private void RemoveCard(ProgramCard card,IReadOnlyList<string>? capturedExecutables=null)
     {
         if (List.ItemsSource is IEnumerable<ProgramCard> source)
         {
@@ -674,8 +718,8 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
         }
         // Publish the verified removal to the shared inventory immediately so
         // the Home count reflects it, then confirm with a fresh authoritative scan.
-        inventory.NotifyRemoved(card.Program);
-        _ = inventory.RefreshAsync();
+        inventory.NotifyRemoved(card.Program,capturedExecutables);
+        _ = RefreshSharedInventoryAsync();
     }
 
     private async Task RecordHistoryAsync(ProgramCard card, UninstallHistoryCapture capture)
@@ -708,68 +752,65 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
         if (remaining.Length != snapshot.Count) InventorySnapshotService.Save(null, remaining);
     }
 
-    private async Task Uninstall(bool deep)
+    private async Task Uninstall(bool deep,ProgramCard? requested=null)
     {
-        if(busy||monitorCancellation!=null||List.SelectedItem is not ProgramCard card)return;
-        if(!Operation.Wait(0)){Status.Text=L("An uninstall operation is already running.","توجد عملية إزالة جارية بالفعل.");return;}
+        var card=requested??List.SelectedItem as ProgramCard;
+        if(busy||monitorCancellation!=null||card==null)return;
+        if(!Operation.Wait(0)){language.Text(Status,"An uninstall operation is already running.","توجد عملية إزالة جارية بالفعل.");return;}
+        using var preparation=CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token,batchCancellation?.Token??CancellationToken.None);
+        var token=preparation.Token;directCancellation=preparation;cancelRemoval.Visibility=Visibility.Visible;
+        operationOutcome=BatchItemOutcome.Failed;monitorTask=null;
         bool transferred=false,launchSucceeded=false;UninstallSnapshot? preparedSnapshot=null;busy=true;UpdateActions();
+        activity.Write("INFO",L("Starting removal: ","بدء الإزالة: ")+DisplayFormat.Isolate(card.Name));
         try
         {
-            Status.Text=L("Verifying uninstall capabilities…","جارٍ التحقق من طريقة الإزالة…");
-            var current=await ReadRemovalInventoryAsync(cancellation.Token);
-            var decision=await Task.Run(()=>SmartUninstallSelectionService.Evaluate(card.Program,current),cancellation.Token);
+            language.Text(Status,"Verifying uninstall capabilities…","جارٍ التحقق من طريقة الإزالة…");
+            var current=await ReadRemovalInventoryAsync(token);
+            var decision=await Task.Run(()=>SmartUninstallSelectionService.Evaluate(card.Program,current),token);
             if(decision.Method is not (UninstallMethod.Deep or UninstallMethod.Games))
-            {Status.Text=decision.Explanation(arabic);activity.Write("WARNING",Status.Text);return;}
+            {SetStatus(decision.Explanation);activity.Write("WARNING",Status.Text);return;}
             if(decision.GamesEnabled&&!current.Any(p=>UninstallVerificationService.Matches(p,card.Program)&&LeftoverService.EqualPath(p.Location,card.Program.Location)))
-            {Status.Text=L("Game installation evidence changed. Refresh before removing it.","تغيّرت بيانات تثبيت اللعبة. حدّث القائمة قبل إزالتها.");return;}
+            {language.Text(Status,"Game installation evidence changed. Refresh before removing it.","تغيّرت بيانات تثبيت اللعبة. حدّث القائمة قبل إزالتها.");return;}
             if(decision.UsesOfficialUninstaller&&!current.Any(p=>UninstallVerificationService.Matches(p,card.Program)&&string.Equals(p.Uninstall,card.Program.Uninstall,StringComparison.OrdinalIgnoreCase)))
-            {Status.Text=L("The installation registration changed. Refresh before removing it.","تغيّر سجل التثبيت. حدّث القائمة قبل الإزالة.");return;}
-            if(deep!=decision.DeepEnabled){Status.Text=decision.Explanation(arabic);return;}
+            {language.Text(Status,"The installation registration changed. Refresh before removing it.","تغيّر سجل التثبيت. حدّث القائمة قبل الإزالة.");return;}
+            if(deep!=decision.DeepEnabled){SetStatus(decision.Explanation);return;}
             var route=decision.GameRoute;
-            string detail=decision.Explanation(arabic);
-            if(RiotGameService.IsProtectedComponent(card.Program))
-                detail+=L("\nThis shared Riot component can affect other installed games.","\nقد تؤثر إزالة مكون Riot المشترك في ألعاب أخرى مثبتة.");
-            string prompt=L("Start the verified uninstall workflow for ","بدء الإزالة المتحقق منها لـ ")+card.Name+"?\n\n"+detail+
-                L("\n\nThis authorization includes removal and automatic cleanup of verified installation resources, temporary files, obsolete shortcuts and exact installation Registry entries. Personal settings, profiles, saves and documents are preserved. Windows and the uninstaller may still require confirmation.","\n\nيشمل هذا التأكيد الإزالة والتنظيف التلقائي لموارد التثبيت المتحقق منها والملفات المؤقتة والاختصارات القديمة وسجلات التثبيت المحددة. تُحفظ الإعدادات والملفات الشخصية والحفظ والمستندات. قد يطلب Windows أو المزيل تأكيدًا إضافيًا.");
-            if(route?.DirectEpic==true||(route?.CloseLauncher==true&&LauncherRemovalCoordinator.Supports(card.Program)))
-                prompt+=L("\n\nThis also authorizes closing the game launcher and, if it remains open, ending only its verified launcher processes before continuing automatically. Active launcher downloads may be interrupted. Steam and running games will not be terminated.","\n\nتشمل هذه الموافقة إغلاق لانشر اللعبة، وإن بقي مفتوحًا، إنهاء عملياته المتحقق منها فقط ثم متابعة الحذف تلقائيًا دون تأكيد آخر. قد تتوقف تنزيلات اللانشر الجارية. لن يُنهى Steam أو الألعاب قيد التشغيل.");
-            if(MessageBox.Show(Window.GetWindow(this),prompt,"Polar Uninstaller",MessageBoxButton.YesNo,MessageBoxImage.Question)!=MessageBoxResult.Yes)return;
-            Status.Text=L("Preparing removal and authorized cleanup scope…","جارٍ تجهيز الإزالة ونطاق التنظيف المصرح به…");
+            language.Text(Status,"Preparing removal and authorized cleanup scope…","جارٍ تجهيز الإزالة ونطاق التنظيف المصرح به…");
             if(route?.CloseLauncher==true&&LauncherRemovalCoordinator.Supports(card.Program))
             {
-                using var closeCancellation=CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token);
+                using var closeCancellation=CancellationTokenSource.CreateLinkedTokenSource(token);
                 directCancellation=closeCancellation;cancelRemoval.Visibility=Visibility.Visible;
                 string launcherName=LauncherRemovalCoordinator.Profile(card.Program)!.Name;
                 try
                 {
-                    Status.Text=L("Closing launcher: ","جارٍ إغلاق اللانشر: ")+launcherName;
+                    SetStatus(lang => BidiText.Localize(lang,"Closing launcher: ","جارٍ إغلاق اللانشر: ") + DisplayFormat.Directional(launcherName,lang));
                     if(!await EpicLauncherCloseService.CloseAuthorizedAsync(
                         force=>LauncherRemovalCoordinator.CloseAsync(card.Program,force,closeCancellation.Token),
-                        ()=>{Status.Text=L("Ending verified launcher processes; continuing automatically…","جارٍ إنهاء عمليات اللانشر المتحقق منها ثم المتابعة تلقائيًا…");activity.Write("INFO",L("Using the original removal authorization to close verified launcher processes: ","تُستخدم موافقة الإزالة الأصلية لإغلاق عمليات اللانشر المتحقق منها: ")+launcherName);},closeCancellation.Token))
+                        ()=>{language.Text(Status,"Ending verified launcher processes; continuing automatically…","جارٍ إنهاء عمليات اللانشر المتحقق منها ثم المتابعة تلقائيًا…");activity.Write("INFO",L("Using the original removal authorization to close verified launcher processes: ","تُستخدم موافقة الإزالة الأصلية لإغلاق عمليات اللانشر المتحقق منها: ")+launcherName);},closeCancellation.Token))
                         throw new IOException("Launcher shutdown could not be verified. No uninstaller was started. Close the launcher from its tray icon and retry; no files were removed.");
                     closeCancellation.Token.ThrowIfCancellationRequested();
                     activity.Write("INFO",L("Launcher closed; continuing the same authorized game removal: ","أُغلق اللانشر؛ تُستكمل إزالة اللعبة المصرح بها نفسها: ")+launcherName);
-                    Status.Text=L("Launcher closed. Preparing this game's uninstaller…","أُغلق اللانشر. جارٍ تجهيز مزيل هذه اللعبة…");
+                    language.Text(Status,"Launcher closed. Preparing this game's uninstaller…","أُغلق اللانشر. جارٍ تجهيز مزيل هذه اللعبة…");
                 }
-                finally{directCancellation=null;cancelRemoval.Visibility=Visibility.Collapsed;}
+                finally{directCancellation=preparation;cancelRemoval.Visibility=Visibility.Visible;}
             }
             if(route?.DirectEpic==true)
             {
-                using var epicCancellation=CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token);
+                using var epicCancellation=CancellationTokenSource.CreateLinkedTokenSource(token);
                 directCancellation=epicCancellation;cancelRemoval.Visibility=Visibility.Visible;
                 try
                 {
-                    Status.Text=L("Closing Epic Games Launcher…","جارٍ إغلاق Epic Games Launcher…");
+                    language.Text(Status,"Closing Epic Games Launcher…","جارٍ إغلاق Epic Games Launcher…");
                     if(!await EpicLauncherCloseService.CloseAuthorizedAsync(
                         force=>EpicLauncherCloseService.CloseAsync(card.Program,force,epicCancellation.Token),
-                        ()=>{Status.Text=L("Ending verified Epic processes; continuing automatically…","جارٍ إنهاء عمليات Epic المتحقق منها ثم المتابعة تلقائيًا…");activity.Write("INFO",L("Using the original removal authorization to close verified Epic processes.","تُستخدم موافقة الإزالة الأصلية لإغلاق عمليات Epic المتحقق منها."));},epicCancellation.Token))
+                        ()=>{language.Text(Status,"Ending verified Epic processes; continuing automatically…","جارٍ إنهاء عمليات Epic المتحقق منها ثم المتابعة تلقائيًا…");activity.Write("INFO",L("Using the original removal authorization to close verified Epic processes.","تُستخدم موافقة الإزالة الأصلية لإغلاق عمليات Epic المتحقق منها."));},epicCancellation.Token))
                         throw new IOException("Epic shutdown could not be verified after checking replacement processes. No removal was started. Close Epic from its tray icon and retry; no files were removed.");
                     epicCancellation.Token.ThrowIfCancellationRequested();
-                    Status.Text=L("Epic closed. Continuing removal automatically…","أُغلق Epic. تُستكمل الإزالة تلقائيًا…");
+                    language.Text(Status,"Epic closed. Continuing removal automatically…","أُغلق Epic. تُستكمل الإزالة تلقائيًا…");
                     activity.Write("INFO",L("Verified Epic shutdown; continuing the same authorized removal operation.","تأكد إغلاق Epic؛ تُستكمل عملية الإزالة المصرح بها نفسها."));
                     var service=new EpicGameRemovalService();
                     var plan=await service.PrepareAsync(card.Program,current,epicCancellation.Token);
-                    var progress=new Progress<string>(message=>Status.Text=L("Epic direct removal: ","إزالة Epic المباشرة: ")+message);
+                    var progress=new Progress<string>(message=>SetStatus(lang => BidiText.Localize(lang,"Epic direct removal: ","إزالة Epic المباشرة: ") + DisplayFormat.Directional(message,lang)));
                     activity.Write("INFO",L("Epic direct removal authorized; preserving saves and files outside the installed build: ","تم تفويض إزالة Epic المباشرة مع حفظ بيانات الحفظ والملفات خارج قائمة التثبيت: ")+card.Name);
                     var epicCapture=await history.CaptureAsync(card.Program,token:epicCancellation.Token);
                     var result=await service.RemoveAsync(plan,current,progress,epicCancellation.Token);
@@ -777,21 +818,22 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
                     activity.Write("INFO",L("Epic metadata backup: ","نسخة بيانات Epic الاحتياطية: ")+result.Backup);
                     if(result.Confirmed)
                     {
+                        operationOutcome=BatchItemOutcome.Succeeded;
                         RemoveCard(card);await RecordHistoryAsync(card,epicCapture);
-                        Status.Text=L("Epic game files and local installation records verified as removed. Files deleted: ","تأكد حذف ملفات لعبة Epic وسجلات تثبيتها المحلية. الملفات المحذوفة: ")+DisplayFormat.Number(result.Removed)+L(". Reopen Epic to confirm its Library view; save data was preserved.",". أعد فتح Epic للتحقق من مكتبته؛ حُفظت بيانات الحفظ.");
+                        SetStatus(lang => BidiText.Localize(lang,"Epic game files and local installation records verified as removed. Files deleted: ","تأكد حذف ملفات لعبة Epic وسجلات تثبيتها المحلية. الملفات المحذوفة: ")+DisplayFormat.Directional(DisplayFormat.Number(result.Removed),lang)+BidiText.Localize(lang,". Reopen Epic to confirm its Library view; save data was preserved.",". أعد فتح Epic للتحقق من مكتبته؛ حُفظت بيانات الحفظ."));
                     }
-                    else Status.Text=L("Epic removal is incomplete. Review Activity Log; no success was assumed.","إزالة Epic غير مكتملة. راجع سجل النشاط؛ لم يُفترض النجاح.");
+                    else language.Text(Status,"Epic removal is incomplete. Review Activity Log; no success was assumed.","إزالة Epic غير مكتملة. راجع سجل النشاط؛ لم يُفترض النجاح.");
                 }
                 catch(OperationCanceledException)
-                {Status.Text=L("Epic removal cancelled. Completed file deletions cannot be undone; refresh before retrying.","أُلغيت إزالة Epic. لا يمكن التراجع عن الملفات المحذوفة؛ حدّث القائمة قبل إعادة المحاولة.");activity.Write("WARNING",Status.Text);}
+                {language.Text(Status,"Epic removal cancelled. Completed file deletions cannot be undone; refresh before retrying.","أُلغيت إزالة Epic. لا يمكن التراجع عن الملفات المحذوفة؛ حدّث القائمة قبل إعادة المحاولة.");activity.Write("WARNING",Status.Text);}
                 catch(Exception error)when(LauncherMetadataDiscovery.ReadFailure(error)||error is Win32Exception)
-                {Status.Text=L("Epic direct removal stopped: ","توقفت إزالة Epic المباشرة: ")+error.Message;activity.Write("WARNING",Status.Text);}
-                finally{directCancellation=null;cancelRemoval.Visibility=Visibility.Collapsed;}
+                {language.Text(Status,"Epic removal stopped. Close Epic and the game, check permissions, then refresh before retrying.","توقفت إزالة Epic. أغلق Epic واللعبة، وتحقق من الصلاحيات، ثم حدّث القائمة قبل إعادة المحاولة.");CrashDiagnostics.Record("Epic removal",error);activity.Write("WARNING",Status.Text);}
+                finally{directCancellation=preparation;cancelRemoval.Visibility=Visibility.Visible;}
                 return;
             }
-            var capture=await history.CaptureAsync(card.Program,token:cancellation.Token);
-            var snapshot=await new SharedLeftoverScanner().CaptureAsync(card.Program,cancellation.Token);preparedSnapshot=snapshot;
-            officialPlan=await new RemovalEngine().PlanAsync(snapshot,current,deep&&!decision.UsesOfficialUninstaller,cancellation.Token);
+            var capture=await history.CaptureAsync(card.Program,token:token);
+            var snapshot=await new SharedLeftoverScanner().CaptureAsync(card.Program,token);preparedSnapshot=snapshot;
+            officialPlan=await new RemovalEngine().PlanAsync(snapshot,current,deep&&!decision.UsesOfficialUninstaller,token);
             advancedCard=null;advancedPlan=null;
             if(deep&&!decision.UsesOfficialUninstaller)
             {
@@ -800,29 +842,30 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
             }
             string target;IReadOnlyList<string> arguments;
             // Revalidate immediately before launch, not just when the row was selected.
-            decision=await Task.Run(()=>SmartUninstallSelectionService.Evaluate(card.Program,current),cancellation.Token);
+            decision=await Task.Run(()=>SmartUninstallSelectionService.Evaluate(card.Program,current),token);
             if(decision.GamesEnabled&&decision.GameRoute!=null)
             {route=decision.GameRoute;target=route.Target;arguments=route.Arguments;}
             else if(decision.UsesOfficialUninstaller&&TryParseUninstaller(card.Program.Uninstall,out var exe,out var args))
             {target=exe;arguments=args;}
             else throw new IOException("The verified uninstall route is no longer available.");
             var start=new ProcessStartInfo(target){UseShellExecute=true};foreach(var argument in arguments)start.ArgumentList.Add(argument);
+            var launchedUtc=DateTime.UtcNow;
             var process=Process.Start(start);
             if(process==null&&Path.IsPathFullyQualified(target))throw new IOException("The uninstaller process could not be started.");
             launchSucceeded=true;
             bool trackExit=route?.TrackProcess==true||decision.UsesOfficialUninstaller||(route?.ManualInteraction==false&&Path.IsPathFullyQualified(target)&&
                 (Path.GetFileName(target).Contains("unins",StringComparison.OrdinalIgnoreCase)||Path.GetFileName(target).Equals("msiexec.exe",StringComparison.OrdinalIgnoreCase)));
-            if(trackExit&&process!=null)officialProcessExit=WaitForOfficialExitAsync(process);
+            if(trackExit&&process!=null)officialProcessExit=Task.Run(()=>UninstallProcessTracker.WaitAsync(process,launchedUtc));
             else{process?.Dispose();officialProcessExit=null;}
-            Status.Text=route?.ManualInteraction==true?L("Manual action is required inside the launcher; Polar is monitoring only.","يلزم إكمال الإزالة داخل اللانشر؛ يراقب Polar النتيجة فقط."):L("Official removal started. Verifying the installation state…","بدأت الإزالة الرسمية. جارٍ التحقق من حالة التثبيت…");
+            SetStatus(lang=>route?.ManualInteraction==true?BidiText.Localize(lang,"Manual action is required inside the launcher; Polar is monitoring only.","يلزم إكمال الإزالة داخل اللانشر؛ يراقب Polar النتيجة فقط."):BidiText.Localize(lang,"Official removal started. Verifying the installation state…","بدأت الإزالة الرسمية. جارٍ التحقق من حالة التثبيت…"));
             activity.Write("INFO",L("Uninstall workflow: ","مسار الإزالة: ")+card.Name+" · "+decision.Method+(route?.ManualInteraction==true?" · manual launcher interaction required":""));
             StartMonitoring(card,snapshot,capture,true);transferred=true;
         }
-        catch(OperationCanceledException){Status.Text=L("Uninstall preparation cancelled.","أُلغي تجهيز الإزالة.");}
+        catch(OperationCanceledException){language.Text(Status,"Uninstall preparation cancelled.","أُلغي تجهيز الإزالة.");}
         catch(Exception ex)when(LauncherMetadataDiscovery.ReadFailure(ex)||ex is Win32Exception)
                 {
             if(ex is Win32Exception{NativeErrorCode:1223})
-            {Status.Text=L("Windows authorization was cancelled. No automatic cleanup was performed.","أُلغي تفويض Windows. لم يُنفذ تنظيف تلقائي.");activity.Write("INFO",Status.Text);return;}
+            {language.Text(Status,"Windows authorization was cancelled. No automatic cleanup was performed.","أُلغي تفويض Windows. لم يُنفذ تنظيف تلقائي.");activity.Write("INFO",Status.Text);return;}
             // Only a missing/invalid executable can enter automatic direct
             // fallback. UAC cancellation, access denial and partial execution
             // are not authorization to delete the installation instead.
@@ -831,9 +874,9 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
             {
                 try
                 {
-                    var fresh=await ReadRemovalInventoryAsync(cancellation.Token);
+                    var fresh=await ReadRemovalInventoryAsync(token);
                     DirectRemovalService.Validate(card.Program,fresh);
-                    var fallback=await new RemovalEngine().PlanAsync(preparedSnapshot,fresh,true,cancellation.Token);
+                    var fallback=await new RemovalEngine().PlanAsync(preparedSnapshot,fresh,true,token);
                     activity.Write("WARNING",L("The official executable is unavailable; using the authorized validated direct fallback.","المزيل الرسمي غير متاح؛ تُستخدم الإزالة المباشرة المتحقق منها ضمن التفويض."));
                     officialPlan=null;transferred=true;await RunDirectPassAsync(card,null,fallback,fresh,true);return;
                 }
@@ -841,11 +884,13 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
                 {activity.Write("WARNING",L("Safe direct fallback is unavailable.","الإزالة المباشرة الآمنة غير متاحة.")+" · "+fallbackError.GetType().Name);}
             }
             if(officialPlan?.Root!=null&&!launchSucceeded)await RetainEligibleContextAsync(card,officialPlan);
-            Status.Text=L("The uninstall workflow could not be started; no success was assumed.","تعذر بدء الإزالة؛ لم يُفترض نجاحها.");activity.Write("WARNING",Status.Text+" · "+ex.GetType().Name);
+            language.Text(Status,"The uninstall workflow could not be started; no success was assumed.","تعذر بدء الإزالة؛ لم يُفترض نجاحها.");activity.Write("WARNING",Status.Text+" · "+ex.GetType().Name);
         }
         finally
         {
-            if(!transferred){busy=false;officialPlan=null;ReleaseRemovalOperation();UpdateActions();}
+            directCancellation=null;
+            if(!transferred){busy=false;officialPlan=null;cancelRemoval.Visibility=Visibility.Collapsed;ReleaseRemovalOperation();UpdateActions();}
+            activity.Write(transferred||operationOutcome==BatchItemOutcome.Succeeded?"INFO":"WARNING",L("Removal dispatch finished: ","انتهى بدء الإزالة: ")+DisplayFormat.Isolate(card.Name));
         }
     }
     private void ReleaseRemovalOperation()
@@ -881,10 +926,12 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
 
 public sealed class ProgramCard : INotifyPropertyChanged
 {
-    private readonly bool arabic;
+    private bool arabic;
+    private bool calculating;
     private readonly string unknown;
     public InstalledProgram Program { get; }
-    public string Name => Program.Name;
+    public string Name => string.IsNullOrWhiteSpace(Program.Name)?unknown:Program.Name.Trim();
+    public long? MeasuredSizeKb {get;private set;}
     public string FallbackGlyph => string.IsNullOrWhiteSpace(Program.Identifier)?"▣":"♧";
     private string details = "";
     public string Details { get => details; private set { if (details == value) return; details = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Details))); } }
@@ -900,8 +947,9 @@ public sealed class ProgramCard : INotifyPropertyChanged
     public ProgramCard(InstalledProgram program, bool arabic)
     {
         this.arabic = arabic;
-        Program = program; unknown = arabic ? "غير معروف" : "Unknown";
-        long? reportedSize = program.SizeKb is long s && s > 0 ? s : null;
+        Program = program; unknown = "—";
+        long? reportedSize = program.SizeKb is long s && s > 0 && s<=long.MaxValue/1024 ? s : null;
+        MeasuredSizeKb=reportedSize;
         Version = string.IsNullOrWhiteSpace(program.Version) ? unknown : program.Version;
         Publisher = string.IsNullOrWhiteSpace(program.Publisher) ? unknown : program.Publisher;
         Size = reportedSize is long rs ? DisplayFormat.Size(rs * 1024L, arabic) : unknown;
@@ -910,13 +958,22 @@ public sealed class ProgramCard : INotifyPropertyChanged
     }
     public void UpdateSize(long? sizeKb)
     {
-        long? reported = sizeKb is long s && s > 0 ? s : null;
+        long? reported = sizeKb is long s && s > 0 && s<=long.MaxValue/1024 ? s : null;
+        calculating=false;
+        MeasuredSizeKb=reported;
         Size = reported is long rs ? DisplayFormat.Size(rs * 1024L, arabic) : unknown;
         Details = $"{(string.IsNullOrWhiteSpace(Program.Publisher) ? unknown : Program.Publisher)}  ·  {(string.IsNullOrWhiteSpace(Program.Version) ? unknown : Program.Version)}  ·  {Size}  ·  {Program.Source}";
     }
     public void SetCalculating()
     {
+        calculating=true;
         Size = arabic ? "جارٍ الحساب…" : "Calculating…";
+    }
+    public void SetLanguage(bool value)
+    {
+        arabic=value;
+        if(calculating) SetCalculating();
+        else UpdateSize(MeasuredSizeKb);
     }
     public void SetIcon(ProgramIcon icon)
     {
