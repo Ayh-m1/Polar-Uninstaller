@@ -21,7 +21,8 @@ public partial class DeepUninstallerView
     private void WriteReport(UninstallReport report)
     {
         var english=report.LogLines(false);var translation=report.LogLines(true);
-        for(int i=0;i<english.Count;i++)activity.WriteBilingual(report.Severity,english[i],translation[i]);
+        for(int i=0;i<english.Count;i++)
+            activity.WriteBilingual(report.Severity,english[i],i<translation.Count?translation[i]:english[i]);
     }
     private string kindFilter="all";
     private ComboBox? kindSelector;
