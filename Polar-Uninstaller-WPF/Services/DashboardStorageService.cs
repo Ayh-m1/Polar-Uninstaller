@@ -48,7 +48,7 @@ public sealed record StorageScope(string Root, bool IsDriveRoot)
     public string DriveRoot => Path.GetPathRoot(Root) ?? Root;
 }
 
-public sealed class DashboardStorageService
+public sealed partial class DashboardStorageService
 {
     // Files and folders are ranked independently. Folders are never truncated
     // because a drive may legitimately contain more than the historical limit.
