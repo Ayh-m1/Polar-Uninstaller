@@ -30,6 +30,7 @@ public static class DisplayFormat
 
     /// <summary>Wraps a value in a left-to-right isolate so it cannot be reordered by surrounding RTL text.</summary>
     public static string Isolate(string value) => "\u2066" + value + "\u2069";
+    public static string Directional(string value, bool arabic) => arabic ? Isolate(value) : value;
 
     public static string Quantity(long value, string englishUnit, string arabicUnit, bool arabic) =>
         Isolate(Number(value)) + " " + (arabic ? arabicUnit : englishUnit);

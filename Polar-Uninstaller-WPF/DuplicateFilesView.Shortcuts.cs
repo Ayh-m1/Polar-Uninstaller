@@ -92,7 +92,7 @@ public partial class DuplicateFilesView
     private void FitDuplicateHint()
     {
         if(DuplicateShortcutHint==null||DuplicateShortcutHint.Children.Count==0||SelectionSummary==null)return;
-        var text=new TextRange(SelectionSummary.ContentStart,SelectionSummary.ContentEnd).Text.TrimEnd('\r','\n');
+        var text=SelectionSummary.Text;
         DuplicateShortcutHint.Fit(Math.Min(ActualWidth,DuplicateStatusFooter.ActualWidth),ShortcutUi.TextWidth(text,SelectionSummary,SelectionSummary.FontSize));
     }
 }

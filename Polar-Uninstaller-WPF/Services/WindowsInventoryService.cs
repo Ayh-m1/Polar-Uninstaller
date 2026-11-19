@@ -2,9 +2,13 @@ using Microsoft.Win32;
 
 namespace PolarUninstallerWpf.Services;
 
+public sealed record ApplicationRegistration(RegistryHive Hive, RegistryView View, string Path);
+
 public sealed record InstalledProgram(string Name, string Publisher, string Version, string Location = "", string IconPath = "", long? SizeKb = null, string Uninstall = "", string Source = "Windows", string Identifier = "", IReadOnlyList<string>? Sources = null, IReadOnlyList<string>? IconCandidates = null,bool RequiresOfficialRemoval=false)
 {
     public string LaunchUri { get; init; } = "";
+    public string RegisteredIcon { get; init; } = "";
+    public ApplicationRegistration? Registration { get; init; }
 }
 
 public sealed class WindowsInventoryService
@@ -69,7 +73,8 @@ public sealed class WindowsInventoryService
                                 if (riotProduct.Length > 0) identifier = "riot:" + riotProduct;
                             }
                             bool managed=Convert.ToString(item?.GetValue("WindowsInstaller"))=="1" || !string.IsNullOrEmpty(Convert.ToString(item?.GetValue("ReleaseType"))) || !string.IsNullOrEmpty(Convert.ToString(item?.GetValue("ParentKeyName"))) || Convert.ToString(item?.GetValue("NoRemove"))=="1" || riotProtected || identifier.StartsWith("riot:", StringComparison.OrdinalIgnoreCase);
-                            programs.Add(new(name.Trim(), publisher, Convert.ToString(item?.GetValue("DisplayVersion")) ?? "", location, icon, sizeKb, command, "Windows", identifier, null, icons,managed));
+                            programs.Add(new(name.Trim(), publisher, Convert.ToString(item?.GetValue("DisplayVersion")) ?? "", location, icon, sizeKb, command, "Windows", identifier, null, icons,managed)
+                            { RegisteredIcon = icon, Registration = new(hive, view, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\" + keyName) });
                         }
                         catch (Exception error) when (error is UnauthorizedAccessException or System.Security.SecurityException or System.IO.IOException) { }
                     }

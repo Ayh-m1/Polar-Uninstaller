@@ -9,6 +9,35 @@ public static class ApplicationIconResolver
 {
     private static readonly ConcurrentDictionary<string,Task<ProgramIcon?>> Cache=new(StringComparer.OrdinalIgnoreCase);
     private static readonly SemaphoreSlim Slots=new(3);
+    private static readonly ConcurrentDictionary<string, Task<ProgramIcon?>> SizedCache = new(StringComparer.OrdinalIgnoreCase);
+    public static void ResetFailures()
+    {
+        foreach (var pair in SizedCache.Where(p => p.Value.IsCompleted))
+            if (!pair.Value.IsCompletedSuccessfully || pair.Value.Result is null) SizedCache.TryRemove(pair.Key, out _);
+    }
+    public static Task<ProgramIcon?> ResolveAsync(InstalledProgram program, int pixels, CancellationToken token, bool priority)
+    {
+        pixels = Math.Clamp(pixels, 32, 256);
+        string key = ProgramIconDiskCache.KeyFor(program) + "|" + pixels;
+        if (SizedCache.Count > 512)
+            foreach (var pair in SizedCache.Where(p => p.Value.IsCompleted).Take(64)) SizedCache.TryRemove(pair.Key, out _);
+        return SizedCache.GetOrAdd(key, _ => ResolveWorkerAsync(program, pixels, priority)).WaitAsync(token);
+    }
+    private static async Task<ProgramIcon?> ResolveWorkerAsync(InstalledProgram program, int pixels, bool priority)
+    {
+        var reply = await IconWorkerPool.ResolveAsync(program, pixels, CancellationToken.None, priority).ConfigureAwait(false);
+        if (reply.Png is null)
+        {
+            IconDiagnostics.Report(program, false, reply.Reason, reply.Detail);
+            return null;
+        }
+        using var stream = new MemoryStream(reply.Png);
+        var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+        bitmap.BeginInit(); bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+        bitmap.StreamSource = stream; bitmap.EndInit(); bitmap.Freeze();
+        IconDiagnostics.Report(program, true, reply.Method.ToString(), reply.Source);
+        return new ProgramIcon(bitmap, null) { SourcePath = reply.Source, SourceIndex = reply.Index, Method = reply.Method };
+    }
     public static Task<ProgramIcon?> ResolveAsync(InstalledProgram program)
     {
         if(Cache.Count>512)foreach(var entry in Cache.Where(c=>c.Value.IsCompleted).Take(64))Cache.TryRemove(entry.Key,out _);

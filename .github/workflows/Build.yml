@@ -10,9 +10,21 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,17 +37,28 @@ jobs:
       - name: Restore
         run: dotnet restore Polar-Uninstaller-WPF/PolarUninstallerWpf.csproj
 
+      - name: Build Release
+        run: dotnet build Polar-Uninstaller-WPF/PolarUninstallerWpf.csproj -c Release --no-restore
+
+      - name: Run CI regression checks
+        run: dotnet run --project Polar-Uninstaller-WPF/Tests/CiSmoke/CiSmoke.csproj -c Release
+
       - name: Publish single-file EXE
         run: >
           dotnet publish Polar-Uninstaller-WPF/PolarUninstallerWpf.csproj
           -c Release -r win-x64 --self-contained true
           -p:PublishSingleFile=true
           -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=None -p:DebugSymbols=false
           -o artifacts/SingleFile
 
-      - name: Upload EXE
+      - name: Verify published EXE and create checksums
+        run: ./scripts/Test-PublishedBuild.ps1
+
+      - name: Upload portable build
         uses: actions/upload-artifact@v4
         with:
           name: PolarUninstaller-exe
-          path: artifacts/SingleFile/*.exe
+          path: artifacts/SingleFile/
           if-no-files-found: error
+          retention-days: 14

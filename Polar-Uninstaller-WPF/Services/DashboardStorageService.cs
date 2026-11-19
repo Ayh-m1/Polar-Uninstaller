@@ -39,6 +39,12 @@ public sealed record StorageSnapshot(IReadOnlyList<DriveSummary> Drives, IReadOn
     public string Root { get; init; } = "";
     public bool IsDriveRoot { get; init; }
     public DateTimeOffset CompletedAt { get; init; } = DateTimeOffset.Now;
+    public IReadOnlyList<LargeFile> FileIndex { get; init; } = [];
+    public IReadOnlyList<FolderAggregate> FolderIndex { get; init; } = [];
+    public IReadOnlyList<string> HiddenPaths { get; init; } = [];
+    public IReadOnlyList<string> RemovedPaths { get; init; } = [];
+    public IReadOnlyList<Guid> AppliedChanges { get; init; } = [];
+    public bool IndexComplete { get; init; }
 }
 
 /// <summary>Describes exactly what a scan covers so partial results are never
@@ -56,6 +62,8 @@ public sealed partial class DashboardStorageService
     private static readonly object CacheGate = new();
     private static readonly Dictionary<string, StorageSnapshot> Cache = new(StringComparer.OrdinalIgnoreCase);
     private static long cacheVersion;
+    private static long cacheEpoch;
+    private static readonly Queue<(long Version, FileChangeBatch Batch)> RecentChanges = new();
 
     /// <summary>The most recent completed scan, regardless of scope.</summary>
     public static StorageSnapshot? LastSnapshot { get; private set; }
@@ -83,7 +91,8 @@ public sealed partial class DashboardStorageService
 
     public static void ClearCache()
     {
-        lock (CacheGate) { Cache.Clear(); LastSnapshot = null; cacheVersion++; }
+        lock (CacheGate) { Cache.Clear(); LastSnapshot = null; cacheVersion++; cacheEpoch++; RecentChanges.Clear(); }
+        _ = SaveCacheAsync();
     }
 
     public Task<IReadOnlyList<DriveSummary>> ReadDrivesAsync() => Task.Run<IReadOnlyList<DriveSummary>>(() =>
@@ -108,8 +117,8 @@ public sealed partial class DashboardStorageService
     public Task<StorageSnapshot> ScanAsync(string root, CancellationToken token, IProgress<int>? progress = null, IProgress<StorageSnapshot>? partial = null) => Task.Run(() =>
     {
         token.ThrowIfCancellationRequested();
-        long version;
-        lock (CacheGate) version = cacheVersion;
+        long version, epoch;
+        lock (CacheGate) { version = cacheVersion; epoch = cacheEpoch; }
         var scope = ClassifyScope(root);
         string rootPath = scope.Root;
         if (!Directory.Exists(rootPath)) throw new DirectoryNotFoundException(rootPath);
@@ -126,7 +135,10 @@ public sealed partial class DashboardStorageService
         }
 
         var largestFiles = new PriorityQueue<LargeFile, long>();
+        var fileIndex = new List<LargeFile>();
+        bool indexComplete = true;
         var folderSizes = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        var directFileCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         var pending = new Stack<string>();
         var snapshotClock = System.Diagnostics.Stopwatch.StartNew();
 
@@ -153,6 +165,7 @@ public sealed partial class DashboardStorageService
                 if ((info.Attributes & FileAttributes.ReparsePoint) != 0) { skipped++; limited = true; continue; }
 
                 folderSizes[path] = 0;
+                directFileCounts[path] = 0;
                 folders++;
 
                 FileSystemInfo[] entries = info.GetFileSystemInfos("*", options);
@@ -171,8 +184,11 @@ public sealed partial class DashboardStorageService
                             files++;
                             long length = file.Length;
                             folderSizes[path] += length;
+                            directFileCounts[path]++;
                             totalBytes += length;
                             var item = new LargeFile(file.Name, file.FullName, length);
+                            if (fileIndex.Count < 100000) fileIndex.Add(item);
+                            else indexComplete = false;
                             largestFiles.Enqueue(item, length);
                             if (largestFiles.Count > LargestFileLimit) largestFiles.Dequeue();
                         }
@@ -202,6 +218,7 @@ public sealed partial class DashboardStorageService
         // Post-order accumulation: every directory already holds only its direct files,
         // so adding each child exactly once into its parent cannot double count.
         var ordered = folderSizes.Keys.OrderByDescending(p => p.Length).ToArray();
+        var aggregates = folderSizes.ToDictionary(p => p.Key, p => new FolderAggregate(p.Key, p.Value, directFileCounts[p.Key], 1), StringComparer.OrdinalIgnoreCase);
         var largestFolders = new List<LargeFile>();
         foreach (string path in ordered)
         {
@@ -209,7 +226,11 @@ public sealed partial class DashboardStorageService
             long bytes = folderSizes[path];
             string? parent = Path.GetDirectoryName(path);
             if (parent is not null && folderSizes.ContainsKey(parent))
+            {
                 folderSizes[parent] += bytes;
+                var child = aggregates[path]; var owner = aggregates[parent];
+                aggregates[parent] = owner with { Files = owner.Files + child.Files, Folders = owner.Folders + child.Folders };
+            }
 
             // Report only immediate children of the scan root. A parent's size
             // already includes every nested folder and file, so listing a parent
@@ -237,14 +258,22 @@ public sealed partial class DashboardStorageService
             Inaccessible = inaccessible,
             Root = rootPath,
             IsDriveRoot = scope.IsDriveRoot,
-            CompletedAt = DateTimeOffset.Now
+            CompletedAt = DateTimeOffset.Now,
+            FileIndex = indexComplete ? fileIndex.ToArray() : Top(largestFiles),
+            FolderIndex = aggregates.Values.Select(f => f with { Bytes = folderSizes[f.Path] }).ToArray(),
+            IndexComplete = indexComplete
         };
         // If Clear Cache ran while this scan was finishing, never repopulate the
         // cleared results from this now-stale snapshot.
         lock (CacheGate)
         {
-            if (version == cacheVersion) { Cache[rootPath] = snapshot; LastSnapshot = snapshot; }
+            if (epoch == cacheEpoch)
+            {
+                foreach (var change in RecentChanges.Where(c => c.Version > version)) snapshot = StorageCacheUpdates.Apply(snapshot, change.Batch);
+                Cache[rootPath] = snapshot; LastSnapshot = snapshot;
+            }
         }
+        _ = SaveCacheAsync();
         return snapshot;
     }, token);
 

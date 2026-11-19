@@ -1,4 +1,4 @@
-<UserControl x:Class="PolarUninstallerWpf.FileBrowserView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<UserControl x:Class="PolarUninstallerWpf.FileBrowserView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:PolarUninstallerWpf">
   <UserControl.Resources>
     <ResourceDictionary Source="Styles/FileExplorer.xaml" />
   </UserControl.Resources>
@@ -193,6 +193,12 @@
       </Grid>
     </Grid>
     <ContentControl x:Name="DuplicateHost" Grid.Row="1" Grid.RowSpan="3" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Visibility="Collapsed" />
-    <TextBlock x:Name="Status" Grid.Row="3" Margin="2,8" FontSize="13" Foreground="{DynamicResource HomeTextBrush}" TextWrapping="Wrap" />
+    <StackPanel Grid.Row="3">
+      <ContentControl x:Name="SelectionTipHost" />
+      <DockPanel x:Name="StatusFooter" SizeChanged="StatusFooterSizeChanged">
+        <local:ShortcutHintLine x:Name="BrowserShortcutHint" DockPanel.Dock="Right" VerticalAlignment="Center" />
+        <TextBlock x:Name="Status" Margin="2,8" FontSize="13" Foreground="{DynamicResource HomeTextBrush}" TextWrapping="Wrap" />
+      </DockPanel>
+    </StackPanel>
   </Grid>
 </UserControl>

@@ -57,6 +57,7 @@ public static class InventoryMerger
         var ordered=records.OrderByDescending(x=>x.Source!="Windows").ToArray();
         var icons = ordered.SelectMany(x => x.IconCandidates ?? Array.Empty<string>()).Concat(ordered.Select(x => x.IconPath)).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         string location = records.Select(x => x.Location).FirstOrDefault(Directory.Exists) ?? Pick(x => x.Location);
-        return new InstalledProgram(first.Name, Pick(x => x.Publisher), Pick(x => x.Version), location, icons.FirstOrDefault() ?? "", records.Select(x => x.SizeKb).FirstOrDefault(x => x.HasValue), records.OrderByDescending(x => x.Source != "Windows").Select(x => x.Uninstall).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? "", launcher?.Source ?? first.Source, Pick(x => ValidIdentifier(x.Identifier)), records.Select(x => x.Source).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(), icons,records.Any(x=>x.RequiresOfficialRemoval)){LaunchUri=Pick(x=>x.LaunchUri)};
+        return new InstalledProgram(first.Name, Pick(x => x.Publisher), Pick(x => x.Version), location, icons.FirstOrDefault() ?? "", records.Select(x => x.SizeKb).FirstOrDefault(x => x.HasValue), records.OrderByDescending(x => x.Source != "Windows").Select(x => x.Uninstall).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) ?? "", launcher?.Source ?? first.Source, Pick(x => ValidIdentifier(x.Identifier)), records.Select(x => x.Source).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(), icons,records.Any(x=>x.RequiresOfficialRemoval))
+        {LaunchUri=Pick(x=>x.LaunchUri), RegisteredIcon=Pick(x=>x.RegisteredIcon), Registration=windows?.Registration};
     }
 }

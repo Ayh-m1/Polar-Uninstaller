@@ -718,7 +718,7 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
         }
         // Publish the verified removal to the shared inventory immediately so
         // the Home count reflects it, then confirm with a fresh authoritative scan.
-        inventory.NotifyRemoved(card.Program,capturedExecutables);
+        inventory.NotifyRemoved(card.Program);
         _ = RefreshSharedInventoryAsync();
     }
 

@@ -62,7 +62,7 @@ public partial class FileBrowserView
     private void FitBrowserHint()
     {
         if(BrowserShortcutHint==null||BrowserShortcutHint.Children.Count==0||Status==null)return;
-        string text=new TextRange(Status.ContentStart,Status.ContentEnd).Text.TrimEnd('\r','\n');
+        string text=Status.Text;
         BrowserShortcutHint.Fit(Math.Min(ActualWidth,StatusFooter.ActualWidth),ShortcutUi.TextWidth(text,Status,Status.FontSize));
     }
 }

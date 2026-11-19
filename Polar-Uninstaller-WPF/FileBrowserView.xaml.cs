@@ -83,7 +83,7 @@ SearchPlaceholder.Visibility = Visibility.Visible;
             if(sort==nameof(BrowserEntry.Size))RefreshSortPreservingSelection();
             UpdateSelectionState(false);
         };
-        PreviewKeyDown+=(_,e)=>{if(e.Key==Key.F4){ShowAddress();e.Handled=true;}};
+        PreviewKeyDown+=async (_,e)=>await HandleBrowserKey(e);
         Files.PreviewKeyDown+=FilesPreviewKeyDown;
         SizeChanged += (_, _) =>
         {
@@ -94,6 +94,7 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         };
         InitializeActions();
         ApplyExplorerAccessibility();
+        InitializeShortcutExperience();
         Unloaded += (_,_) => { sizeRequest?.Cancel();autoSizeRequest?.Cancel();filterTimer.Stop();sortRefreshTimer.Stop(); };
         Loaded += async (_,_) => { LoadSortPreference(); if(skipNextLoad){skipNextLoad=false;return;} if(!duplicatesActive) await Navigate(current, position); };
         Unloaded += (_,_) => load?.Cancel();
@@ -145,6 +146,7 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         var duplicateItem=new MenuItem { Header=L("Find Duplicate Files","البحث عن الملفات المكررة"), Icon=duplicateIcon, Style=(Style)Resources["ExplorerMenuItem"] };
         duplicateItem.Click+=(_,_)=>OpenDuplicates();more.Items.Add(duplicateItem);
         ReorganizeMenus();UpdateNavigationState();
+        AddShortcutHelpButton();
     }
     private void LoadSortPreference()
     {
@@ -176,6 +178,7 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         System.Windows.Automation.AutomationProperties.SetName(Address,T("Address"));
         System.Windows.Automation.AutomationProperties.SetName(Search,T("Search"));
         duplicates?.SetLanguage(arabic);
+        RefreshShortcutLanguage();
         if(duplicatesActive){Actions.Visibility=Visibility.Collapsed;Status.Visibility=Visibility.Collapsed;}
     }
     public Task ShowFolderAsync(string path,string? reveal=null)

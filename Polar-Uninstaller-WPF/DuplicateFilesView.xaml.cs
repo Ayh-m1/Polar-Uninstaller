@@ -31,6 +31,7 @@ public partial class DuplicateFilesView : UserControl
     {
         this.activity=activity;this.inventory=inventory;this.settings=settings??new SettingsService();InitializeComponent();
         InitializeGroupedResults();
+        InitializeDuplicateShortcuts();
         PathInput.Text=Directory.Exists(directory)?Path.GetFullPath(directory):"";
         SetLanguage(arabic);
         Unloaded+=(_,_)=>{CancelOperation();partialTimer.Stop();resultFilterTimer.Stop();toastTimer.Stop();};
@@ -48,6 +49,7 @@ public partial class DuplicateFilesView : UserControl
         RecycleButton.Content=T("Recycle");PermanentButton.Content=T("Permanent");ClearSelectionButton.Content=T("DupClear");
         SmartSelectButton.Content=T("DupSmart");MinimumLabel.Text=T("DupMinimum");ResultsSearch.ToolTip=T("DupSearch");
         LocalizeGroupedResults();
+        LocalizeDuplicateShortcuts();
         foreach(var row in rows)row.SetLanguage(arabic);
         if(lastCleanup!=null)CleanupDetails.Text=string.Join(Environment.NewLine,lastCleanup.Items.Select(i=>Reason(i)+" · "+i.Path));
         UpdateSummary();UpdateStatus();UpdateButtons();

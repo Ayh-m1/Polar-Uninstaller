@@ -10,6 +10,14 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        if (e.Args.Contains("--polar-icon-worker", StringComparer.Ordinal))
+        {
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            IconWorkerPool.RunConsoleWorker();
+            Shutdown();
+            return;
+        }
+        Exit += (_, _) => IconWorkerPool.StopAll();
         DispatcherUnhandledException+=(_,args)=>CrashDiagnostics.Record("Unhandled UI exception",args.Exception);
         AppDomain.CurrentDomain.UnhandledException+=(_,args)=>
         {

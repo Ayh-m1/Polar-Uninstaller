@@ -13,7 +13,8 @@ public sealed record AppSettings(
     string? FileBrowserSort = null,
     string? FileBrowserSortDirection = null,
     string? DuplicateSort = null,
-    bool DuplicateSortAscending = false);
+    bool DuplicateSortAscending = false,
+    bool SelectionTipDismissed = false);
 
 public sealed class SettingsService
 {
