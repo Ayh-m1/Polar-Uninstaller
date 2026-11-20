@@ -1,4 +1,4 @@
-[Uploading README_Polar_Uninstaller_v1.0.144.md…]()
+[README_Polar_Uninstaller_v1.0.147.md](https://github.com/user-attachments/files/35139278/README_Polar_Uninstaller_v1.0.147.md)
 <div align="center">
 
 <img src="Polar_Logo_Beige_512.png" width="112" alt="Polar Uninstaller logo">
@@ -9,7 +9,7 @@
 
 **Built with C# • .NET • WPF**
 
-[![Version](https://img.shields.io/badge/version-1.0.144-00B8F0)](https://github.com/Ayh-m1/Polar-Uninstaller/releases)
+[![Version](https://img.shields.io/badge/version-1.0.147-00B8F0)](https://github.com/Ayh-m1/Polar-Uninstaller/releases)
 [![Language](https://img.shields.io/badge/language-C%23-512BD4?logo=dotnet&logoColor=white)](https://learn.microsoft.com/dotnet/csharp/)
 [![UI](https://img.shields.io/badge/UI-WPF-0078D4)](https://learn.microsoft.com/dotnet/desktop/wpf/)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D4)](https://github.com/Ayh-m1/Polar-Uninstaller/releases)
@@ -27,11 +27,61 @@
 
 ### Overview
 
-**Polar Uninstaller v1.0.144** builds on the native **C# / .NET / WPF** edition introduced in v1.0.120. This release focuses on making the **File Browser** and the **Duplicate Finder** easier to understand, safer to use, and more consistent, with better Arabic (RTL) layouts, keyboard support, and accessibility, while retaining the responsive Windows interface and themes.
+**Polar Uninstaller v1.0.147** builds on the native **C# / .NET / WPF** edition introduced in v1.0.120. This release focuses on stability and polish: switching language or theme no longer interrupts running operations, the Dashboard scan shows progress and can be cancelled, Arabic numbers, sizes, and paths appear in the correct order, program icons and duplicates are fixed, and settings and crash handling are more resilient.
 
 The interface supports **English and Arabic**, with right-to-left layouts where appropriate.
 
-### What's new in v1.0.144
+### What's new in v1.0.147
+
+#### Improvements
+
+- **Switch language during operations:** you can change the language while uninstalling, scanning for leftovers, running Quick Cleaner, calculating folder sizes, or scanning for duplicates, without restarting the page or the current operation.
+- **Dashboard scan progress:** the scan shows progress and can be cancelled, in both languages. Scan operations are recorded in the Activity Log when they start, finish, or are cancelled.
+- **Consistent numbers:** version numbers, paths, and sizes now match the surrounding design on Home, Deep Uninstaller, File Browser, and the update center.
+- **Responsive loading and saving:** the app stays responsive while loading lists and saving settings, ignores stale scan results, and saves pending settings before closing.
+
+#### Fixes
+
+- **Dashboard keeps scanning:** the scan and update continue when you switch language or theme. Returning to the Dashboard shows the running scan with its progress and results.
+- **Correct order in Arabic:** sizes, percentages, drive letters, dates, and paths appear in the correct order. Dashboard values stay under their titles and beside their icons in both languages.
+- **Icons and duplicates:** program and game icons are restored correctly, Steam icons are detected more reliably, and duplicate items in the program list are merged.
+- **Corrupted settings:** if the saved settings file is damaged, settings are restored from a healthy backup, and the error page offers a retry option instead of a technical message.
+- **Crash reports:** crash reports are saved on your device with options to open the logs folder or copy the details. When you reopen the app, the current window is shown, and movement is reduced in Remote Desktop sessions.
+
+
+<details>
+<summary>Also in v1.0.145–v1.0.146</summary>
+
+#### Deep Uninstaller
+
+- **Faster start:** the extra confirmation before starting an uninstall was removed, since you already chose the program. Leftover candidates are still never preselected, and permanent deletions still require confirmation.
+- **Workflow review:** the Deep and Games uninstall paths and their buttons were audited in both Arabic and English, with fixes for several Deep Uninstaller problems.
+- **Logos for every program and game:** icons are resolved and cached from the first launch, including on a first run, with safeguards so one app never shows another app's icon (for example, Steam no longer shows the wrong logo).
+- **No duplicate rows:** the same program or game reported by a launcher and the Windows registry is merged into one entry, and launcher product IDs are no longer shown as versions.
+- **Larger program rows** for easier reading.
+
+#### Dashboard and File Browser
+
+- **Working Refresh button** on the Dashboard.
+- **Deletion sync:** when you delete a file or folder, the Dashboard's scan results update to match.
+- **Scan keeps running:** switching the language or theme no longer interrupts a Dashboard scan.
+- **Back history and breadcrumb path** in the File Browser, so you can step back through the folders you visited and jump to any parent folder.
+
+#### Interface
+
+- **Hover animation** on navigation buttons: colors fade smoothly, the button shifts slightly, and the effect follows the active theme across all eight themes. It is disabled when Windows animations are turned off.
+- **Better Arabic:** improved interface wording, and numbers with units (such as `41.6 GB`) and dates appear in the correct order in the Arabic interface.
+
+#### Stability
+
+- Global error handling so unexpected errors are logged instead of closing the application.
+- Settings are saved atomically with a backup copy, so a crash during saving cannot corrupt them.
+- Background scans are cancelled cleanly when you leave a page, and stale results are discarded.
+
+</details>
+
+<details>
+<summary>Previous release highlights (v1.0.144)</summary>
 
 #### File Browser
 
@@ -61,42 +111,28 @@ The interface supports **English and Arabic**, with right-to-left layouts where 
 - **More supported launchers:** game inventory detection now also covers **GOG** and **Riot Games** when detectable.
 - **Themes:** eight themes are available, including Blue, Black, White, Beige, Dark Beige / Espresso, and Midnight Champagne.
 
-<details>
-<summary>Previous release highlights (v1.0.125)</summary>
-
-- **Accurate storage analysis:** the Dashboard separates **Largest Folders** and **Largest Files** into dedicated tabs. Folder results show the immediate children of the scanned location, with cumulative sizes and no repeated nested-folder entries.
-- **Direct Dashboard-to-File-Browser navigation:** open a storage-result folder inside Polar's integrated File Browser to inspect its contents.
-- **Automatic folder sizes:** calculate cumulative folder sizes in the background, update results as sizes become available, and indicate incomplete or inaccessible scans instead of presenting misleading zero-byte results.
-- **File Browser multi-selection:** select multiple files and folders using the selection markers, **Ctrl+Click**, **Shift+Click**, and **Ctrl+A**.
-- **Batch file operations:** move selected items to the Recycle Bin or permanently delete them after explicit confirmation, with protections for sensitive locations.
-- **Persistent sorting:** remember the selected sort field and direction when navigating between folders and after restarting the application.
-- **Improved scan responsiveness:** asynchronous processing, caching, cancellation, and safeguards against stale results and repeated scanning.
-- **More reliable uninstall history and consistent app counts:** Home and Deep Uninstaller use the same merged, deduplicated inventory source.
-- **Clear Cache improvements:** clear stored scan results and temporary data while resetting locally stored dashboard statistics and removal history.
-
 </details>
 
 ### Core features
 
-- **Deep, Official, and supported game uninstall workflows**, with verification and optional leftover review.
+- **Deep and supported game uninstall workflows**, with verification and optional leftover review.
 - **Quick Cleaner** for selected temporary-file and cleanup categories.
 - **Dashboard** with drive capacity and large-folder/file analysis.
 - **Integrated File Browser** with navigation, folder-size calculation, clickable sorting, multi-selection, a right-click menu, and confirmed batch operations.
 - **Duplicate Finder** with SHA-256 content verification, grouped results, and smart selection that always keeps one copy.
 - **Eight themes**, English/Arabic localization, and an Activity Log.
 - **Built-in update check.**
-- **Portable EXE, portable ZIP, and Windows Setup installer** build options.
+- **Portable EXE and Windows Setup installer**, with SHA-256 checksums.
 
 ### Features
 
 #### Deep Uninstaller
 
-Discover installed Windows applications and supported game-library entries from Steam, Epic Games, Ubisoft, Rockstar, GOG, and Riot Games when detectable. The page displays application names, versions, publishers, sizes, and icons when that information is available. Home and Deep Uninstaller share the same merged inventory and installed-program count.
+Discover installed Windows applications and supported game-library entries from Steam, Epic Games, Ubisoft, Rockstar, GOG, and Riot Games when detectable. The page displays application names, versions, publishers, sizes, and icons when that information is available. Home and Deep Uninstaller share the same merged, deduplicated inventory and installed-program count, and logos are resolved from the first launch.
 
 - **Deep Uninstall** is available for installations that support a verified direct-removal workflow.
-- **Official Uninstall** uses a valid registered uninstall command when direct removal is inappropriate.
 - **Games Uninstall** uses supported launcher or game-specific removal methods when available. Some launchers require you to finish removal in their own interface.
-- Both Deep and Official workflows can use the **same leftover scanner and review window** after removal is verified.
+- Both workflows can use the **same leftover scanner and review window** after removal is verified.
 - Review candidate files, folders, shortcuts, and Registry entries. Candidates are **not preselected**.
 - **Verify / Rescan** helps recheck a removal that could not be confirmed automatically.
 - The application list is refreshed after a removal is verified; the app must not be reported as removed merely because an uninstaller window closed.
@@ -158,14 +194,14 @@ Polar Uninstaller supports eight themes, including **Blue, Black, White, Beige, 
 ### Download and run
 
 1. Visit the [official Releases page](https://github.com/Ayh-m1/Polar-Uninstaller/releases).
-2. Choose the latest **C# / WPF** release (v1.0.144 or newer when available). Older Python releases use a different application build.
+2. Choose the latest **C# / WPF** release (v1.0.147 or newer when available). Older Python releases use a different application build.
 3. Choose one of the published assets:
-   - **`PolarUninstaller-Setup-v1.0.144.exe`** — Windows Setup installer.
-   - **`PolarUninstaller-v1.0.144-portable.zip`** — portable archive; extract it and run `PolarUninstaller.exe`.
-   - **`PolarUninstaller.exe`** — standalone single-file executable, when provided as a release asset.
+   - **`PolarUninstaller-Setup-v1.0.147.exe`** — Windows Setup installer.
+      - **`PolarUninstaller.exe`** — standalone portable single-file executable.
+   - **`SHA256SUMS.txt`** — SHA-256 checksums to verify your download.
 4. Review any Windows security or administrator-permission prompt before approving it.
 
-The WPF portable builds are packaged with their required .NET runtime components, so a separate .NET runtime installation is not normally needed. The Setup installer is a different distribution format from the portable EXE and ZIP.
+The WPF portable build is packaged with their required .NET runtime components, so a separate .NET runtime installation is not normally needed. The Setup installer is a different distribution format from the portable EXE. The Setup installer and the app request administrator permission, so Windows will show a User Account Control prompt.
 
 > **Release status:** A successful local build does not mean an installer or GitHub release has already been published. Check the Releases page for what is actually available.
 
@@ -205,7 +241,7 @@ The intended portable output is `Build/SingleFile/PolarUninstaller.exe`. Keep th
 | `Localization/` | English and Arabic interface text |
 | `Assets/` | Branding, images, release notes, and other bundled resources |
 | `Build/SingleFile/` | Self-contained portable EXE output |
-| `Build/` | Release artifacts, portable ZIP, and installer packaging output |
+| `Build/` | Release artifacts and installer packaging output |
 
 Actual folders may differ as the project evolves. Use the project files in the repository for the definitive layout.
 
@@ -235,7 +271,7 @@ Special thanks to MobV2 for extensive testing, bug reports, suggestions, and hel
 - [Support](https://polarwolves.com/supportus/p1682342912)
 - [Discord](https://discord.gg/plr)
 
-**Developer:** Ayhm  
+**Developer:** Polar  
 **License:** MIT
 
 ### Code signing policy
@@ -267,11 +303,61 @@ Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
 ### نظرة عامة
 
-**Polar Uninstaller v1.0.144** هو تحديث للنسخة المبنية باستخدام **C# وWPF و.NET** لنظام Windows، والتي بدأت مع الإصدار v1.0.120 بدل واجهة Python وCustomTkinter السابقة.
+**Polar Uninstaller v1.0.147** هو تحديث للنسخة المبنية باستخدام **C# وWPF و.NET** لنظام Windows، والتي بدأت مع الإصدار v1.0.120 بدل واجهة Python وCustomTkinter السابقة.
 
-يركز هذا الإصدار على جعل **متصفح الملفات** و**مكتشف الملفات المكررة** أسهل فهمًا وأكثر أمانًا وتناسقًا، مع تحسين تخطيط الواجهة العربية (RTL) ودعم لوحة المفاتيح وإمكانية الوصول. يدعم البرنامج **العربية والإنجليزية** مع مراعاة اتجاه الواجهة.
+يركز هذا الإصدار على الاستقرار والتحسينات: تبديل اللغة أو المظهر لم يعد يقطع العمليات الجارية، وفحص لوحة المعلومات يعرض التقدّم ويمكن إلغاؤه، والأرقام والأحجام والمسارات العربية بالترتيب الصحيح، وإصلاح الأيقونات والتكرار، وتعزيز التعامل مع الإعدادات والأعطال. يدعم البرنامج **العربية والإنجليزية** مع مراعاة اتجاه الواجهة.
 
-### أبرز تغييرات v1.0.144
+### أبرز تغييرات v1.0.147
+
+#### تحسينات
+
+- **تبديل اللغة أثناء العمليات:** يمكن تبديل اللغة أثناء الإزالة وفحص البقايا والتنظيف السريع وحساب أحجام المجلدات وفحص الملفات المكررة دون إعادة تشغيل الصفحة أو العملية الحالية.
+- **تقدّم فحص لوحة المعلومات:** يظهر تقدّم الفحص ويمكن إلغاؤه باللغتين، وتُسجَّل عمليات الفحص في سجل النشاط عند البدء أو الاكتمال أو الإلغاء.
+- **أرقام متناسقة:** أصبحت أرقام الإصدارات والمسارات والأحجام متناسقة مع التصميم المحيط في الرئيسية والإزالة العميقة ومتصفح الملفات ومركز التحديث.
+- **تحميل وحفظ سريعان:** يبقى التطبيق سريع الاستجابة أثناء تحميل القوائم وحفظ الإعدادات، ويتجاهل نتائج الفحص القديمة، ويحفظ الإعدادات المعلّقة قبل الإغلاق.
+
+#### إصلاحات
+
+- **استمرار فحص لوحة المعلومات:** يستمر الفحص والتحديث عند تبديل اللغة أو المظهر، وعند العودة إلى اللوحة يظهر الفحص الجاري مع تقدّمه ونتائجه.
+- **ترتيب صحيح في العربية:** تظهر الأحجام والنسب وحروف الأقراص والتواريخ والمسارات بالترتيب الصحيح، وتبقى قيم لوحة المعلومات تحت عناوينها وبجانب أيقوناتها في اللغتين.
+- **الأيقونات والتكرار:** تُستعاد أيقونات البرامج والألعاب بشكل صحيح، وتُكتشف أيقونات Steam بموثوقية أكبر، وتُدمج العناصر المكررة في قائمة البرامج.
+- **ملف إعدادات تالف:** إذا تلف ملف الإعدادات المحفوظ، تُستعاد الإعدادات من نسخة احتياطية سليمة، وتظهر صفحة الخطأ خيار إعادة المحاولة بدلًا من رسالة تقنية.
+- **تقارير الأعطال:** تُحفظ تقارير الأعطال على جهازك مع خيار فتح مجلد السجلات أو نسخ التفاصيل. وعند فتح التطبيق مرة أخرى تُعرض النافذة الحالية، وتقل الحركة في جلسات سطح المكتب البعيد.
+
+
+<details>
+<summary>أيضًا في v1.0.145–v1.0.146</summary>
+
+#### الإزالة العميقة
+
+- **بدء أسرع:** أُزيلت رسالة التأكيد الإضافية قبل بدء الإزالة لأنك اخترت البرنامج بنفسك. ولا تزال بقايا الملفات غير محددة مسبقًا، ويبقى التأكيد مطلوبًا للحذف النهائي.
+- **مراجعة شاملة للوظائف:** فُحصت مسارات الإزالة العميقة وإزالة الألعاب وأزرارها بالعربية والإنجليزية، مع إصلاح عدة مشاكل في الإزالة العميقة.
+- **شعارات لكل برنامج ولعبة:** تُحدد الأيقونات وتُحفظ من أول تشغيل حتى في المرة الأولى، مع حمايات تمنع ظهور أيقونة برنامج آخر (مثلًا لم تعد Steam تظهر بشعار خاطئ).
+- **بدون صفوف مكررة:** يُدمج البرنامج أو اللعبة نفسها إذا ظهرت من المشغّل ومن سجل Windows في عنصر واحد، ولم تعد معرّفات المنتجات في المشغّلات تظهر كأنها إصدار.
+- **صفوف برامج أكبر** لقراءة أسهل.
+
+#### لوحة المعلومات ومتصفح الملفات
+
+- **زر التحديث (Refresh) يعمل** في لوحة المعلومات.
+- **مزامنة الحذف:** عند حذف ملف أو مجلد تتحدث نتائج لوحة المعلومات تلقائيًا.
+- **استمرار الفحص:** تغيير اللغة أو المظهر لم يعد يقطع فحص لوحة المعلومات.
+- **سجل الرجوع ومسار قابل للنقر** في متصفح الملفات، للرجوع بين المجلدات التي زرتها والقفز إلى أي مجلد أب.
+
+#### الواجهة
+
+- **حركة عند تمرير المؤشر** على أزرار التنقل: تتغير الألوان بسلاسة ويتحرك الزر قليلًا، وتتوافق مع المظهر الحالي في جميع المظاهر الثمانية. وتتعطل عند إيقاف حركات Windows.
+- **عربية أفضل:** تحسين صياغة النصوص، وتظهر الأرقام مع الوحدات (مثل `41.6 GB`) والتواريخ بالترتيب الصحيح في الواجهة العربية.
+
+#### الاستقرار
+
+- معالجة عامة للأخطاء بحيث تُسجَّل الأخطاء غير المتوقعة بدل إغلاق البرنامج.
+- تُحفظ الإعدادات بطريقة ذرّية مع نسخة احتياطية، فلا يفسدها إغلاق مفاجئ أثناء الحفظ.
+- تُلغى عمليات الفحص الخلفية بشكل سليم عند مغادرة الصفحة، وتُتجاهل النتائج القديمة.
+
+</details>
+
+<details>
+<summary>أبرز تغييرات الإصدار السابق (v1.0.144)</summary>
 
 #### متصفح الملفات
 
@@ -301,42 +387,28 @@ Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 - **منصات ألعاب إضافية:** يشمل اكتشاف الألعاب الآن **GOG** و**Riot Games** عند إمكانية اكتشافها.
 - **المظاهر:** ثمانية مظاهر متاحة، منها الأزرق والأسود والأبيض والبيج والبيج الغامق / إسبريسو وMidnight Champagne.
 
-<details>
-<summary>أبرز تغييرات الإصدار السابق (v1.0.125)</summary>
-
-- **تحليل تخزين أدق:** فصل **أكبر المجلدات** و**أكبر الملفات** في تبويبين مستقلين، مع عرض العناصر الفرعية المباشرة للمسار المفحوص بأحجامها التراكمية دون تكرار المجلدات المتداخلة.
-- **الانتقال من لوحة المعلومات:** فتح المجلدات الظاهرة في نتائج الفحص مباشرة داخل متصفح ملفات Polar.
-- **حساب أحجام المجلدات تلقائيًا:** حساب الأحجام في الخلفية وتحديث النتائج عند اكتمالها، مع توضيح النتائج الجزئية والمجلدات التي يتعذر الوصول إليها.
-- **التحديد المتعدد:** اختيار عدة ملفات ومجلدات باستخدام علامة التحديد أو **Ctrl+Click** أو **Shift+Click** أو **Ctrl+A**.
-- **عمليات الملفات الجماعية:** نقل العناصر المحددة إلى سلة المحذوفات أو حذفها نهائيًا بعد التأكيد، مع إجراءات حماية للمسارات الحساسة.
-- **حفظ الترتيب:** الاحتفاظ بطريقة الترتيب واتجاهه عند الانتقال بين المجلدات وبعد إعادة تشغيل البرنامج.
-- **فحص أكثر سلاسة:** معالجة في الخلفية وتخزين مؤقت وإلغاء للعمليات القديمة، مع تقليل الفحص المكرر.
-- **تحسين سجل الإزالة وتوحيد عدد البرامج:** الصفحة الرئيسية والإزالة العميقة تستخدمان مصدرًا واحدًا للبرامج والألعاب المدعومة بعد دمج النتائج وإزالة التكرار.
-- **تحسين إزالة الكاش:** مسح بيانات الفحص المؤقتة والنتائج المحفوظة وإعادة تعيين إحصاءات لوحة المعلومات وسجل الإزالة المحلي.
-
 </details>
 
 ### المميزات الأساسية
 
-- الإزالة العميقة والرسمية وإزالة الألعاب المدعومة، مع التحقق من النتائج ومراجعة البقايا.
+- الإزالة العميقة وإزالة الألعاب المدعومة، مع التحقق من النتائج ومراجعة البقايا.
 - التنظيف السريع لفئات الملفات المؤقتة المختارة.
 - لوحة معلومات تعرض مساحة القرص وأكبر الملفات والمجلدات.
 - متصفح ملفات مدمج يدعم أحجام المجلدات التلقائية والترتيب بالنقر على العناوين والتحديد المتعدد وقائمة الزر الأيمن والعمليات الجماعية المؤكدة.
 - مكتشف ملفات مكررة يتحقق من المحتوى باستخدام SHA-256، مع نتائج مجمّعة وتحديد ذكي يحتفظ بنسخة واحدة دائمًا.
 - ثمانية مظاهر وواجهتان بالعربية والإنجليزية وسجل نشاط.
 - فحص مدمج للتحديثات.
-- خيارات إصدار تشمل EXE مستقلًا وZIP محمولًا ومثبت Windows.
+- ملف EXE محمول ومثبت Windows مع بصمات SHA-256.
 
 ### مميزات البرنامج
 
-#### الإزالة العميقة والرسمية
+#### الإزالة العميقة
 
 يعرض القسم البرامج المثبتة وبعض ألعاب Steam وEpic Games وUbisoft وRockstar وGOG وRiot Games عند إمكانية اكتشافها، مع الاسم والإصدار والناشر والحجم والأيقونة عند توفر البيانات. ويستخدم مع الصفحة الرئيسية مصدرًا موحدًا لعدد البرامج المثبتة بعد دمج السجلات وإزالة التكرار.
 
 - **Deep Uninstall:** إزالة مباشرة للتثبيتات التي يتوفر لها مسار حذف موثوق ومتحقق منه.
-- **Official Uninstall:** استخدام أمر الإزالة الرسمي المسجّل للبرامج التي لا يناسبها الحذف المباشر.
 - **Games Uninstall:** استخدام طرق إزالة الألعاب المتاحة حسب المنصة؛ وقد تحتاج لإكمال الإزالة داخل مشغّل الألعاب.
-- يمكن للطريقتين **العميقة والرسمية** تشغيل فاحص البقايا نفسه بعد التحقق من إزالة البرنامج.
+- يمكن للطريقتين تشغيل فاحص البقايا نفسه بعد التحقق من إزالة البرنامج.
 - تُعرض الملفات والمجلدات والاختصارات ومدخلات Registry المرشحة في نافذة مراجعة، **ولا تُحدد تلقائيًا**.
 - يتيح زر **Verify / Rescan** إعادة التحقق والفحص إذا لم تتأكد نتيجة الإزالة.
 - تُحدّث قائمة البرامج بعد التحقق من الإزالة، وليس بمجرد إغلاق نافذة المزيل.
@@ -398,14 +470,14 @@ Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 ### التحميل والتشغيل
 
 1. افتح [صفحة الإصدارات الرسمية على GitHub](https://github.com/Ayh-m1/Polar-Uninstaller/releases).
-2. اختر أحدث إصدار **C# / WPF** (v1.0.144 أو أحدث عند توفره)؛ فإصدارات Python السابقة مختلفة عن هذا البناء.
+2. اختر أحدث إصدار **C# / WPF** (v1.0.147 أو أحدث عند توفره)؛ فإصدارات Python السابقة مختلفة عن هذا البناء.
 3. اختر أحد الملفات المنشورة:
-   - **`PolarUninstaller-Setup-v1.0.144.exe`** — مثبت Windows.
-   - **`PolarUninstaller-v1.0.144-portable.zip`** — نسخة محمولة؛ فك الضغط ثم شغّل `PolarUninstaller.exe`.
-   - **`PolarUninstaller.exe`** — ملف تنفيذي مستقل إذا كان مرفقًا بالإصدار.
+   - **`PolarUninstaller-Setup-v1.0.147.exe`** — مثبت Windows.
+   - **`PolarUninstaller.exe`** — ملف تنفيذي محمول ومستقل.
+   - **`SHA256SUMS.txt`** — بصمات SHA-256 للتحقق من الملف الذي نزّلته.
 4. راجع أي طلب صلاحيات أو تحذير أمني من Windows قبل الموافقة.
 
-تحتوي حزم WPF المحمولة على مكونات تشغيل .NET المطلوبة، لذلك لا يلزم عادةً تثبيت .NET بشكل منفصل. ويختلف ملف Setup عن الحزمة المحمولة.
+تحتوي نسخة WPF المحمولة على مكونات تشغيل .NET المطلوبة، لذلك لا يلزم عادةً تثبيت .NET بشكل منفصل. ويختلف ملف Setup عن النسخة المحمولة. يطلب المثبت والبرنامج صلاحيات المسؤول، لذلك ستظهر نافذة التحكم بحساب المستخدم (UAC) في Windows.
 
 > **حالة النشر:** نجاح بناء النسخة محليًا لا يعني نشرها تلقائيًا على GitHub. تحقق من صفحة Releases لمعرفة الملفات المنشورة بالفعل.
 
@@ -445,7 +517,7 @@ dotnet publish .\PolarUninstallerWpf.csproj -c Release -r win-x64 --self-contain
 | `Localization/` | نصوص الواجهة بالعربية والإنجليزية |
 | `Assets/` | الشعارات والصور وبيانات الإصدارات والموارد |
 | `Build/SingleFile/` | ملف EXE المحمول والمستقل |
-| `Build/` | ملفات البناء والحزمة المحمولة وملفات المثبت |
+| `Build/` | ملفات البناء وملفات المثبت |
 
 قد تتغير المجلدات أثناء التطوير؛ ملفات المشروع الفعلية هي المرجع النهائي.
 
@@ -475,7 +547,7 @@ dotnet publish .\PolarUninstallerWpf.csproj -c Release -r win-x64 --self-contain
 - [الدعم](https://polarwolves.com/supportus/p1682342912)
 - [Discord](https://discord.gg/plr)
 
-**المطور:** Ayhm  
+**المطور:** Polar  
 **الترخيص:** MIT
 
 ### سياسة التوقيع الرقمي
