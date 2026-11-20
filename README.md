@@ -13,8 +13,6 @@
 Polar Uninstaller is a C# / WPF utility for 64-bit Windows 10 and 11. It removes apps and games, cleans temporary files, analyzes storage, and manages files. The interface supports English and Arabic, including right-to-left layout.
 
 ![Polar Uninstaller Home](docs/screenshots/home.png)
-![Deep Uninstaller app and game list](docs/screenshots/deep-uninstaller.png)
-![Dashboard storage overview](docs/screenshots/dashboard.png)
 
 ### Using Polar Uninstaller
 
@@ -101,8 +99,6 @@ GitHub Actions builds the Windows EXE from the public source and uploads it as a
 أداة لإزالة البرامج والألعاب، وتنظيف الملفات المؤقتة، وتحليل مساحة التخزين، وإدارة الملفات. تعمل على ويندوز ⁦10⁩ و⁦11⁩ بمعمارية ⁦x64⁩، ومبنية باستخدام ⁦C#⁩ و⁦WPF⁩. تدعم الإنجليزية والعربية، مع عرض الواجهة العربية من اليمين إلى اليسار.
 
 ![الصفحة الرئيسية](docs/screenshots/home.png)
-![قائمة البرامج والألعاب في الإزالة العميقة](docs/screenshots/deep-uninstaller.png)
-![نظرة عامة على التخزين في لوحة المعلومات](docs/screenshots/dashboard.png)
 
 ### استخدام البرنامج
 
