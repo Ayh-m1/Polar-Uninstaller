@@ -50,6 +50,7 @@ public static class RecycleBinCleaner
         int removed=(int)Math.Min(int.MaxValue,Math.Max(0,before.Items-after.Items));
         int remaining=(int)Math.Min(int.MaxValue,Math.Max(0,after.Items));
         if(hr<0&&removed==0&&freed==0)Marshal.ThrowExceptionForHR(hr);
+        if(removed>0||freed>0)FileChangeHub.PublishAsync(Array.Empty<FileChange>()).GetAwaiter().GetResult();
         return new(removed,freed,remaining);
     }
 }

@@ -2,7 +2,7 @@ using System.Windows.Input;
 
 namespace PolarUninstallerWpf;
 
-public enum ExplorerCommand {None,Help,Back,Forward,Up,Refresh,Open,SelectAll,Deselect,Recycle,Permanent,Search,Address}
+public enum ExplorerCommand {None,Help,Back,Forward,Up,Refresh,Open,SelectAll,Deselect,Recycle,Permanent,Search,Address,ToggleHidden}
 public sealed record ShortcutHelpEntry(string Group,string Keys,string Description);
 
 public static class ExplorerShortcuts
@@ -15,6 +15,7 @@ public static class ExplorerShortcuts
         if(modifiers==ModifierKeys.None&&key==Key.F5)return ExplorerCommand.Refresh;
         if(!duplicate&&(modifiers==ModifierKeys.None&&key==Key.F4||modifiers==ModifierKeys.Control&&key==Key.L))return ExplorerCommand.Address;
         if(textInput)return ExplorerCommand.None;
+        if(!duplicate && key==Key.H && modifiers==ModifierKeys.Control)return ExplorerCommand.ToggleHidden;
         if(key==Key.Back&&modifiers==ModifierKeys.None)return ExplorerCommand.Back;
         if(!listFocus)return ExplorerCommand.None;
         if(key==Key.A&&modifiers==ModifierKeys.Control)return ExplorerCommand.SelectAll;
@@ -28,6 +29,7 @@ public static class ExplorerShortcuts
     {
         var rows=new List<ShortcutHelpEntry>{new("HelpNavigation","Alt+Left",duplicate?"HelpBackBrowser":"HelpBack")};
         if(!duplicate){rows.Add(new("HelpNavigation","Alt+Right","HelpForward"));rows.Add(new("HelpNavigation","Alt+Up","HelpUp"));rows.Add(new("HelpNavigation","Ctrl+L / F4","HelpAddress"));}
+        if(!duplicate)rows.Add(new("View","Ctrl+H","ShowHiddenItems"));
         rows.Add(new("HelpNavigation","F5",duplicate?"HelpRescan":"HelpRefresh"));
         rows.Add(new("HelpNavigation","Backspace",duplicate?"HelpBackBrowser":"HelpBackOutsideText"));
         rows.Add(new("HelpNavigation","Enter",duplicate?"HelpExpandGroup":"HelpOpen"));

@@ -8,7 +8,7 @@ namespace PolarUninstallerWpf.Services;
 internal static class DialogThemeResources
 {
     internal static void Apply(ResourceDictionary resources, string background, string card,
-        string border, string accent, string text, string dim)
+        string border, string accent, string text, string dim, string? accentText=null)
     {
         static Color ColorOf(string value)=>(Color)ColorConverter.ConvertFromString(value);
         static Color Alpha(Color color,byte alpha)=>Color.FromArgb(alpha,color.R,color.G,color.B);
@@ -27,7 +27,7 @@ internal static class DialogThemeResources
         Put("DialogBorderBrush",Alpha(edge,180));
         Put("DialogTextBrush",ColorOf(text));Put("DialogDimBrush",ColorOf(dim));
         Put("DialogAccentBrush",highlight);
-        Put("DialogAccentTextBrush",(.299*highlight.R+.587*highlight.G+.114*highlight.B)/255>.62
+        Put("DialogAccentTextBrush",accentText is not null ? ColorOf(accentText) : (.299*highlight.R+.587*highlight.G+.114*highlight.B)/255>.62
             ?Color.FromRgb(18,24,31):Colors.White);
     }
 }

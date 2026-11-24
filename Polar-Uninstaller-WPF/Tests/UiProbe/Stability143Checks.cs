@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,14 +18,16 @@ internal static class Stability143Checks
         string target=Path.Combine(root,"PolarUninstaller.exe"),otherTarget=Path.Combine(root,"Unrelated.exe");
         File.WriteAllText(target,"disposable shortcut target; never executed");
         File.WriteAllText(otherTarget,"unrelated disposable target; never executed");
-        string icon=target; // The executable owns its icon; index 0 is the primary icon.
+        string icon=Path.Combine(root,WindowsShellIconService.IconFileName);
+        using(var resource=Application.GetResourceStream(new Uri("pack://application:,,,/PolarUninstaller;component/Assets/Polar.ico"))!.Stream)
+        using(var output=File.Create(icon))resource.CopyTo(output);
         string link=Path.Combine(root,"اختصار Polar.lnk"),otherLink=Path.Combine(root,"Unrelated.lnk");
         ShellShortcutService.Write(link,target,"--fixture argument",otherTarget);
         ShellShortcutService.Write(otherLink,otherTarget,"--keep",otherTarget);
         var otherBytes=File.ReadAllBytes(otherLink);
-        Check(ShellShortcutService.UpdateIconForTarget(link,target,icon),"Matching Unicode shortcut is refreshed to the executable icon");
+        Check(ShellShortcutService.UpdateIconForTarget(link,target,icon),"Matching Unicode shortcut is refreshed to official branding");
         var refreshed=ShellShortcutService.Read(link);
-        Check(refreshed.Target==target&&refreshed.Arguments=="--fixture argument"&&refreshed.Icon==icon+",0","Refresh preserves target and arguments and points the icon at the EXE");
+        Check(refreshed.Target==target&&refreshed.Arguments=="--fixture argument"&&refreshed.Icon==icon+",0","Refresh preserves target and arguments and changes only the icon");
         Check(!ShellShortcutService.UpdateIconForTarget(link,target,icon),"Repeated icon refresh is idempotent");
         Check(!ShellShortcutService.UpdateIconForTarget(otherLink,target,icon)&&File.ReadAllBytes(otherLink).SequenceEqual(otherBytes),"Unrelated shortcut remains byte-for-byte unchanged");
         var metrics=new ActivityMetricsService(root);
@@ -58,9 +60,8 @@ internal static class Stability143Checks
             for(int i=0;i<12;i++){navigate.Invoke(window,new object[]{page});toggle.Invoke(window,new object[]{window,new RoutedEventArgs()});}
             Check(ReferenceEquals(original,content.Content),page+": repeated navigation and sidebar toggles preserve page instance");
         }
-        Check(AppInfo.Version=="1.0.144"&&ReleaseNotesService.LoadCurrent(false)?.Entries.Count==7&&ReleaseNotesService.LoadCurrent(true)?.Entries.Count==7,"v1.0.144 and concise bilingual notes embedded");
+        Check(AppInfo.Version=="1.0.150"&&ReleaseNotesService.LoadCurrent(false)?.Entries.Count==5&&ReleaseNotesService.LoadCurrent(true)?.Entries.Count==5,"v1.0.150 and complete bilingual notes embedded");
         Console.WriteLine($"{count} checks, {failures} failures. No personal application removal or live UI test performed.");
         return failures==0?0:1;
     }
 }
-

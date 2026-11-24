@@ -1,4 +1,4 @@
-<UserControl x:Class="PolarUninstallerWpf.FileBrowserView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:PolarUninstallerWpf">
+<UserControl xmlns:local="clr-namespace:PolarUninstallerWpf" x:Class="PolarUninstallerWpf.FileBrowserView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <UserControl.Resources>
     <ResourceDictionary Source="Styles/FileExplorer.xaml" />
   </UserControl.Resources>
@@ -17,7 +17,7 @@
       </Grid.ColumnDefinitions>
       <WrapPanel x:Name="Toolbar" VerticalAlignment="Top" MaxWidth="450" />
       <Grid Grid.Column="1" Margin="4,0,8,0" VerticalAlignment="Top" Height="34">
-        <Border x:Name="BreadcrumbFrame" ClipToBounds="True" SizeChanged="BreadcrumbSizeChanged" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" CornerRadius="9" Padding="8,4">
+        <Border FlowDirection="LeftToRight" x:Name="BreadcrumbFrame" ClipToBounds="True" SizeChanged="BreadcrumbSizeChanged" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" CornerRadius="9" Padding="8,4">
           <StackPanel x:Name="Breadcrumbs" Orientation="Horizontal" MouseDown="EditAddress" MinHeight="26" />
         </Border>
         <TextBox x:Name="Address" Visibility="Collapsed" Padding="10,8" FlowDirection="LeftToRight" Background="Transparent" Foreground="{DynamicResource ChromeText}" BorderBrush="{DynamicResource ChromeAccent}" KeyDown="AddressKey" LostKeyboardFocus="AddressBlur" />
@@ -31,6 +31,7 @@
     </Grid>
     <Grid x:Name="BrowserBody" Grid.Row="1">
       <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
         <RowDefinition Height="*" />
         <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
@@ -38,7 +39,7 @@
         <ColumnDefinition Width="*" />
         <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
-      <ListView x:Name="Files" MaxWidth="1440" HorizontalAlignment="Stretch" SizeChanged="FilesSizeChanged" SelectionChanged="FilesSelectionChanged" PreviewMouseLeftButtonDown="FilesPreviewMouseLeftButtonDown" SelectionMode="Extended" Background="Transparent" Foreground="{DynamicResource HomeTextBrush}" BorderThickness="0" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling">
+      <ListView x:Name="Files" MaxWidth="1440" HorizontalAlignment="Stretch" SizeChanged="FilesSizeChanged" SelectionChanged="FilesSelectionChanged" PreviewMouseLeftButtonDown="FilesPreviewMouseLeftButtonDown" SelectionMode="Extended" Background="Transparent" Foreground="{DynamicResource HomeTextBrush}" BorderThickness="0" ScrollViewer.CanContentScroll="True" ScrollViewer.HorizontalScrollBarVisibility="Disabled" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" Grid.Row="1">
         <ListView.Template>
           <ControlTemplate TargetType="ListView">
             <Border Background="Transparent">
@@ -83,7 +84,7 @@
             <Setter Property="Template">
               <Setter.Value>
                 <ControlTemplate TargetType="ListViewItem">
-                  <Border x:Name="Row" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="11">
+                  <Border local:CalmRow.Enabled="True" x:Name="Row" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="11">
                     <Grid>
                       <GridViewRowPresenter Content="{TemplateBinding Content}" Columns="{Binding View.Columns, RelativeSource={RelativeSource AncestorType=ListView}}" Margin="{TemplateBinding Padding}" />
                       <Border x:Name="SelectionHitbox" Width="42" Height="42" Margin="-5,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" Background="Transparent" Cursor="Hand" MouseLeftButtonDown="SelectionCircleClick" />
@@ -141,21 +142,21 @@
             <GridViewColumn x:Name="NameColumn" Width="260">
               <GridViewColumn.CellTemplate>
                 <DataTemplate>
-                  <TextBlock Margin="12,0" Text="{Binding Name}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" VerticalAlignment="Center" />
+                  <TextBlock Margin="12,0" Text="{Binding DisplayName}" Style="{StaticResource BrowserDirectionalCell}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Name}" VerticalAlignment="Center" />
                 </DataTemplate>
               </GridViewColumn.CellTemplate>
             </GridViewColumn>
             <GridViewColumn x:Name="SizeColumn" Width="100">
               <GridViewColumn.CellTemplate>
                 <DataTemplate>
-                  <TextBlock Margin="12,0" Text="{Binding DisplaySize}" FlowDirection="LeftToRight" TextAlignment="Right" VerticalAlignment="Center" />
+                  <TextBlock Margin="12,0" Text="{Binding DisplaySize}" ToolTip="{Binding SizeToolTip}" FlowDirection="LeftToRight" TextAlignment="Right" VerticalAlignment="Center" />
                 </DataTemplate>
               </GridViewColumn.CellTemplate>
             </GridViewColumn>
             <GridViewColumn x:Name="TypeColumn" Width="134">
               <GridViewColumn.CellTemplate>
                 <DataTemplate>
-                  <TextBlock Margin="12,0" Text="{Binding Type}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Type}" VerticalAlignment="Center" />
+                  <TextBlock Margin="12,0" Text="{Binding Type}" Style="{StaticResource BrowserDirectionalCell}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Type}" VerticalAlignment="Center" />
                 </DataTemplate>
               </GridViewColumn.CellTemplate>
             </GridViewColumn>
@@ -169,12 +170,12 @@
           </GridView>
         </ListView.View>
       </ListView>
-      <Border x:Name="DetailsPanel" Grid.Column="1" Width="245" Margin="12,0,0,0" Padding="18" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" CornerRadius="12" Grid.RowSpan="2">
+      <Border x:Name="DetailsPanel" Grid.Column="1" Width="245" Margin="12,0,0,0" Padding="18" Background="Transparent" BorderBrush="Transparent" BorderThickness="0" CornerRadius="12" Grid.RowSpan="2" Grid.Row="1">
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
           <StackPanel>
             <TextBlock x:Name="DetailsHeading" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource ChromeAccent}" Margin="0,0,0,16" />
             <Image x:Name="DetailsIcon" Width="64" Height="64" Stretch="Uniform" Margin="0,0,0,16" />
-            <TextBlock x:Name="DetailsText" Foreground="{DynamicResource HomeTextBrush}" TextWrapping="Wrap" />
+            <local:SelectableText x:Name="DetailsText" Foreground="{DynamicResource HomeTextBrush}" />
             <TextBox x:Name="DetailsPath" IsReadOnly="True" FlowDirection="LeftToRight" Foreground="{DynamicResource HomeTextBrush}" Background="Transparent" BorderThickness="0" TextWrapping="Wrap" Margin="0,12,0,4" />
             <Button x:Name="DetailsCopy" Style="{StaticResource ExplorerActionButton}" Click="DetailsCopyPath" Margin="0,0,0,10" />
             <Button x:Name="DetailsLocation" Style="{StaticResource ExplorerPrimaryButton}" Click="DetailsOpenLocation" />
@@ -183,7 +184,7 @@
           </StackPanel>
         </ScrollViewer>
       </Border>
-      <Grid x:Name="Actions" Grid.Row="1" Margin="0,8,0,0" Visibility="Collapsed" Grid.Column="0">
+      <Grid x:Name="Actions" Grid.Row="2" Margin="0,8,0,0" Visibility="Collapsed" Grid.Column="0">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="Auto" />
           <ColumnDefinition Width="Auto" />
@@ -191,14 +192,16 @@
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
       </Grid>
+      <ContentControl x:Name="SelectionTipHost" Grid.ColumnSpan="2" />
     </Grid>
     <ContentControl x:Name="DuplicateHost" Grid.Row="1" Grid.RowSpan="3" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Visibility="Collapsed" />
-    <StackPanel Grid.Row="3">
-      <ContentControl x:Name="SelectionTipHost" />
-      <DockPanel x:Name="StatusFooter" SizeChanged="StatusFooterSizeChanged">
-        <local:ShortcutHintLine x:Name="BrowserShortcutHint" DockPanel.Dock="Right" VerticalAlignment="Center" />
-        <TextBlock x:Name="Status" Margin="2,8" FontSize="13" Foreground="{DynamicResource HomeTextBrush}" TextWrapping="Wrap" />
-      </DockPanel>
-    </StackPanel>
+    <Grid x:Name="StatusFooter" Grid.Row="3" SizeChanged="StatusFooterSizeChanged">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <local:SelectableText x:Name="Status" Grid.Row="0" Margin="2,8" FontSize="13" Foreground="{DynamicResource HomeTextBrush}" />
+      <local:ShortcutHintLine x:Name="BrowserShortcutHint" Grid.Column="1" Margin="16,8,2,8" xmlns:local="clr-namespace:PolarUninstallerWpf" />
+    </Grid>
   </Grid>
 </UserControl>

@@ -10,9 +10,9 @@ namespace PolarUninstallerWpf.Services;
 
 public sealed record ProgramIcon(ImageSource Image, Color? Accent)
 {
-    public string SourcePath { get; init; } = "";
+    public IconResolutionMethod Method { get; init; }
     public int SourceIndex { get; init; }
-    public IconResolutionMethod Method { get; init; } = IconResolutionMethod.Legacy;
+    public string SourcePath { get; init; } = "";
 }
 public static class ProgramIconService
 {

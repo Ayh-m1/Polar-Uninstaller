@@ -10,7 +10,7 @@ public sealed class PermanentDeleteDialog : Window
 {
     public Button CancelButton {get;}
     public Button ConfirmButton {get;}
-    public PermanentDeleteDialog(bool arabic,int count,long knownBytes,bool incomplete,IReadOnlyList<string> paths,Style danger,Style normal)
+    public PermanentDeleteDialog(bool arabic,int count,long knownBytes,bool incomplete,IReadOnlyList<string> paths,Style danger,Style normal,bool hiddenOrSystem=false)
     {
         string T(string key,params object[] values)=>BrowserText.Get(key,arabic,values);
         Title=T("PermanentTitle");Width=650;MinWidth=460;SizeToContent=SizeToContent.Height;MaxHeight=650;
@@ -20,6 +20,7 @@ public sealed class PermanentDeleteDialog : Window
         var root=new StackPanel{Margin=new Thickness(22)};KeyboardNavigation.SetTabNavigation(root,KeyboardNavigationMode.Cycle);
         root.Children.Add(new TextBlock{Text=T("PermanentWarning"),FontSize=17,FontWeight=FontWeights.SemiBold,TextWrapping=TextWrapping.Wrap});
         root.Children.Add(new TextBlock{Text=T("SelectedCount",count),Margin=new Thickness(0,14,0,4)});
+        if(hiddenOrSystem)root.Children.Add(new TextBlock{Text=T("HiddenDeleteWarning"),TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,8,0,0)});
         var size=new StackPanel{Orientation=Orientation.Horizontal};size.Children.Add(new TextBlock{Text=T("KnownSize")+": "});
         size.Children.Add(new TextBlock{Text=BrowserEntry.FormatBytes(knownBytes),FlowDirection=FlowDirection.LeftToRight});root.Children.Add(size);
         if(incomplete)root.Children.Add(new TextBlock{Text=T("UnknownSizes"),TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,8,0,0)});

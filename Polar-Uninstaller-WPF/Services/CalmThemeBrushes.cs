@@ -18,6 +18,7 @@ public static class CalmThemeBrushes
     {
         Color C(string value)=>(Color)ColorConverter.ConvertFromString(value);
         var accent=C(palette.Accent);var surface=C(palette.Card);var text=C(palette.Text);var dim=C(palette.Dim);
+        var hoverAccent=C(palette.HoverAccent??palette.Accent);
         var selected=Read(r,"SidebarSelected",surface);var activeText=Read(r,"SidebarActiveText",text);
         Color Fill(Color background,Color foreground,Color secondary)
         {
@@ -30,7 +31,7 @@ public static class CalmThemeBrushes
         Put("CalmHoverFill",fill);Put("CalmHoverBorder",Legible(Mix(surface,accent,.5),fill,text,3));
         Put("CalmNavHoverFill",nav);Put("CalmNavHoverBorder",Legible(Mix(nav,accent,.5),nav,text,3));
         Put("CalmSelectedHoverFill",selectedFill);Put("CalmSelectedHoverBorder",Legible(accent,selectedFill,activeText,3));
-        Put("CalmHoverIcon",Legible(accent,nav,text,3));Put("CalmSelectedHoverIcon",Legible(accent,selectedFill,activeText,3));
+        Put("CalmHoverIcon",Legible(hoverAccent,nav,text,3));Put("CalmSelectedHoverIcon",Legible(hoverAccent,selectedFill,activeText,3));
         Put("CalmFocusBrush",Legible(accent,C(palette.Background),text,3));
         var primary=Read(r,"AccentButtonBackground",accent);var primaryText=Read(r,"ChromeAccentText",text);
         // Brighten only as far as the existing primary text contrast permits.
@@ -40,9 +41,9 @@ public static class CalmThemeBrushes
         var danger=C("#B3261E");var dangerText=C("#FFFFFF");var dangerHover=Mix(danger,dangerText,.08);
         if(Contrast(dangerHover,dangerText)<4.5)dangerHover=danger;
         Put("CalmDangerHoverFill",dangerHover);Put("CalmDangerHoverBorder",Legible(dangerText,dangerHover,dangerText,3));
-        var secondaryAccent=C(palette.SecondaryAccent??palette.Glow);
+        var secondaryAccent=C(palette.HoverAccent??palette.SecondaryAccent??palette.Glow);
         byte lightAlpha=51;
-        while(lightAlpha>0&&new[]{accent,secondaryAccent}.Any(c=>Contrast(dim,Mix(nav,c,lightAlpha/255d))<4.5||Contrast(text,Mix(nav,c,lightAlpha/255d))<4.5||Contrast(Legible(accent,nav,text,3),Mix(nav,c,lightAlpha/255d))<3))lightAlpha--;
+        while(lightAlpha>0&&new[]{accent,secondaryAccent}.Any(c=>Contrast(dim,Mix(nav,c,lightAlpha/255d))<4.5||Contrast(text,Mix(nav,c,lightAlpha/255d))<4.5||Contrast(Legible(hoverAccent,nav,text,3),Mix(nav,c,lightAlpha/255d))<3))lightAlpha--;
         var light=new LinearGradientBrush(new GradientStopCollection{new(Color.FromArgb(0,accent.R,accent.G,accent.B),0),new(Color.FromArgb(lightAlpha,accent.R,accent.G,accent.B),.35),new(Color.FromArgb(lightAlpha,secondaryAccent.R,secondaryAccent.G,secondaryAccent.B),.65),new(Color.FromArgb(0,secondaryAccent.R,secondaryAccent.G,secondaryAccent.B),1)},new Point(0,0),new Point(1,0));light.Freeze();r["CalmGlowBrush"]=light;
         Changed?.Invoke();
     }

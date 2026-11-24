@@ -7,7 +7,7 @@ namespace PolarUninstallerWpf.Services;
 /// <summary>Updates language-sensitive properties without replacing their controls or operation owners.</summary>
 internal sealed class LocalizedPresentation
 {
-    private readonly Dictionary<(DependencyObject, DependencyProperty), Func<bool, string>> values = new();
+    private readonly Dictionary<(DependencyObject, DependencyProperty?), Func<bool, string>> values = new();
     private bool arabic;
 
     public void Set(DependencyObject owner, DependencyProperty property, Func<bool, string> value)
@@ -18,6 +18,14 @@ internal sealed class LocalizedPresentation
 
     public void Text(TextBlock owner, string en, string ar) => Set(owner, TextBlock.TextProperty, language => BidiText.Localize(language, en, ar));
 
+    public void Text(SelectableText owner, string en, string ar) => Text(owner, language => BidiText.Localize(language, en, ar));
+
+    public void Text(SelectableText owner, Func<bool, string> value)
+    {
+        values[(owner, null)] = value;
+        SetRuns(owner, value(arabic));
+    }
+
     public void Refresh(bool language)
     {
         arabic = language;
@@ -25,7 +33,7 @@ internal sealed class LocalizedPresentation
             Apply(key.Item1, key.Item2, value(language));
     }
 
-    private static void Apply(DependencyObject owner, DependencyProperty property, string value)
+    private static void Apply(DependencyObject owner, DependencyProperty? property, string value)
     {
         if (owner is TextBlock text && property == TextBlock.TextProperty)
         {
@@ -33,7 +41,10 @@ internal sealed class LocalizedPresentation
             return;
         }
 
-        owner.SetCurrentValue(property, value);
+        if (property is null && owner is SelectableText selectable)
+            SetRuns(selectable, value);
+        else if (property is not null)
+            owner.SetCurrentValue(property, value);
     }
 
     public static void SetLeftToRight(TextBlock text, string value, bool arabic)
@@ -43,6 +54,12 @@ internal sealed class LocalizedPresentation
         if (text.Inlines.FirstInline is not Run run) return;
         if (arabic) run.FlowDirection = FlowDirection.LeftToRight;
         else run.ClearValue(Inline.FlowDirectionProperty);
+    }
+
+    public static void SetLeftToRight(SelectableText text, string value, bool arabic)
+    {
+        text.Text = value;
+        if (arabic && text.Inlines.FirstInline is Run run) run.FlowDirection = FlowDirection.LeftToRight;
     }
 
     // WPF text layout needs explicit run direction for neutral characters
@@ -55,7 +72,14 @@ internal sealed class LocalizedPresentation
             return;
         }
 
-        text.Inlines.Clear();
+        SetIsolatedRuns(text.Inlines, value);
+    }
+
+    public static void SetRuns(SelectableText text, string value) => SetIsolatedRuns(text.Inlines, value);
+
+    private static void SetIsolatedRuns(InlineCollection inlines, string value)
+    {
+        inlines.Clear();
         int start = 0;
         while (start < value.Length)
         {
@@ -63,12 +87,12 @@ internal sealed class LocalizedPresentation
             int close = open < 0 ? -1 : value.IndexOf('\u2069', open + 1);
             if (close < 0)
             {
-                text.Inlines.Add(value[start..]);
+                inlines.Add(value[start..]);
                 break;
             }
 
-            if (open > start) text.Inlines.Add(value[start..open]);
-            text.Inlines.Add(new Run(value[(open + 1)..close]) { FlowDirection = FlowDirection.LeftToRight });
+            if (open > start) inlines.Add(value[start..open]);
+            inlines.Add(new Run(value[(open + 1)..close]) { FlowDirection = FlowDirection.LeftToRight });
             start = close + 1;
         }
     }

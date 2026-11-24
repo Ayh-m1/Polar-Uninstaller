@@ -238,6 +238,7 @@ public sealed class SharedLeftoverScanner
                     messages.Add("Cleanup incomplete: " + candidate.Path);
                     continue;
                 }
+                if(candidate.Category is "File" or "Folder" or "Shortcut")await FileChangeHub.PublishAsync(new[]{new FileChange(candidate.Path,true,candidate.Bytes,candidate.Category=="Folder")});
                 removed++;
                 removedPaths.Add(candidate.Path);
                 if (fileResult==null&&candidate.Bytes is long size && size > 0) bytes += size;

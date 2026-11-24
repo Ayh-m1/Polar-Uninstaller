@@ -25,11 +25,11 @@ public partial class DuplicateFilesView : UserControl
     public event EventHandler? BackRequested;
     public event EventHandler? FilesChanged;
     public bool IsBusy=>operation!=null;
-    private string L(string en,string ar)=>arabic?ar:en;
+    private string L(string en,string ar)=> BidiText.Localize(arabic,en,ar);
 
     public DuplicateFilesView(bool arabic,string directory,ActivityLogService activity,ApplicationInventoryService inventory,SettingsService? settings=null)
     {
-        this.activity=activity;this.inventory=inventory;this.settings=settings??new SettingsService();InitializeComponent();
+        this.activity=activity;this.inventory=inventory;this.settings=settings??new SettingsService();InitializeComponent();UiPerformanceProbe.Attach(this);
         InitializeGroupedResults();
         InitializeDuplicateShortcuts();
         PathInput.Text=Directory.Exists(directory)?Path.GetFullPath(directory):"";
@@ -200,6 +200,7 @@ public partial class DuplicateFilesView : UserControl
         SmartSelectButton.IsEnabled=!IsBusy&&rows.Count>0;ClearSelectionButton.IsEnabled=!IsBusy&&rows.Any(row=>row.Selected);
         RecycleButton.IsEnabled=PermanentButton.IsEnabled=!IsBusy&&rows.Any(r=>r.Selected);
         Results.IsEnabled=state!="cleaning";UpdateSelectionSummary();
+        duplicateTip?.SelectionChanged(rows.Any(row=>row.Selected));
     }
     private void UpdateSummary()
     {

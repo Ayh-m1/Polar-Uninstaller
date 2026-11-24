@@ -75,6 +75,26 @@ public static class FolderSizeService
         return GetAsync(path, token);
     }
 
+    /// <summary>Measures the physical target of an individual File Browser directory link for display.</summary>
+    public static async Task<FolderSizeResult> GetDirectoryLinkTargetSizeAsync(string linkPath, bool recalculate, CancellationToken token)
+    {
+        string? targetPath = await Task.Run(() =>
+        {
+            try
+            {
+                return FileBrowserService.ResolveLocalDirectoryLinkTarget(linkPath);
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException or ArgumentException or NotSupportedException)
+            {
+                return null;
+            }
+        }, token).ConfigureAwait(false);
+
+        token.ThrowIfCancellationRequested();
+        if (targetPath is null) return new FolderSizeResult(null, false, true);
+        return await (recalculate ? RecalculateAsync(targetPath, token) : GetAsync(targetPath, token)).ConfigureAwait(false);
+    }
+
     /// <summary>
     /// Recursively sums file lengths below <paramref name="root"/>. Directory sizes
     /// are never added to their parent (files are counted once), links and
@@ -88,8 +108,13 @@ public static class FolderSizeService
         try
         {
             token.ThrowIfCancellationRequested();
-            if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) return (0, 0, false);
-            if ((File.GetAttributes(root) & FileAttributes.ReparsePoint) != 0) return (0, 0, false);
+            if (string.IsNullOrWhiteSpace(root)) return (0, 0, false);
+            root=Path.GetFullPath(root);
+            var chain=new Stack<string>();
+            for(string? path=root;path!=null;path=Path.GetDirectoryName(path))chain.Push(path);
+            while(chain.TryPop(out var path))
+                if((File.GetAttributes(path)&FileAttributes.ReparsePoint)!=0)return (0,0,false);
+            if(!Directory.Exists(root))return (0,0,false);
             // Probe the root first so an inaccessible folder is reported as
             // unavailable rather than as a misleading exact zero.
             using (var probe = Directory.EnumerateFileSystemEntries(root).GetEnumerator()) _ = probe.MoveNext();

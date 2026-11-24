@@ -8,7 +8,7 @@ using PolarUninstallerWpf.Services;
 
 namespace PolarUninstallerWpf;
 
-public sealed record ThemeOption(string Id,string ArabicName,string Background,string Glow,string Card,string Border,string Accent,string Text,string Dim,string? Sidebar=null,string? Hover=null,string? SecondaryBackground=null,string? SecondaryAccent=null);
+public sealed record ThemeOption(string Id,string ArabicName,string Background,string Glow,string Card,string Border,string Accent,string Text,string Dim,string? Sidebar=null,string? Hover=null,string? SecondaryBackground=null,string? SecondaryAccent=null,string? AccentText=null);
 
 public partial class ThemeGalleryView : UserControl
 {
@@ -19,7 +19,7 @@ public partial class ThemeGalleryView : UserControl
     public string PendingTheme {get;private set;}="";
     public event Action<string>? ApplyRequested;
     public event Action? CancelRequested;
-    private string L(string en,string ar)=>arabic?ar:en;
+    private string L(string en,string ar)=> BidiText.Localize(arabic,en,ar);
     private static SolidColorBrush Brush(string hex)=>(SolidColorBrush)new BrushConverter().ConvertFromString(hex)!;
 
     public ThemeGalleryView(IReadOnlyList<ThemeOption> themes)
@@ -32,7 +32,7 @@ public partial class ThemeGalleryView : UserControl
         arabic=isArabic;FlowDirection=arabic?FlowDirection.RightToLeft:FlowDirection.LeftToRight;
         Heading.Text=L("Appearance","المظهر");
         Subtitle.Text=L("Choose the appearance that suits you to personalize Polar Uninstaller.","اختر المظهر الذي يناسبك لتخصيص واجهة البرنامج.");
-        CountText.Text=arabic?$"{themes.Count} ثيمات متاحة":$"{themes.Count} themes available";
+        CountText.Text=arabic?$"المظاهر المتاحة: {DisplayFormat.Isolate(themes.Count.ToString())}":$"{themes.Count} themes available";
         CancelButton.Content=L("Cancel","إلغاء");ApplyButton.Content=L("✓  Apply Theme","✓  تطبيق المظهر");
         ApplyButton.FlowDirection=SelectionText.FlowDirection=arabic?FlowDirection.RightToLeft:FlowDirection.LeftToRight;
         CloseButton.ToolTip=L("Close without applying","إغلاق دون تطبيق");
@@ -63,7 +63,8 @@ public partial class ThemeGalleryView : UserControl
             Grid.SetColumn(dot,1);names.Children.Add(dot);Grid.SetRow(names,1);content.Children.Add(names);
             var check=new Border{Width=29,Height=29,CornerRadius=new(15),Background=Brush(theme.Accent),HorizontalAlignment=HorizontalAlignment.Left,VerticalAlignment=VerticalAlignment.Top,Margin=new(5),Visibility=Visibility.Collapsed,Child=new TextBlock{Text="✓",FontWeight=FontWeights.Bold,FontSize=18,Foreground=Brush("#160D13"),HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center}};
             content.Children.Add(check);
-            ((TextBlock)check.Child).Foreground=new SolidColorBrush((.299*Brush(theme.Accent).Color.R+.587*Brush(theme.Accent).Color.G+.114*Brush(theme.Accent).Color.B)/255>.62?Color.FromRgb(18,24,31):Colors.White);
+            ((TextBlock)check.Child).Foreground=theme.AccentText is string accentText?Brush(accentText):
+                new SolidColorBrush((.299*Brush(theme.Accent).Color.R+.587*Brush(theme.Accent).Color.G+.114*Brush(theme.Accent).Color.B)/255>.62?Color.FromRgb(18,24,31):Colors.White);
             var button=new Button{Content=content,Style=(Style)Resources["GalleryCard"],ToolTip=theme.Id+" · "+theme.ArabicName};
             System.Windows.Automation.AutomationProperties.SetName(button,theme.Id+" · "+theme.ArabicName);
             button.Click+=(_,_)=>Select(theme.Id);tiles.Add(theme.Id,(button,check,englishTitle));Cards.Children.Add(button);
@@ -72,7 +73,7 @@ public partial class ThemeGalleryView : UserControl
     private void Select(string id)
     {
         var selected=themes.FirstOrDefault(t=>t.Id==id)??themes[0];PendingTheme=selected.Id;
-        DialogThemeResources.Apply(Resources,selected.Background,selected.Card,selected.Border,selected.Accent,selected.Text,selected.Dim);
+        DialogThemeResources.Apply(Resources,selected.Background,selected.Card,selected.Border,selected.Accent,selected.Text,selected.Dim,selected.AccentText);
         PanelFrame.Effect=selected.Id=="Pure Black"?null:new System.Windows.Media.Effects.DropShadowEffect{BlurRadius=26,ShadowDepth=5,Opacity=.2};
         foreach(var (key,tile) in tiles)
         {

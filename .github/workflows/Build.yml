@@ -28,37 +28,51 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
-      - name: Restore
-        run: dotnet restore Polar-Uninstaller-WPF/PolarUninstallerWpf.csproj
-
-      - name: Build Release
-        run: dotnet build Polar-Uninstaller-WPF/PolarUninstallerWpf.csproj -c Release --no-restore
-
       - name: Run CI regression checks
         run: dotnet run --project Polar-Uninstaller-WPF/Tests/CiSmoke/CiSmoke.csproj -c Release
+
+      - name: Restore Windows publish dependencies
+        run: dotnet restore Polar-Uninstaller-WPF/PolarUninstallerWpf.csproj -r win-x64 -p:PublishProfile=WindowsSingleFile
+
+      - name: Build Release
+        run: dotnet build Polar-Uninstaller-WPF/PolarUninstallerWpf.csproj -c Release -r win-x64 --no-restore
 
       - name: Publish single-file EXE
         run: >
           dotnet publish Polar-Uninstaller-WPF/PolarUninstallerWpf.csproj
-          -c Release -r win-x64 --self-contained true
-          -p:PublishSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
-          -p:DebugType=None -p:DebugSymbols=false
+          -c Release -p:PublishProfile=WindowsSingleFile --no-restore
           -o artifacts/SingleFile
 
-      - name: Verify published EXE and create checksums
-        run: ./scripts/Test-PublishedBuild.ps1
+      - name: Build Setup
+        run: |
+          $version = ([xml](Get-Content -Raw Polar-Uninstaller-WPF/Directory.Build.props)).Project.PropertyGroup.Version
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") {
+            throw 'The release tag and the project version differ.'
+          }
+          $directory = (Resolve-Path artifacts/SingleFile).Path
+          $app = Join-Path $directory 'PolarUninstaller.exe'
+          $setup = Join-Path $directory "PolarUninstaller-Setup-v$version.exe"
+          $nsis = Join-Path ${env:ProgramFiles(x86)} 'NSIS/makensis.exe'
+          & $nsis /V2 "/DVERSION=$version" "/DOUTFILE=$setup" "/DAPPEXE=$app" Polar-Uninstaller-WPF/Installer-NSIS/PolarUninstaller.nsi
+          if ($LASTEXITCODE -ne 0 -or !(Test-Path -LiteralPath $setup -PathType Leaf)) {
+            throw 'NSIS did not build the installer.'
+          }
 
-      - name: Upload portable build
+      - name: Verify published EXE and create checksums
+        run: ./scripts/Test-PublishedBuild.ps1 -BuildAssembly Polar-Uninstaller-WPF/bin/Release/net9.0-windows/win-x64/PolarUninstaller.dll -RequireSetup
+
+      - name: Upload Windows release files
         uses: actions/upload-artifact@v4
         with:
-          name: PolarUninstaller-exe
+          name: PolarUninstaller-windows-x64
           path: artifacts/SingleFile/
           if-no-files-found: error
           retention-days: 14

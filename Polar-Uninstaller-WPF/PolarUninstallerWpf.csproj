@@ -4,6 +4,9 @@
     <TargetFramework>net9.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <WarningsAsErrors>$(WarningsAsErrors);CA2012;CS4014</WarningsAsErrors>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>PolarUninstaller</AssemblyName>
     <ApplicationIcon>Assets\Polar.ico</ApplicationIcon>

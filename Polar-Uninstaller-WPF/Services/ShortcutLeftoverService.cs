@@ -123,8 +123,10 @@ public static class ShortcutLeftoverService
             }
             if ((File.GetAttributes(shortcut.Path) & FileAttributes.ReparsePoint) != 0 || Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(shortcut.Path))) != shortcut.Hash)
                 return "Skipped changed "+kind+": " + shortcut.Path;
+            long removedBytes=new FileInfo(shortcut.Path).Length;
             File.Delete(shortcut.Path);
             BrowserOperationsService.VerifyAbsent(shortcut.Path);
+            _=FileChangeHub.PublishAsync(new[]{new FileChange(shortcut.Path,true,removedBytes)});
             return isShortcut?"Removed shortcut permanently: "+System.IO.Path.GetFileName(shortcut.Path):"Removed file: "+shortcut.Path;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Security.SecurityException or ArgumentException) { return "Skipped "+kind+": "+System.IO.Path.GetFileName(shortcut.Path)+" ("+e.GetType().Name+")"; }

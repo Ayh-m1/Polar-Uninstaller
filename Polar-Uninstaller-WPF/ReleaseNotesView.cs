@@ -1,5 +1,7 @@
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
 using PolarUninstallerWpf.Services;
 
@@ -126,9 +128,9 @@ public sealed class ReleaseNotesView : UserControl
         };
         columns.SizeChanged += (_, _) => BalanceColumns(columns);
 
-        AddCategory(columns, arabic ? "إضافات جديدة" : "New Features", release.DisplayFeatures, "NotesFeatureBrush");
-        AddCategory(columns, arabic ? "تحسينات" : "Improvements", release.DisplayImprovements, "ChromeAccent");
-        AddCategory(columns, arabic ? "إصلاحات" : "Bug Fixes", release.DisplayFixes, "NotesFixBrush");
+        AddCategory(columns, arabic ? "إضافات جديدة" : "New Features", release.DisplayFeatures, "NotesFeatureBrush", arabic);
+        AddCategory(columns, arabic ? "تحسينات" : "Improvements", release.DisplayImprovements, "ChromeAccent", arabic);
+        AddCategory(columns, arabic ? "إصلاحات" : "Bug Fixes", release.DisplayFixes, "NotesFixBrush", arabic);
 
         if (columns.Children.Count > 0)
             container.Children.Add(columns);
@@ -147,17 +149,16 @@ public sealed class ReleaseNotesView : UserControl
                 Padding = new Thickness(0, 6, 0, 6),
                 Foreground = (Brush)Application.Current.Resources["HomeTextBrush"]
             };
-            var allList = new StackPanel { Margin = new Thickness(0, 8, 0, 4) };
-            foreach (var entry in release.Entries)
-                allList.Children.Add(MakeBullet(entry, 18, (Brush)Application.Current.Resources["HomeDimBrush"]));
-            showAll.Content = allList;
+            var allNotes = MakeSelectableNotes(release.Entries, arabic, (string)showAll.Header);
+            allNotes.Margin = new Thickness(0, 8, 0, 4);
+            showAll.Content = allNotes;
             container.Children.Add(showAll);
         }
 
         return container;
     }
 
-    private static void AddCategory(Panel parent, string title, IReadOnlyList<string> entries, string headingResource)
+    private static void AddCategory(Panel parent, string title, IReadOnlyList<string> entries, string headingResource, bool arabic)
     {
         if (entries.Count == 0) return;
         var column = new StackPanel
@@ -176,8 +177,7 @@ public sealed class ReleaseNotesView : UserControl
         };
         heading.SetResourceReference(TextBlock.ForegroundProperty,headingResource);
         column.Children.Add(heading);
-        foreach (var entry in entries)
-            column.Children.Add(MakeBullet(entry, 18, (Brush)Application.Current.Resources["HomeDimBrush"]));
+        column.Children.Add(MakeSelectableNotes(entries, arabic, title));
         parent.Children.Add(column);
     }
 
@@ -191,16 +191,33 @@ public sealed class ReleaseNotesView : UserControl
         foreach (var child in children) child.Width = width;
     }
 
-    private static TextBlock MakeBullet(string text, double size, Brush foreground)
+    private static RichTextBox MakeSelectableNotes(IReadOnlyList<string> entries, bool arabic, string name)
     {
-        return new TextBlock
+        var document = new FlowDocument
         {
-            Text = "•  " + ReleaseNotesService.DisplayEntry(text),
-            FontSize = size,
-            TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(0, 0, 0, 10),
-            LineHeight = size + 8,
-            Foreground = foreground
+            FlowDirection = arabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight,
+            PagePadding = new Thickness(0),
+            LineHeight = 26
         };
+        foreach (var entry in entries)
+        {
+            string text = ReleaseNotesService.DisplayEntry(entry);
+            if (arabic) text = BidiText.IsolateLatin(text);
+            document.Blocks.Add(new Paragraph(new Run("•  " + text)) { Margin = new Thickness(0, 0, 0, 10) });
+        }
+
+        var notes = new RichTextBox(document)
+        {
+            IsReadOnly = true,
+            FontSize = 18,
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            Padding = new Thickness(0),
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Disabled
+        };
+        notes.SetResourceReference(Control.ForegroundProperty, "HomeDimBrush");
+        AutomationProperties.SetName(notes, name);
+        return notes;
     }
 }

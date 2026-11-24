@@ -42,6 +42,11 @@ public sealed class BrowserEntry : INotifyPropertyChanged
     public string Name { get; }
     public string FullPath { get; }
     public bool IsDirectory { get; }
+    public FileAttributes Attributes { get; init; }
+    public bool IsDirectoryLink => IsDirectory && (Attributes & FileAttributes.ReparsePoint) != 0;
+    public long? CountedSize => IsDirectoryLink ? null : Size;
+    public bool IsHiddenOrSystem => (Attributes & (FileAttributes.Hidden | FileAttributes.System)) != 0;
+    public string DisplayName => IsHiddenOrSystem ? Name + "  ◇" : Name;
 
     public long? Size
     {
@@ -64,6 +69,7 @@ public sealed class BrowserEntry : INotifyPropertyChanged
             sizeState = value;
             Raise(nameof(SizeState));
             Raise(nameof(DisplaySize));
+            Raise(nameof(SizeToolTip));
         }
     }
 
@@ -79,6 +85,7 @@ public sealed class BrowserEntry : INotifyPropertyChanged
             arabic = value;
             Raise(nameof(Arabic));
             Raise(nameof(Type));
+            Raise(nameof(SizeToolTip));
         }
     }
 
@@ -88,12 +95,15 @@ public sealed class BrowserEntry : INotifyPropertyChanged
     {
         BrowserSizeState.Calculating => "…",
         BrowserSizeState.Unavailable => "—",
-        BrowserSizeState.Partial when size.HasValue => "≥ " + FormatBytes(size.Value),
-        _ when size.HasValue => FormatBytes(size.Value),
+        BrowserSizeState.Partial when size.HasValue => "≥ " + FormatBytes(size.Value) + (IsDirectoryLink ? " ↗" : ""),
+        _ when size.HasValue => FormatBytes(size.Value) + (IsDirectoryLink ? " ↗" : ""),
         _ => "—"
     };
 
-    public static string FormatBytes(long bytes) => bytes >= 1073741824 ? $"{bytes / 1073741824.0:N1} GB" : bytes >= 1048576 ? $"{bytes / 1048576.0:N1} MB" : bytes >= 1024 ? $"{bytes / 1024.0:N1} KB" : $"{bytes:N0} B";
+    public string? SizeToolTip => IsDirectoryLink ? BrowserText.Get(
+        SizeState == BrowserSizeState.Unavailable ? "LinkTargetSizeUnavailable" : "LinkTargetSize", Arabic) : null;
+
+    public static string FormatBytes(long bytes) => DisplayFormat.BinarySize(bytes);
 
     public string Type => IsDirectory ? Arabic ? "مجلد" : "Folder" : Path.GetExtension(Name).ToUpperInvariant();
 
@@ -105,16 +115,52 @@ public sealed class BrowserEntry : INotifyPropertyChanged
 public sealed class FileBrowserService
 {
     public Task<IReadOnlyList<BrowserEntry>> ListAsync(string path, CancellationToken cancellationToken = default) =>
-        Task.Run<IReadOnlyList<BrowserEntry>>(() =>
+        ListAsync(path, false, cancellationToken);
+
+    public async Task<IReadOnlyList<BrowserEntry>> ListAsync(string path, bool showHidden, CancellationToken cancellationToken) =>
+        (await OpenFolderAsync(path, showHidden, cancellationToken).ConfigureAwait(false)).Entries;
+
+    public Task<(string Path, IReadOnlyList<BrowserEntry> Entries)> OpenFolderAsync(string path, bool showHidden, CancellationToken cancellationToken) =>
+        Task.Run<(string, IReadOnlyList<BrowserEntry>)>(() =>
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            path = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+            if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0)
+                path = ResolveLocalDirectoryLinkTarget(path) ?? path;
+
             var entries = new List<BrowserEntry>();
-            var options = new EnumerationOptions { IgnoreInaccessible = true, RecurseSubdirectories = false, ReturnSpecialDirectories = false };
+            // A denied root must fail navigation instead of appearing to be empty.
+            var options = new EnumerationOptions { IgnoreInaccessible = false, RecurseSubdirectories = false, ReturnSpecialDirectories = false, AttributesToSkip = showHidden ? 0 : FileAttributes.Hidden | FileAttributes.System };
             foreach (var item in new DirectoryInfo(path).EnumerateFileSystemInfos("*", options))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                try { entries.Add(new(item.Name, item.FullName, item is DirectoryInfo, item is FileInfo file ? file.Length : null) { Modified = item.LastWriteTime, Created = item.CreationTime }); }
+                try { entries.Add(new(item.Name, item.FullName, item is DirectoryInfo, item is FileInfo file && (item.Attributes & FileAttributes.ReparsePoint) == 0 ? file.Length : null) { Attributes = item.Attributes, Modified = item.LastWriteTime, Created = item.CreationTime }); }
                 catch (Exception error) when (error is UnauthorizedAccessException or IOException) { }
             }
-            return entries.OrderByDescending(e => e.IsDirectory).ThenBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase).ToArray();
+            return (path, entries.OrderByDescending(e => e.IsDirectory).ThenBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase).ToArray());
         }, cancellationToken);
+
+    internal static string? ResolveLocalDirectoryLinkTarget(string linkPath)
+    {
+        // Read the link metadata directly, even if Windows denies enumeration through the alias.
+        var target = new DirectoryInfo(linkPath).ResolveLinkTarget(returnFinalTarget: false);
+        if (target is null) return null;
+
+        string path = target.FullName;
+        if (path.StartsWith(@"\\?\", StringComparison.Ordinal)) path = path[4..];
+        if (path.Length < 3 || !char.IsAsciiLetter(path[0]) || path[1] != ':' || path[2] != '\\')
+            throw new UnauthorizedAccessException(linkPath);
+
+        path = Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+        if (new DriveInfo(Path.GetPathRoot(path)!).DriveType != DriveType.Fixed)
+            throw new UnauthorizedAccessException(linkPath);
+
+        var ancestors = new Stack<string>();
+        for (string? ancestor = path; ancestor != null; ancestor = Path.GetDirectoryName(ancestor))
+            ancestors.Push(ancestor);
+        while (ancestors.TryPop(out var ancestor))
+            if ((File.GetAttributes(ancestor) & FileAttributes.ReparsePoint) != 0)
+                throw new UnauthorizedAccessException(linkPath);
+        return path;
+    }
 }

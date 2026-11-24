@@ -47,6 +47,6 @@ internal static partial class Parts146Checks
         Invoke(window,"OpenStorageItem",child,child);var opened=(FileBrowserView)Field(window,"fileBrowserPage")!;Until(()=>opened.CurrentDirectory==child);
         Check(((Dictionary<string,Button>)Field(opened,"navigation")!)["Back"].IsEnabled,"First Dashboard navigation preserves the previous browser location");
         Wait((Task)Invoke(opened,"GoHistoryAsync",-1)!);Check(opened.CurrentDirectory==start,"Back after Dashboard entry returns to the captured origin");
-        Check(AppInfo.Version=="1.0.147","Version stays v1.0.147");return Finish("B");
+        Check(AppInfo.Version=="1.0.150","Version stays v1.0.150");return Finish("B");
     }
 }

@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.IO;
 using System.Diagnostics;
 using PolarUninstallerWpf.Services;
@@ -34,6 +35,9 @@ public partial class MainWindow : Window
     private string currentDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
     private string? pendingFileReveal;
     private FileBrowserView? fileBrowserPage;
+    private DashboardView? dashboardPage;
+    private DashboardScanSession? dashboardScan;
+    private Action? cleanerLanguageChanged;
     private CancellationTokenSource? pageLoad;
     private bool cleanerOperationActive;
     private readonly HashSet<TempCleanerService.Category> cleanerCategories = new();
@@ -52,11 +56,22 @@ public partial class MainWindow : Window
         LogClearButton.Background = Brushes.Transparent; LogClearButton.BorderBrush = Brushes.Transparent;
         LogToggleButton.Background = Brushes.Transparent; LogToggleButton.BorderBrush = Brushes.Transparent;
         Log.ItemContainerStyle = (Style)Application.Current.Resources["LogEntryContainer"];
-        activity = new ActivityLogService(Dispatcher);
+        activity = new ActivityLogService(Dispatcher);AppSafety.AttachLog(activity,()=>arabic);
         applicationInventory.Diagnostic += message => activity.Write("INFO", message);
         metrics.Record(true);
         PreviewMouseDown += (_, _) => metrics.Record(false);
         Log.ItemsSource = activity.Entries;
+        Log.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (_, e) =>
+        {
+            var lines = Log.Items.Cast<ActivityEntry>().Where(entry => Log.SelectedItems.Contains(entry)).Select(entry => entry.Display);
+            try { Clipboard.SetText(string.Join(Environment.NewLine, lines)); }
+            catch (System.Runtime.InteropServices.ExternalException) { System.Media.SystemSounds.Beep.Play(); }
+            e.Handled = true;
+        }, (_, e) =>
+        {
+            e.CanExecute = Log.SelectedItems.Count > 0;
+            e.Handled = true;
+        }));
         Log.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler((_, e) =>
         {
             if (e.ExtentHeightChange == 0 && e.OriginalSource is ScrollViewer scroller)
@@ -84,10 +99,18 @@ public partial class MainWindow : Window
         ContentRendered += async (_, _) => await StartupUpdateCheckAsync();
         activity.Write("INFO", AppInfo.Name+" v"+AppInfo.Version+" started.");
         if (settingsService.LoadError is string loadError) activity.Write("WARNING", "Settings could not be loaded: " + loadError);
-        Closing += (_, _) => activity.Write("INFO", "Application shutting down.");
+        Closing += SaveOnClose;
     }
 
-    private string L(string en, string ar) => arabic ? ar : en;
+    private bool shutdownReady,shutdownPending;
+    private async void SaveOnClose(object? sender,System.ComponentModel.CancelEventArgs e)
+    {
+        if(shutdownReady)return;e.Cancel=true;if(shutdownPending)return;shutdownPending=true;pageLoad?.Cancel();dashboardPage?.CancelWork();
+        try{await settingsService.FlushAsync().WaitAsync(TimeSpan.FromSeconds(2));await SafeTasks.Run(()=>Task.Run(()=>AtomicStateFile.Write(Path.Combine(AppSafety.LogDirectory,"performance.json"),System.Text.Json.JsonSerializer.Serialize(PerformanceTrace.Snapshot()),false)),"Save performance timings").WaitAsync(TimeSpan.FromSeconds(1));}
+        catch(Exception error){CrashDiagnostics.Record("Shutdown settings flush",error);}
+        shutdownReady=true;IconWorkerPool.StopAll();activity.Write("INFO","Application shutting down.");_=Dispatcher.BeginInvoke(new Action(Close));
+    }
+    private string L(string en, string ar) => BidiText.Localize(arabic,en,ar);
     private static Brush B(string color) => (Brush)new BrushConverter().ConvertFromString(color)!;
     private static Color ContrastText(Color accent) =>
         (0.299 * accent.R + 0.587 * accent.G + 0.114 * accent.B) / 255.0 > 0.62
@@ -104,19 +127,20 @@ public partial class MainWindow : Window
         var card = new SolidColorBrush(cardColor); var border = new SolidColorBrush(borderColor);
         var resources = Application.Current.Resources;
         BrandingAssets.Apply(resources,ThemePicker.SelectedItem as string??ThemeCatalog.DefaultTheme);
-        DialogThemeResources.Apply(resources,palette.Background,palette.Card,palette.Border,palette.Accent,palette.Text,palette.Dim);
+        DialogThemeResources.Apply(resources,palette.Background,palette.Card,palette.Border,palette.Accent,palette.Text,palette.Dim,palette.AccentText);
         bool isBeige = ThemePicker.SelectedItem as string == "Beige";
         resources["InterfaceFont"] = resources[arabic ? "TajawalFont" : "InterFont"];
         SetThemeBrush(resources,"HomeCardBrush",card); SetThemeBrush(resources,"HomeBorderBrush",border);
         SetThemeBrush(resources,"HomeTextBrush",text); SetThemeBrush(resources,"HomeDimBrush",dim); SetThemeBrush(resources,"HomeAccentBrush",accent);
         SetThemeBrush(resources,"ChromeBackground",card); SetThemeBrush(resources,"ChromeBorder",border);
         SetThemeBrush(resources,"ChromeText",text); SetThemeBrush(resources,"ChromeHover",B(palette.Glow)); SetThemeBrush(resources,"ChromeAccent",accent);
-        SetThemeBrush(resources,"ChromeAccentText",new SolidColorBrush(ContrastText((Color)ColorConverter.ConvertFromString(palette.Accent))));
+        SetThemeBrush(resources,"ChromeAccentText",palette.AccentText is string accentText
+            ? B(accentText) : new SolidColorBrush(ContrastText((Color)ColorConverter.ConvertFromString(palette.Accent))));
         SetThemeBrush(resources,"SidebarSelected",card); SetThemeBrush(resources,"SidebarHover",border);
         SetThemeBrush(resources,"SidebarSelectedHover",border);
         SetThemeBrush(resources,"SidebarActiveText",text);
         SetThemeBrush(resources,"ChromeSecondaryBackground",B(palette.SecondaryBackground??palette.Background));
-        SetThemeBrush(resources,"ChromeSecondaryAccent",B(palette.SecondaryAccent??palette.Accent));
+        SetThemeBrush(resources,"ChromeSecondaryAccent",B(palette.HoverAccent??palette.SecondaryAccent??palette.Accent));
         var hoverHome = (Color)ColorConverter.ConvertFromString("#EBD6B9"); hoverHome.A = 210;
         SetThemeBrush(resources,"HomeHoverBrush",isBeige ? new SolidColorBrush(hoverHome) : card);
         if (isBeige)
@@ -136,8 +160,7 @@ public partial class MainWindow : Window
         foreach(Window child in Application.Current.Windows)
             if(!ReferenceEquals(child,this))NativeTitleBarService.Apply(child,(Color)ColorConverter.ConvertFromString(palette.Card),(Color)ColorConverter.ConvertFromString(palette.Text));
         Root.Background = Brushes.Transparent;
-        // All themes share the same window-wide lighting layer. An opaque
-        // sidebar would cut the corner gradient into a separate rectangle.
+        // The corner lighting passes continuously behind the sidebar.
         Side.Background = Brushes.Transparent;
         backgroundBase.Fill = B(palette.Background);
         if ((ThemePicker.SelectedItem as string) == "Black")
@@ -240,14 +263,19 @@ public partial class MainWindow : Window
             SetThemeBrush(resources,"NotesFixBrush",B(palette.SecondaryAccent!));
             resources["LogoGlowOpacity"]=.20d;
         }
+        CalmThemeBrushes.Apply(resources,palette);
         Side.FlowDirection = arabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
         Side.BorderBrush = border; Brand.Foreground = text; PreviewLabel.Foreground = dim;
         Brand.Text = "Polar Uninstaller"; Brand.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
         Toggle.Content = collapsed ? (arabic ? "‹" : "›") : (arabic ? "›" : "‹");
         Toggle.ToolTip = collapsed ? L("Expand sidebar", "توسيع الشريط") : L("Collapse sidebar", "طي الشريط");
         PreviewLabel.Text="v"+AppInfo.Version+" · "+AppInfo.Publisher; PreviewLabel.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
+        SidebarVersion.Visibility=collapsed?Visibility.Collapsed:Visibility.Visible;
+        SidebarVersion.ToolTip=Services.BrowserText.Get("SidebarWhatsNew",arabic);
+        System.Windows.Automation.AutomationProperties.SetName(SidebarVersion,PreviewLabel.Text+" · "+Services.BrowserText.Get("SidebarWhatsNew",arabic));
         LangButton.Content = arabic ? "English" : "العربية";
-        ThemeButton.Content = L("◉  Theme  ▾", "◉  المظهر  ▾");
+        ThemeButtonLabel.Text = L("  Theme  ▾", "  المظهر  ▾");
+        System.Windows.Automation.AutomationProperties.SetName(ThemeButton, L("Theme", "المظهر"));
         LogTitle.Text = L("Activity Log", "سجل النشاط");
         LogClearButton.Content = L("Clear", "مسح");
         LogToggleButton.ToolTip = logCollapsed ? L("Expand log", "توسيع السجل") : L("Collapse log", "طي السجل");
@@ -268,7 +296,7 @@ public partial class MainWindow : Window
             var navForeground=(Brush)resources[key==page?"SidebarActiveText":"HomeDimBrush"];
             var navigationIcon=SidebarIcons.Create(key,navForeground,20);
             navigationIcon.SetResourceReference(System.Windows.Shapes.Shape.StrokeProperty,key==page?"SidebarActiveText":"HomeDimBrush");
-            content.Children.Add(navigationIcon);
+            content.Children.Add(CalmHover.WrapIcon(navigationIcon));
             if (!collapsed) content.Children.Add(new TextBlock { Text = L(labels[key].En, labels[key].Ar), FontSize = 14, Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center });
             // Tag is object-typed; match the string values in the XAML triggers
             // explicitly so selected cream surfaces do not keep a dark background.
@@ -282,18 +310,19 @@ public partial class MainWindow : Window
         AddCommunityButton("support", L("Support & Donate", "الدعم والتبرع"), () => OpenCommunityLink("https://polarwolves.com/supportus/p1682342912"));
         AddCommunityButton("feedback", L("Feedback & Reports", "الملاحظات والبلاغات"), OpenFeedback);
         }
-        if(rebuildPage) PageContent.Content = BuildPage();
+        if(rebuildPage) PageContent.Content = BuildPageSafely();
     }
 
+    private void OpenVersionNotes(object sender,RoutedEventArgs e)=>NavigateTo("whatsnew");
     private void AddCommunityButton(string key, string label, Action action)    {
         var content = new StackPanel { Orientation = Orientation.Horizontal };
         if (key == "feedback")
-            content.Children.Add(new TextBlock { Text = "\uE715", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 17, Width = 20, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center });
+            content.Children.Add(CalmHover.WrapIcon(new TextBlock { Text = "\uE715", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 17, Width = 20, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center }));
         else
         {
             var icon=SidebarIcons.Create(key,(Brush)Application.Current.Resources["HomeDimBrush"],20);
             icon.SetResourceReference(icon.Stroke==null?System.Windows.Shapes.Shape.FillProperty:System.Windows.Shapes.Shape.StrokeProperty,"HomeDimBrush");
-            content.Children.Add(icon);
+            content.Children.Add(CalmHover.WrapIcon(icon));
         }
         if (!collapsed) content.Children.Add(new TextBlock { Text = label, FontSize = 13, Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center });
         var button = new Button { Style = (Style)Application.Current.Resources["SidebarNavButton"], Content = content, ToolTip = label, Height = 42, Padding = new Thickness(12, 0, 12, 0), Foreground = (Brush)Application.Current.Resources["HomeDimBrush"], HorizontalContentAlignment = collapsed ? HorizontalAlignment.Center : HorizontalAlignment.Left };
@@ -359,7 +388,7 @@ public partial class MainWindow : Window
     }
     private async void OpenUpdateCenter(object sender, RoutedEventArgs e)
     {
-        if (updateResult.State is UpdateState.UpToDate or UpdateState.Checking) return;
+        if (updateResult.State == UpdateState.Checking) return;
         if (updateResult.State != UpdateState.Available)
         {
             await CheckUpdates(true);
@@ -375,6 +404,17 @@ public partial class MainWindow : Window
         updateWindow.Show();
         updateWindow.Activate();
     }
+    private UIElement BuildPageSafely()
+    {
+        using var timing=PerformanceTrace.Measure("page."+page);
+        try{return BuildPage();}
+        catch(Exception error)when(error is not OutOfMemoryException and not StackOverflowException)
+        {
+            AppSafety.Report("Load page "+page,error);var panel=new StackPanel{Margin=new Thickness(24)};
+            panel.Children.Add(new TextBlock{Text=L("This page could not load. Please retry.","تعذر تحميل هذه الصفحة. أعد المحاولة."),TextWrapping=TextWrapping.Wrap});
+            var retry=new Button{Content=L("Retry","أعد المحاولة"),Style=(Style)Application.Current.Resources["ChromeButton"],Margin=new Thickness(0,12,0,0)};retry.Click+=(_,_)=>PageContent.Content=BuildPageSafely();panel.Children.Add(retry);return panel;
+        }
+    }
     private UIElement BuildPage()
     {
         if (page == "home")
@@ -384,11 +424,16 @@ public partial class MainWindow : Window
             return home;
         }
         if (page == "whatsnew") return new ReleaseNotesView(arabic);
-        if (page == "uninstall") return new DeepUninstallerView(arabic, activity, applicationInventory);
+        if (page == "uninstall") return new DeepUninstallerView(arabic, activity, applicationInventory,settingsService);
         if (page == "dashboard")
         {
-            var dashboard=new DashboardView(arabic,activity,OpenStorageItem,applicationInventory);
-            dashboard.NavigationRequested+=NavigateTo;return dashboard;
+            if(dashboardPage==null)
+            {
+                dashboardPage=new DashboardView(arabic,activity,OpenStorageItem,applicationInventory,scanSession:dashboardScan ??= new DashboardScanSession(activity));
+                dashboardPage.NavigationRequested+=NavigateTo;
+            }
+            else dashboardPage.SetLanguage(arabic);
+            return dashboardPage;
         }
         if (page == "files")
         {
@@ -396,8 +441,7 @@ public partial class MainWindow : Window
             pendingFileReveal = null;
             if(fileBrowserPage==null)
             {
-                fileBrowserPage=new FileBrowserView(arabic,currentDirectory,activity,reveal,settingsService,applicationInventory);
-                fileBrowserPage.LocationChanged+=path=>currentDirectory=path;
+                EnsureFileBrowserCreated();
             }
             else
             {
@@ -405,7 +449,7 @@ public partial class MainWindow : Window
                 if(reveal!=null||!string.Equals(fileBrowserPage.CurrentDirectory,currentDirectory,StringComparison.OrdinalIgnoreCase))
                     _=fileBrowserPage.ShowFolderAsync(currentDirectory,reveal);
             }
-            return fileBrowserPage;
+            return fileBrowserPage!;
         }
         var body = new Grid(); body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); body.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         var header = new StackPanel { Margin = new Thickness(0, 6, 0, 16) };
@@ -472,20 +516,33 @@ public partial class MainWindow : Window
     }
     private UIElement Cleaner()
     {
+        var language = new LocalizedPresentation();
+        language.Refresh(arabic);
         var outer = new StackPanel();
-        outer.Children.Add(Text(L("Scans temporary files of all ages. Locked and inaccessible items are skipped. Prefetch cleanup is optional and generally unnecessary.", "يشمل الفحص الملفات المؤقتة بجميع أعمارها، مع تجاوز الملفات المقفلة أو التي يتعذر الوصول إليها. تنظيف Prefetch اختياري وغير ضروري عادةً."), 13, palette.Dim));
+        static SelectableText CleanerText(double fontSize)
+        {
+            var text = new SelectableText { FontSize = fontSize };
+            text.SetResourceReference(Control.ForegroundProperty, "HomeDimBrush");
+            return text;
+        }
+        var introduction = CleanerText(13);
+        outer.Children.Add(introduction);
+        language.Text(introduction,"Scans temporary files of all ages. Locked and inaccessible items are skipped. Prefetch cleanup is optional and generally unnecessary.", "يشمل الفحص الملفات المؤقتة بجميع أعمارها، مع تجاوز الملفات المقفلة أو التي يتعذر الوصول إليها. تنظيف Prefetch اختياري وغير ضروري عادةً.");
         var grid = new UniformGrid { Columns = 2, Margin = new Thickness(0, 8, 0, 8) };
         var categories = new[] { (TempCleanerService.Category.UserTemp, "User Temp", "ملفات المستخدم المؤقتة", "◈"), (TempCleanerService.Category.SystemTemp, "System Temp", "ملفات النظام المؤقتة", "⚙"), (TempCleanerService.Category.Prefetch, "Windows Prefetch", "ملفات Prefetch", "✦"), (TempCleanerService.Category.RecycleBin, "Recycle Bin", "سلة المحذوفات", "♲") };
-        var controls = new Dictionary<TempCleanerService.Category, (CheckBox Check, TextBlock Summary)>();
+        var controls = new Dictionary<TempCleanerService.Category, (CheckBox Check, SelectableText Summary)>();
         foreach (var (kind, en, ar, icon) in categories)
         {
             var content = new StackPanel(); var check = new CheckBox { Style = (Style)Application.Current.Resources["CleanerCheckBox"], Content = $"{icon}   {L(en, ar)}", FontSize = 15, IsChecked = cleanerCategories.Contains(kind) };
             if(kind==TempCleanerService.Category.RecycleBin)check.ToolTip=L("Emptying the Recycle Bin permanently deletes its contents.","إفراغ سلة المحذوفات يحذف محتوياتها نهائيًا.");
-            var summary = Text(L("Not scanned", "لم يُفحص"), 12, palette.Dim); summary.Margin = new Thickness(0, 12, 0, 2);
+            language.Set(check,ContentControl.ContentProperty,lang=>$"{icon}   {BidiText.Localize(lang,en,ar)}");
+            var summary = CleanerText(12);
+            language.Text(summary,"Not scanned","لم يُفحص"); summary.Margin = new Thickness(0, 12, 0, 2);
             content.Children.Add(check); content.Children.Add(summary); grid.Children.Add(CleanerCard(content)); controls[kind] = (check, summary);
         }
         outer.Children.Add(grid);
-        var status = Text(L("Scanning…", "جارٍ الفحص…"), 13, palette.Dim); status.TextWrapping = TextWrapping.Wrap;
+        var status = CleanerText(13);
+        language.Text(status,"Scanning…","جارٍ الفحص…");
         var cleanButton = new Button { Content = L("✦   One-Click Quick Clean   ✦", "✦   التنظيف السريع   ✦"), Style = (Style)Application.Current.Resources["ChromeButton"], IsEnabled = false, Height = 52, FontSize = 16, FontWeight = FontWeights.SemiBold, HorizontalContentAlignment = HorizontalAlignment.Center, Margin = new Thickness(5, 10, 5, 4) };
         cleanButton.SetResourceReference(Control.BackgroundProperty, "HomeCardBrush"); cleanButton.SetResourceReference(Control.BorderBrushProperty, "HomeBorderBrush");
         outer.Children.Add(cleanButton); outer.Children.Add(status);
@@ -511,6 +568,13 @@ public partial class MainWindow : Window
             entry.Check.Checked += (_, _) => { PersistSelection(); UpdateCleanEnabled(); };
             entry.Check.Unchecked += (_, _) => { PersistSelection(); UpdateCleanEnabled(); };
         }
+        cleanerLanguageChanged = () =>
+        {
+            language.Refresh(arabic);
+            if (PageContent.Content is Grid pageGrid && pageGrid.Children[0] is StackPanel header && header.Children[0] is TextBlock heading)
+                heading.Text = L(labels["cleaner"].En,labels["cleaner"].Ar);
+            UpdateCleanEnabled();
+        };
         async Task Run(bool delete, bool silent = false)
         {
             if (running != null || cleanerOperationActive) { if (!silent) status.Text = L("A cleanup operation is already running.", "توجد عملية تنظيف جارية بالفعل."); return; }
@@ -520,16 +584,17 @@ public partial class MainWindow : Window
             using var cts = new CancellationTokenSource(); running = cts; cleanerOperationActive = true; cleanButton.IsEnabled = false;
             if (!delete){scanned.Clear();estimatedBytes.Clear();}
             foreach (var entry in controls.Values) entry.Check.IsEnabled = false;
+            activity.WriteBilingual("INFO",delete?"Quick cleanup started.":"Quick cleanup scan started.",delete?"بدأ التنظيف السريع.":"بدأ فحص التنظيف السريع.");
             long cleanedBytes = 0; int cleanedFiles = 0, cleanedDirectories = 0, skippedTotal = 0, failedCategories = 0;
             try
             {
-                var progress = new Progress<int>(n => { if (!silent && ReferenceEquals(running,cts)) status.Text = L($"Processed {DisplayFormat.Number(n)} files…", $"تمت معالجة {DisplayFormat.Isolate(DisplayFormat.Number(n))} ملف…"); });
+                var progress = new Progress<int>(n => { if (!silent && ReferenceEquals(running,cts)) language.Text(status,$"Processed {DisplayFormat.Number(n)} files…", $"تمت معالجة {DisplayFormat.Isolate(DisplayFormat.Number(n))} ملف…"); });
                 foreach (var kind in selected)
                 {
                     try
                     {
                         var result = await service.RunCategoryAsync(kind, delete, progress, cts.Token);
-                        controls[kind].Summary.Text = DisplayFormat.CategorySummary(result.Files, result.Directories, result.Bytes, result.Skipped, delete, arabic);
+                        language.Text(controls[kind].Summary,lang=>DisplayFormat.CategorySummary(result.Files,result.Directories,result.Bytes,result.Skipped,delete,lang));
                         if (!delete){scanned.Add(kind);estimatedBytes[kind]=result.Bytes;UpdateCleanEnabled();}
                         else { cleanedBytes += result.Bytes; cleanedFiles += result.Files; cleanedDirectories += result.Directories; }
                         skippedTotal += result.Skipped;
@@ -545,25 +610,25 @@ public partial class MainWindow : Window
                 if (!delete)
                 {
                     scanComplete = true;
-                    if (!silent) status.Text = "";
-                    activity.Write(skippedTotal == 0 ? "INFO" : "WARNING", "Quick cleanup scan finished.");
+                    if (!silent) language.Text(status,"","");
+                    activity.Write("INFO", "Quick cleanup scan finished.");
                 }
                 else
                 {
                     if(cleanedBytes>0)await SpaceFreedService.Instance.AddAsync(cleanedBytes,"clean:"+Guid.NewGuid().ToString("N"));
                     var summary = DisplayFormat.CleanOutcomeSummary(cleanedBytes, cleanedFiles, cleanedDirectories, skippedTotal, failedCategories, arabic);
-                    status.Text = summary;
+                    language.Text(status,lang=>DisplayFormat.CleanOutcomeSummary(cleanedBytes,cleanedFiles,cleanedDirectories,skippedTotal,failedCategories,lang));
                     status.SetResourceReference(TextBlock.ForegroundProperty,cleanedFiles>0||cleanedBytes>0?"ChromeAccent":"HomeDimBrush");
                     activity.Write(failedCategories>0||skippedTotal>0 ? "WARNING" : cleanedFiles > 0 || cleanedBytes > 0 ? "SUCCESS" : "INFO", summary);
                 }
             }
-            catch (OperationCanceledException) { if (!silent) status.Text = L("Cancelled; completed deletions cannot be undone.", "أُلغي العمل؛ لا يمكن التراجع عن الملفات التي حُذفت بالفعل."); }
+            catch (OperationCanceledException) { if (!silent) language.Text(status,"Cancelled; completed deletions cannot be undone.", "أُلغي العمل؛ لا يمكن التراجع عن الملفات التي حُذفت بالفعل."); activity.WriteBilingual("INFO","Quick Cleaner cancelled.","أُلغي التنظيف السريع."); }
             catch (Exception ex) { if (!silent) status.Text = L("Scan or cleanup failed; see Activity Log.", "تعذر الفحص أو التنظيف؛ راجع سجل النشاط."); scanComplete = false; activity.Write("ERROR", $"Quick Cleaner: {ex.GetType().Name}"); }
             finally { running = null; cleanerOperationActive = false; foreach (var entry in controls.Values) entry.Check.IsEnabled = true; UpdateCleanEnabled(); }
             // Refresh category summaries after cleaning without overwriting the success result.
             if (delete && outer.IsLoaded) await Run(false, true);
         }
-        outer.Loaded += async (_, _) => await Run(false); outer.Unloaded += (_, _) => { if (running != null && !scanComplete) running.Cancel(); }; cleanButton.Click += async (_, _) => await Run(true);
+        outer.Loaded += async (_, _) => await Run(false);  cleanButton.Click += async (_, _) => await Run(true);
         return outer;
     }
     private Border CleanerCard(UIElement content) => new() { Background = Brushes.Transparent, BorderBrush = Brushes.Transparent, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(18), Margin = new Thickness(5), Child = content };
@@ -579,11 +644,18 @@ public partial class MainWindow : Window
         activity.Write("WARNING", L("Finish or cancel the current operation before leaving this page.", "أكمل العملية الحالية أو ألغها قبل مغادرة الصفحة."));
         return false;
     }
+    private void EnsureFileBrowserCreated()
+    {
+        if(fileBrowserPage!=null)return;
+        fileBrowserPage=new FileBrowserView(arabic,currentDirectory,activity,null,settingsService,applicationInventory);
+        fileBrowserPage.LocationChanged+=path=>currentDirectory=path;
+    }
     private void OpenStorageItem(string directory, string? reveal)
     {
+        EnsureFileBrowserCreated();
         try
         {
-            string target = Path.GetFullPath(Directory.Exists(directory) ? directory : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+            string target = Path.GetFullPath(directory);
             currentDirectory = target;
             pendingFileReveal = reveal;
         }
@@ -598,7 +670,7 @@ public partial class MainWindow : Window
     private void ApplyNativeTitleBar() => NativeTitleBarService.Apply(this,
         (Color)ColorConverter.ConvertFromString(palette.Sidebar??palette.Card),
         (Color)ColorConverter.ConvertFromString(palette.Text));
-    private void ClearLog(object sender, RoutedEventArgs e) { activity.Entries.Clear(); activity.Write("INFO", "Activity log cleared."); }
+    private void ClearLog(object sender, RoutedEventArgs e) { activity.Clear(); activity.Write("INFO", "Activity log cleared."); }
     private void ToggleLog(object sender, RoutedEventArgs e)
     {
         logCollapsed = !logCollapsed;
@@ -614,9 +686,7 @@ public partial class MainWindow : Window
             // Preserve preferences owned by other pages (deep-uninstaller and
             // File Browser sorting) instead of resetting them to their defaults.
             var existing = settingsService.Load();
-            settingsService.Save(new(ThemePicker.SelectedItem as string ?? ThemeCatalog.DefaultTheme, arabic, collapsed,
-                CleanerSelection.Serialize(cleanerCategories), existing.DeepUninstallerSort,
-                existing.FileBrowserSort, existing.FileBrowserSortDirection));
+            _=SafeTasks.Run(()=>settingsService.SaveAsync(existing with{Theme=ThemePicker.SelectedItem as string??ThemeCatalog.DefaultTheme,Arabic=arabic,SidebarCollapsed=collapsed,CleanerCategories=CleanerSelection.Serialize(cleanerCategories)}),"Save settings");
             settingsErrorReported = false;
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Security.SecurityException)
@@ -630,10 +700,11 @@ public partial class MainWindow : Window
         if(ThemeGalleryHost.Visibility==Visibility.Visible){CloseThemeGallery();return;}
         if(themeGallery==null)
         {
-            string ArabicName(string name)=>name switch{"Midnight Champagne"=>"شامبانيا منتصف الليل","Blue"=>"الأزرق","Black"=>"الأسود","White"=>"الأبيض","Beige"=>"البيج","Espresso"=>"إسبريسو","Rose Noir"=>"الوردي الداكن","Pure Black"=>"الأسود الداكن",_=>name};
+            string ArabicName(string name)=>name switch{"Midnight Champagne"=>"شامبانيا منتصف الليل","Blue"=>"الأزرق","Black"=>"الأسود","White"=>"الأبيض","Beige"=>"البيج","Espresso"=>"إسبريسو","Rose Noir"=>"الوردي الداكن","Pure Black"=>"الأسود الداكن",
+                "Emerald"=>"الزمردي","Purple"=>"البنفسجي","Crimson"=>"القرمزي","Teal"=>"الفيروزي",_=>name};
             var preferred=new[]{ThemeCatalog.DefaultTheme,"Blue","Black","White","Beige","Pure Black","Espresso","Rose Noir"};
             var options=preferred.Concat(palettes.Keys.Except(preferred)).Where(palettes.ContainsKey).Select(name=>
-            {var p=palettes[name];return new ThemeOption(name,ArabicName(name),p.Background,p.Glow,p.Card,p.Border,p.Accent,p.Text,p.Dim,p.Sidebar,p.Hover,p.SecondaryBackground,p.SecondaryAccent);}).ToArray();
+            {var p=palettes[name];return new ThemeOption(name,ArabicName(name),p.Background,p.Glow,p.Card,p.Border,p.Accent,p.Text,p.Dim,p.Sidebar,p.Hover,p.SecondaryBackground,p.SecondaryAccent,p.AccentText);}).ToArray();
             themeGallery=new ThemeGalleryView(options);
             themeGallery.CancelRequested+=CloseThemeGallery;
             themeGallery.ApplyRequested+=name=>{CloseThemeGallery();ThemePicker.SelectedItem=name;};
@@ -651,7 +722,23 @@ public partial class MainWindow : Window
             old.Color=next.Color;
         else resources[key]=value.CloneCurrentValue();
     }
-    private void SwitchLanguage(object sender, RoutedEventArgs e) { if (!CanLeavePage()) return; arabic = !arabic; activity.Write("INFO", "Language changed to " + (arabic ? "Arabic" : "English")); SaveSettings(); Render(); updateWindow?.SetLanguage(arabic); }
+    private void SwitchLanguage(object sender, RoutedEventArgs e)
+    {
+        arabic = !arabic;
+        activity.SetLanguage(arabic);
+        activity.Write("INFO", "Language changed to " + (arabic ? "Arabic" : "English"));
+        SaveSettings();
+        Render(false, true);
+        switch (PageContent.Content)
+        {
+            case DashboardView dashboard: dashboard.SetLanguage(arabic); break;
+            case DeepUninstallerView deep: deep.SetLanguage(arabic); break;
+            case FileBrowserView browserPage: browserPage.SetLanguage(arabic); break;
+            case Grid when page == "cleaner": cleanerLanguageChanged?.Invoke(); break;
+            default: PageContent.Content = BuildPageSafely(); break;
+        }
+        updateWindow?.SetLanguage(arabic);
+    }
     private void ChangeTheme(object sender, SelectionChangedEventArgs e) { if (!ready || ThemePicker.SelectedItem is not string name) return; palette = palettes[name]; activity.Write("INFO", "Theme changed to " + name); SaveSettings(); Render(false); }
 
 }

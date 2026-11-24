@@ -112,8 +112,11 @@ public sealed class RemovalEngine
         if(plan.Root!=null)
         {
             var root=DirectRemovalService.Validate(plan.Snapshot.Program,inventory);
-            await Task.Run(()=>
+            await Task.Run(async()=>
             {
+                var changes=new List<FileChange>();
+                try
+                {
                 var clock=System.Diagnostics.Stopwatch.StartNew();
                 foreach(var file in plan.Files)
                 {
@@ -128,7 +131,7 @@ public sealed class RemovalEngine
                         {skippedPaths.Add(file.Path);messages.Add("Skipped changed file: "+file.Path);continue;}
                         File.Delete(file.Path);
                         if(File.Exists(file.Path))throw new IOException("File remains after deletion.");
-                        files++;bytes+=file.Bytes;removedPaths.Add(file.Path);messages.Add("Removed file: "+file.Path);
+                        changes.Add(new(file.Path,true,file.Bytes));files++;bytes+=file.Bytes;removedPaths.Add(file.Path);messages.Add("Removed file: "+file.Path);
                     }
                     catch(Exception ex) when(IsItemError(ex)){failedPaths.Add(file.Path);messages.Add("Failed file: "+file.Path+" ("+Reason(ex)+")");}
                     if(clock.ElapsedMilliseconds>150){progress?.Report(files.ToString("N0"));clock.Restart();}
@@ -144,10 +147,11 @@ public sealed class RemovalEngine
                         // Retained personal data or uncertain new content does not
                         // authorize recursive folder deletion or a false cleanup failure.
                         if(Directory.EnumerateFileSystemEntries(directory).Any())continue;
-                        Directory.Delete(directory,false);folders++;removedPaths.Add(directory);messages.Add("Removed folder: "+directory);
+                        Directory.Delete(directory,false);changes.Add(new(directory,true,0,true));folders++;removedPaths.Add(directory);messages.Add("Removed folder: "+directory);
                     }
                     catch(Exception ex) when(IsItemError(ex)){failedPaths.Add(directory);messages.Add("Retained folder: "+directory+" ("+Reason(ex)+")");}
                 }
+                }finally{await FileChangeHub.PublishAsync(changes).ConfigureAwait(false);}
             },token);
         }
         // Use the ORIGINAL registry/shortcut capture, even after files and the

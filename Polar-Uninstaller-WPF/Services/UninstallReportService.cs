@@ -77,7 +77,7 @@ public sealed record UninstallReport(
     {
         var lines = new List<string>();
         void Add(string english, string arabicText) =>
-            lines.Add(arabic ? "\u200F" + arabicText : english);
+            lines.Add(arabic ? "\u200F" + BidiText.IsolateLatin(arabicText) : english);
 
         Add($"=== Uninstall report: {Name} ===", $"=== تقرير الإزالة: {Name} ===");
         Add($"Result: {Title(false)}", $"النتيجة: {Title(true)}");
@@ -92,7 +92,7 @@ public sealed record UninstallReport(
             $"تُجاوز — الملفات: {DisplayFormat.Isolate(DisplayFormat.Number(FilesSkipped))} · الريجستري: {DisplayFormat.Isolate(DisplayFormat.Number(RegistrySkipped))} · فشل الريجستري: {DisplayFormat.Isolate(DisplayFormat.Number(RegistryFailed))}");
         Add($"Reclaimed: {DriveSummary.Format(ReclaimedBytes)}", $"المسترد: {DisplayFormat.Isolate(DriveSummary.Format(ReclaimedBytes))}");
         if (!string.IsNullOrWhiteSpace(Detail))
-            Add($"Detail: {Detail}", $"التفاصيل: {Detail}");
+            Add($"Detail: {Detail}", $"التفاصيل: {ActivityText.Localize(Detail,true)}");
         if (RemainingPaths.Count > 0)
         {
             Add($"Remaining leftovers ({RemainingPaths.Count}):", $"البقايا المتبقية ({DisplayFormat.Isolate(RemainingPaths.Count.ToString())}):");
@@ -105,7 +105,7 @@ public sealed record UninstallReport(
         {
             Add("Notes:", "ملاحظات:");
             foreach (string message in Messages.Take(25))
-                Add("  · " + message, "  · " + message);
+                Add("  · " + message, "  · " + ActivityText.Localize(message,true));
         }
         return lines;
     }
@@ -165,6 +165,7 @@ public static class UninstallReportService
         bool cleanupUnverified = false)
     {
         var remainingPaths = (cleanup?.RemainingPaths ?? Array.Empty<string>())
+            .Concat(probe.RetainedSteamAssets ? new[] { program.Location } : Array.Empty<string>())
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
         bool registered = probe.LauncherRecordPresent;

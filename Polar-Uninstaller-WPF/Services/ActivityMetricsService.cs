@@ -17,7 +17,8 @@ public sealed class ActivityMetricsService
     public ActivityMetricsService(string? directory = null)
     {
         file = Path.Combine(directory ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PolarUninstallerWPF-Development"), "activity-metrics.json");
-        try { if(File.Exists(file)) metrics = JsonSerializer.Deserialize<ActivityMetrics>(File.ReadAllText(file)) ?? metrics; }
+        try { if(File.Exists(file)&&new FileInfo(file).Length<=1024*1024) metrics = JsonSerializer.Deserialize<ActivityMetrics>(File.ReadAllText(file)) ?? metrics;
+            metrics=metrics with{Opens=Math.Max(0,metrics.Opens),Clicks=Math.Max(0,metrics.Clicks),Days=(metrics.Days??[]).Where(d=>d!=null&&!string.IsNullOrWhiteSpace(d.Date)).TakeLast(90).ToArray()}; }
         catch(Exception e) when(e is IOException or UnauthorizedAccessException or JsonException) { PersistenceError=e.GetType().Name; }
     }
     public ActivityMetrics Snapshot() { lock(gate) return metrics; }
@@ -25,12 +26,12 @@ public sealed class ActivityMetricsService
     {
         lock(gate)
         {
-            string today=DateTime.Now.ToString("yyyy-MM-dd"); var days=metrics.Days.ToList(); var previous=days.FirstOrDefault(d=>d.Date==today) ?? new ActivityDay(today,0,0);
+            string today=DateTime.Now.ToString("yyyy-MM-dd"); var days=(metrics.Days??[]).ToList(); var previous=days.FirstOrDefault(d=>d.Date==today) ?? new ActivityDay(today,0,0);
             days.RemoveAll(d=>d.Date==today); days.Add(previous with { Opens=previous.Opens+(launch?1:0), Clicks=previous.Clicks+(launch?0:1) });
             metrics=new(metrics.Opens+(launch?1:0),metrics.Clicks+(launch?0:1),days.OrderBy(d=>d.Date).TakeLast(90).ToArray());
             dirty=true; if(!saving) { saving=true; _=Task.Run(Save); }
         }
-        Changed?.Invoke();
+        NotifyChanged();
     }
 
     /// <summary>
@@ -71,11 +72,11 @@ public sealed class ActivityMetricsService
         }
     }
 
+    private void NotifyChanged(){foreach(var handler in Changed?.GetInvocationList()??[])try{((Action)handler)();}catch(Exception e){CrashDiagnostics.Record("Metrics notification",e);}}
     private void Persist(ActivityMetrics snapshot)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(file)!);
         string temp = file + ".tmp";
-        File.WriteAllText(temp, JsonSerializer.Serialize(snapshot));
-        File.Move(temp, file, true);
+        AtomicStateFile.Write(file,JsonSerializer.Serialize(snapshot));
     }
 }

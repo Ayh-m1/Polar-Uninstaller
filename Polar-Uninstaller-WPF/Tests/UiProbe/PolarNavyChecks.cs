@@ -25,7 +25,7 @@ internal static class PolarNavyChecks
             Check(loaded.Theme=="Midnight Champagne"&&File.ReadAllText(file)==json,"Missing/invalid preference falls back safely without rewriting user data: "+json);
         }
         File.WriteAllText(file,"invalid json");Check(service.Load().Theme=="Midnight Champagne"&&service.LoadError!=null,"Corrupt settings fall back without hiding the read error");
-        Check(ThemeCatalog.All.Count==8&&new[]{"Blue","Black","White","Beige","Espresso","Rose Noir","Pure Black"}.All(ThemeCatalog.All.ContainsKey),"All seven existing themes remain alongside Midnight Champagne");
+        Check(new[]{"Blue","Black","White","Beige","Espresso","Rose Noir","Pure Black"}.All(ThemeCatalog.All.ContainsKey),"All seven original themes remain alongside Midnight Champagne");
         Check(!ThemeCatalog.All.ContainsKey("Polar Navy")&&ThemeCatalog.Resolve("Polar Navy")=="Midnight Champagne","Legacy identity resolves to the new default without a duplicate gallery option");
         File.WriteAllText(file,"{\"Theme\":\"Polar Navy\",\"Arabic\":true,\"SidebarCollapsed\":true,\"CleanerCategories\":[\"UserTemp\"],\"DeepUninstallerSort\":\"sizeDesc\",\"FileBrowserSort\":\"date\",\"FileBrowserSortDirection\":\"descending\",\"FuturePreference\":{\"enabled\":true}}");
         var migrated=service.Load();
@@ -87,7 +87,7 @@ internal static class PolarNavyChecks
         }
         var options=ThemeCatalog.All.Select(pair=>{var p=pair.Value;return new ThemeOption(pair.Key,pair.Key,p.Background,p.Glow,p.Card,p.Border,p.Accent,p.Text,p.Dim,p.Sidebar,p.Hover,p.SecondaryBackground,p.SecondaryAccent);}).ToArray();
         var gallery=new ThemeGalleryView(options);gallery.Open(ThemeCatalog.DefaultTheme,true);
-        Check(((Panel)gallery.FindName("Cards")).Children.Count==8&&gallery.PendingTheme==ThemeCatalog.DefaultTheme&&gallery.FlowDirection==FlowDirection.RightToLeft,"Appearance Gallery includes eight previews and Arabic selection");
+        Check(((Panel)gallery.FindName("Cards")).Children.Count==ThemeCatalog.All.Count&&gallery.PendingTheme==ThemeCatalog.DefaultTheme&&gallery.FlowDirection==FlowDirection.RightToLeft,"Appearance Gallery includes all catalog previews and Arabic selection");
         Check(ReleaseNotesService.LoadCurrent(false)?.Version=="1.0.142"&&ReleaseNotesService.LoadCurrent(true)?.Entries.Count==4,"Bilingual v1.0.142 notes are embedded");
         foreach(bool rtl in new[]{false,true})
         {

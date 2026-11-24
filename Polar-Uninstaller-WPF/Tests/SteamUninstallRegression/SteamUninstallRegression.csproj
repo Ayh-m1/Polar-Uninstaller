@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
@@ -9,7 +10,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="PolarUninstaller">
-      <HintPath>..\..\bin\Release\net9.0-windows\win-x64\PolarUninstaller.dll</HintPath>
+      <HintPath Condition="'$(PolarAssemblyPath)'==''">..\..\bin\Release\net9.0-windows\win-x64\PolarUninstaller.dll</HintPath>
+      <HintPath Condition="'$(PolarAssemblyPath)'!=''">$(PolarAssemblyPath)</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

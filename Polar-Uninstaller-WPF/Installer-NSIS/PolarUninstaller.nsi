@@ -1,10 +1,10 @@
-; Polar Uninstaller NSIS Installer
+﻿; Polar Uninstaller NSIS Installer
 ; Version, output file and application EXE can be supplied on the command line:
 ;   makensis /DVERSION=1.0.129 /DOUTFILE=... /DAPPEXE=... PolarUninstaller.nsi
 ; The defaults match the current source version.
 
 !ifndef VERSION
-!define VERSION "1.0.144"
+!define VERSION "1.0.151"
 !endif
 !ifndef OUTFILE
 !define OUTFILE "PolarUninstaller-Setup-v${VERSION}.exe"
@@ -89,15 +89,6 @@ Function .onInit
     Delete "$SMPROGRAMS\Polar Uninstaller (WPF)\Polar Uninstaller.lnk"
     RMDir "$SMPROGRAMS\Polar Uninstaller (WPF)"
     Delete "$DESKTOP\Polar Uninstaller (WPF).lnk"
-    ; Remove stale Polar shortcuts left by older Python/WPF layouts so they
-    ; cannot keep showing an old icon next to the new one.
-    Delete "$SMPROGRAMS\Polar Uninstaller.lnk"
-    SetShellVarContext all
-    Delete "$SMPROGRAMS\Polar Uninstaller.lnk"
-    Delete "$SMPROGRAMS\Polar Uninstaller (WPF)\Polar Uninstaller.lnk"
-    RMDir "$SMPROGRAMS\Polar Uninstaller (WPF)"
-    Delete "$DESKTOP\Polar Uninstaller (WPF).lnk"
-    SetShellVarContext current
 FunctionEnd
 
 ; --- Sections ---
@@ -105,26 +96,22 @@ FunctionEnd
 Section "Application (required)" SEC_APP
     SectionIn RO
     SetOutPath "$INSTDIR"
-    SetOverwrite on
     File "${APPEXE}"
-    ; Icons are taken from PolarUninstaller.exe itself. Remove standalone copies
-    ; left by earlier releases so no shortcut can keep pointing at an old logo.
-    Delete "$INSTDIR\PolarLogo*.ico"
-    Delete "$INSTDIR\PolarIcon.png"
+    ; Separate branding path invalidates only Polar's former EXE icon reference.
+    File /oname=PolarLogo-v144-crisp.ico "..\Assets\Polar.ico"
     WriteUninstaller "$INSTDIR\Uninstall.exe"
 
     CreateDirectory "$SMPROGRAMS\${APPNAME_WPF}"
-    ; Shortcut icon: the installed EXE, index 0. Never a separate .ico file.
-    CreateShortCut "$SMPROGRAMS\${APPNAME_WPF}\${APPNAME}.lnk" "$INSTDIR\PolarUninstaller.exe" "" "$INSTDIR\PolarUninstaller.exe" 0
+    CreateShortCut "$SMPROGRAMS\${APPNAME_WPF}\${APPNAME}.lnk" "$INSTDIR\PolarUninstaller.exe" "" "$INSTDIR\PolarLogo-v144-crisp.ico" 0
     ; Refresh an existing desktop shortcut even if its optional section is unchecked.
     IfFileExists "$DESKTOP\${APPNAME_WPF}.lnk" 0 +2
-    CreateShortCut "$DESKTOP\${APPNAME_WPF}.lnk" "$INSTDIR\PolarUninstaller.exe" "" "$INSTDIR\PolarUninstaller.exe" 0
+    CreateShortCut "$DESKTOP\${APPNAME_WPF}.lnk" "$INSTDIR\PolarUninstaller.exe" "" "$INSTDIR\PolarLogo-v144-crisp.ico" 0
 
     WriteRegStr HKLM "${REGKEY}" "DisplayName" "${APPNAME_WPF}"
     WriteRegStr HKLM "${REGKEY}" "Publisher" "${COMPANY}"
     WriteRegStr HKLM "${REGKEY}" "DisplayVersion" "${VERSION}"
     WriteRegStr HKLM "${REGKEY}" "InstallLocation" "$INSTDIR"
-    WriteRegStr HKLM "${REGKEY}" "DisplayIcon" "$INSTDIR\PolarUninstaller.exe,0"
+    WriteRegStr HKLM "${REGKEY}" "DisplayIcon" "$INSTDIR\PolarLogo-v144-crisp.ico,0"
     WriteRegStr HKLM "${REGKEY}" "UninstallString" '"$INSTDIR\Uninstall.exe"'
     WriteRegDWORD HKLM "${REGKEY}" "NoModify" 1
     WriteRegDWORD HKLM "${REGKEY}" "NoRepair" 1
@@ -133,16 +120,9 @@ Section "Application (required)" SEC_APP
 SectionEnd
 
 Section "Desktop shortcut" SEC_DESKTOP
-    CreateShortCut "$DESKTOP\${APPNAME_WPF}.lnk" "$INSTDIR\PolarUninstaller.exe" "" "$INSTDIR\PolarUninstaller.exe" 0
+    CreateShortCut "$DESKTOP\${APPNAME_WPF}.lnk" "$INSTDIR\PolarUninstaller.exe" "" "$INSTDIR\PolarLogo-v144-crisp.ico" 0
     System::Call 'shell32::SHChangeNotify(i 0x2000, i 0x3005, w "$DESKTOP\${APPNAME_WPF}.lnk", p 0)'
 SectionEnd
-
-; SHCNE_ASSOCCHANGED (0x08000000) with SHCNF_IDLIST: rebuild Explorer's icon
-; cache after every install or in-place upgrade so the new EXE icon is shown.
-Function .onInstSuccess
-    System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'
-FunctionEnd
-
 
 ; --- Uninstall ---
 
@@ -156,24 +136,17 @@ Section "Uninstall"
     Delete "$SMPROGRAMS\${APPNAME_WPF}\${APPNAME}.lnk"
     RMDir "$SMPROGRAMS\${APPNAME_WPF}"
     Delete "$DESKTOP\${APPNAME_WPF}.lnk"
-    ; Also clean obsolete WPF-named and stale Python-layout shortcuts.
-    Delete "$SMPROGRAMS\Polar Uninstaller.lnk"
-    SetShellVarContext all
-    Delete "$SMPROGRAMS\Polar Uninstaller.lnk"
+    ; Also clean obsolete WPF-named shortcuts
     Delete "$SMPROGRAMS\Polar Uninstaller (WPF)\Polar Uninstaller.lnk"
     RMDir "$SMPROGRAMS\Polar Uninstaller (WPF)"
     Delete "$DESKTOP\Polar Uninstaller (WPF).lnk"
-    SetShellVarContext current
     Delete "$INSTDIR\PolarUninstaller.exe"
     Delete "$INSTDIR\Uninstall.exe"
-    Delete "$INSTDIR\PolarLogo*.ico"
-    Delete "$INSTDIR\PolarIcon.png"
+    Delete "$INSTDIR\PolarLogo-v144-crisp.ico"
+    Delete "$INSTDIR\PolarLogo-v144-large.ico"
+    Delete "$INSTDIR\PolarLogo-v144.ico"
+    Delete "$INSTDIR\PolarLogo-v142.ico"
     DeleteRegKey HKLM "${REGKEY}"
     RMDir "$INSTDIR"
 SectionEnd
-
-; Rebuild Explorer's icon cache after removing the shortcuts and EXE.
-Function un.onUnInstSuccess
-    System::Call 'shell32::SHChangeNotify(i 0x08000000, i 0, p 0, p 0)'
-FunctionEnd
 

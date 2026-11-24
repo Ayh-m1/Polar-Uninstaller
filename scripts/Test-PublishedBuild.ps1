@@ -1,13 +1,22 @@
 param(
     [string]$PublishDirectory = 'artifacts/SingleFile',
-    [string]$BuildAssembly = 'Polar-Uninstaller-WPF/bin/Release/net9.0-windows/PolarUninstaller.dll'
+    [string]$BuildAssembly = 'Polar-Uninstaller-WPF/bin/Release/net9.0-windows/win-x64/PolarUninstaller.dll',
+    [switch]$RequireSetup
 )
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot
 $exe = Get-Item -LiteralPath (Join-Path $PublishDirectory 'PolarUninstaller.exe')
 $version = ([xml](Get-Content -Raw (Join-Path $repoRoot 'Polar-Uninstaller-WPF/Directory.Build.props'))).Project.PropertyGroup.Version
-if ($exe.Length -lt 1MB) { throw 'The self-contained EXE is unexpectedly small.' }
+if ($exe.Length -lt 50MB) { throw 'The self-contained EXE is unexpectedly small.' }
 if ($exe.VersionInfo.FileVersion -ne "$version.0") { throw 'The EXE version does not match Directory.Build.props.' }
+$releaseFiles = @($exe)
+if ($RequireSetup) {
+    $setup = Get-Item -LiteralPath (Join-Path $PublishDirectory "PolarUninstaller-Setup-v$version.exe")
+    if ($setup.Length -lt 40MB -or $setup.VersionInfo.FileVersion -ne "$version.0") {
+        throw 'The Setup size or version is incorrect.'
+    }
+    $releaseFiles += $setup
+}
 
 # Exercise startup from the built assembly. The production EXE deliberately
 # requires elevation, while the worker protocol itself needs no administrator rights.
@@ -34,9 +43,9 @@ try {
 
 Copy-Item (Join-Path $repoRoot 'LICENSE') (Join-Path $PublishDirectory 'LICENSE.txt')
 Copy-Item (Join-Path $repoRoot 'PRIVACY.md') (Join-Path $PublishDirectory 'PRIVACY.md')
-$stream = [System.IO.File]::OpenRead($exe.FullName)
-$sha = [System.Security.Cryptography.SHA256]::Create()
-try { $hash = ([BitConverter]::ToString($sha.ComputeHash($stream))).Replace('-', '').ToLowerInvariant() }
-finally { $stream.Dispose(); $sha.Dispose() }
-"$hash  PolarUninstaller.exe" | Set-Content (Join-Path $PublishDirectory 'SHA256SUMS.txt') -Encoding utf8
+$checksums = foreach ($file in $releaseFiles) {
+    $hash = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+    "$hash  $($file.Name)"
+}
+$checksums | Set-Content (Join-Path $PublishDirectory 'SHA256SUMS.txt') -Encoding ascii
 Write-Output "Verified PolarUninstaller.exe v$version ($($exe.Length) bytes); built-assembly icon worker started and exited successfully."

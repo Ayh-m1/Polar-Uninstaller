@@ -26,6 +26,7 @@ public partial class DeepUninstallerView
     }
     private string kindFilter="all";
     private ComboBox? kindSelector;
+    private (int Index,int Total,string Name,bool Shared)? batchProgress;
     private static bool SameSelection(InstalledProgram a,InstalledProgram b)=>
         string.Equals(a.Name,b.Name,StringComparison.OrdinalIgnoreCase)&&
         string.Equals(a.Identifier,b.Identifier,StringComparison.OrdinalIgnoreCase)&&
@@ -39,19 +40,23 @@ public partial class DeepUninstallerView
         kindSelector.SelectedIndex=0;kindSelector.ToolTip=L("Filter applications","تصفية البرامج");
         kindSelector.SelectionChanged+=(_,_)=>{if(updatingKindLanguage)return;kindFilter=kindSelector.SelectedIndex switch{1=>"programs",2=>"games",_=>"all"};RefreshFilter();};
         DockPanel.SetDock(kindSelector,Dock.Right);((DockPanel)SortSelector.Parent).Children.Insert(0,kindSelector);
-        List.PreviewKeyDown+=(_,e)=>
-        {
-            if(busy||batchActive||e.OriginalSource is TextBox)return;
-            if(e.Key==Key.A&&Keyboard.Modifiers==ModifierKeys.Control){List.SelectAll();e.Handled=true;}
-            else if(e.Key==Key.Escape||e.Key==Key.D&&Keyboard.Modifiers==ModifierKeys.Control){List.UnselectAll();e.Handled=true;}
-        };
+        InitializeSelectionGestures();
     }
     private void RefreshFilter()
     {
-        view?.Refresh();
-        // Hidden items are deliberately deselected; the next batch is exactly what is visible and selected.
-        foreach(var card in List.SelectedItems.Cast<ProgramCard>().ToArray())if(view?.Contains(card)==false)List.SelectedItems.Remove(card);
-        SelectionChanged(this,null!);
+        if (List == null || view == null) return;
+        gestureRevision++;
+        var selection = List.SelectedItems.Cast<ProgramCard>().ToArray();
+        applyingSelection = true;
+        try
+        {
+            view.Refresh();
+            foreach (var card in selection)
+                if (view.Contains(card) && !List.SelectedItems.Contains(card)) List.SelectedItems.Add(card);
+            if (selectionAnchor is not null && !view.Contains(selectionAnchor)) selectionAnchor = null;
+        }
+        finally { applyingSelection = false; }
+        RefreshSelectionActions(!SelectionLocked && selection.Length != List.SelectedItems.Count);
     }
     private async Task EvaluateBatchActionsAsync(long revision)
     {
@@ -71,10 +76,13 @@ public partial class DeepUninstallerView
     private async Task UninstallSelectionAsync(bool deep)
     {
         if(batchActive||busy||monitorCancellation!=null)return;
-        var selected=List.SelectedItems.Cast<ProgramCard>().Where(c=>view?.Contains(c)!=false).ToArray();
+        var selected=List.Items.OfType<ProgramCard>().Where(List.SelectedItems.Contains).ToArray();
         if(selected.Length==0)return;
-        using var cts=CancellationTokenSource.CreateLinkedTokenSource(cancellation.Token);
-        batchCancellation=cts;batchActive=true;cancelRemoval.Visibility=Visibility.Visible;UpdateActions();
+        if(selected.Length==1){await RunRemovalActionAsync(()=>Uninstall(deep,selected[0]));return;}
+        using var stop=new CancellationTokenSource();
+        batchCancellation=stop;batchActive=true;SetRemovalControl(true);UpdateActions();
+        bool shared=HasSharedSelection(selected);
+        if(shared) activity.WriteBilingual("WARNING",BrowserText.Get("DeepSharedWarning",false),BrowserText.Get("DeepSharedWarning",true));
         try
         {
             var result=await UninstallBatchService.RunAsync(selected,async(card,token)=>
@@ -86,19 +94,53 @@ public partial class DeepUninstallerView
                 {activity.Write("INFO",L("Skipped: ","تُجاوز: ")+DisplayFormat.Isolate(card.Name)+" · "+decision.Explanation(arabic));return BatchItemOutcome.Skipped;}
                 await Uninstall(deep,card);
                 if(monitorTask is {} monitoring)await monitoring;
+                activity.WriteBilingual(operationOutcome==BatchItemOutcome.Succeeded?"INFO":"WARNING",
+                    BrowserText.Get(BatchOutcomeKey(operationOutcome),false,card.Name),BrowserText.Get(BatchOutcomeKey(operationOutcome),true,card.Name));
                 return operationOutcome;
-            },cts.Token,(index,total)=>
+            },cancellation.Token,(index,total)=>
             {
-                cancelRemoval.Visibility=Visibility.Visible;
-                SetStatus(lang => BidiText.Localize(lang,"Removing item ","جارٍ إزالة العنصر ")+DisplayFormat.Directional(index+" / "+total,lang));
-            },error=>{CrashDiagnostics.Record("Batch removal",error);activity.Write("ERROR",L("One removal failed; continuing with remaining items.","تعذرت إزالة عنصر؛ ستُستكمل بقية العناصر."));});
-            SetStatus(lang => BidiText.Localize(lang,"Removal summary — succeeded: ","ملخص الإزالة — نجح: ")+DisplayFormat.Isolate(DisplayFormat.Number(result.Succeeded))+
-                BidiText.Localize(lang," · failed: "," · تعذر: ")+DisplayFormat.Isolate(DisplayFormat.Number(result.Failed))+
-                BidiText.Localize(lang," · skipped: "," · تُجاوز: ")+DisplayFormat.Isolate(DisplayFormat.Number(result.Skipped))+
-                (result.Cancelled?BidiText.Localize(lang," · Stopped. A vendor uninstaller may still be running."," · توقفت العملية. قد يظل مزيل التثبيت الرسمي قيد التشغيل."):""));
-            activity.Write(result.Failed>0?"WARNING":"INFO",Status.Text);
+                batchProgress=(index,total,selected[index-1].Name,shared);
+                SetStatus(_=>"");
+            },error=>{CrashDiagnostics.Record("Batch removal",error);activity.WriteBilingual("ERROR",
+                BrowserText.Get("DeepBatchFailed",false,batchProgress?.Name??""),BrowserText.Get("DeepBatchFailed",true,batchProgress?.Name??""));},stop.Token);
+            batchProgress=null;
+            string Summary(bool lang)=>BrowserText.Get("DeepBatchSummary",lang,result.Succeeded,result.Failed,result.Manual,result.Skipped)+
+                (result.Cancelled?" "+BrowserText.Get("DeepBatchStopped",lang):"");
+            SetStatus(Summary);
+            activity.WriteBilingual(result.Failed>0||result.Manual>0?"WARNING":"INFO",Summary(false),Summary(true));
         }
-        catch(Exception error){CrashDiagnostics.Record("Removal batch",error);SetStatus(lang => BidiText.Localize(lang,"Removal stopped. Refresh and review Activity Log.","توقفت الإزالة. حدّث القائمة وراجع سجل النشاط."));activity.Write("ERROR",Status.Text);}
-        finally{batchActive=false;batchCancellation=null;cancelRemoval.Visibility=Visibility.Collapsed;UpdateActions();}
+        catch(Exception error){batchProgress=null;CrashDiagnostics.Record("Removal batch",error);SetStatus("Removal stopped. Refresh and review Activity Log.","توقفت الإزالة. حدّث القائمة وراجع سجل النشاط.");activity.Write("ERROR",Status.Text);}
+        finally{batchProgress=null;batchActive=false;batchCancellation=null;SetRemovalControl(false);UpdateActions();}
+    }
+
+    private static string BatchOutcomeKey(BatchItemOutcome outcome) => outcome switch
+    {
+        BatchItemOutcome.Succeeded => "DeepBatchSucceeded",
+        BatchItemOutcome.Manual => "DeepBatchManual",
+        _ => "DeepBatchFailed"
+    };
+
+    private bool HasSharedSelection(IEnumerable<ProgramCard> selected)
+    {
+        var records=(List.ItemsSource as IEnumerable<ProgramCard>??Array.Empty<ProgramCard>()).ToArray();
+        return selected.Any(card =>
+        {
+            var program=card.Program;
+            if (RiotGameService.IsProtectedComponent(program) ||
+                program.Name.Equals("Adobe Creative Cloud",StringComparison.OrdinalIgnoreCase) ||
+                program.Name.Equals("Apple Mobile Device Support",StringComparison.OrdinalIgnoreCase)) return true;
+
+            string location=InventoryMerger.NormalizePath(program.Location);
+            return location.Length>0&&records.Any(other=>!ReferenceEquals(card,other)&&
+                string.Equals(location,InventoryMerger.NormalizePath(other.Program.Location),StringComparison.OrdinalIgnoreCase));
+        });
+    }
+
+    private void SetRemovalControl(bool visible,bool monitoring=false)
+    {
+        cancelRemoval.Visibility = visible || batchActive ? Visibility.Visible : Visibility.Collapsed;
+        cancelRemoval.IsEnabled = !batchActive || batchCancellation?.IsCancellationRequested != true;
+        language.Set(cancelRemoval,ContentControl.ContentProperty,lang=>batchActive ? BrowserText.Get("DeepBatchStop",lang) :
+            (monitoring ? BidiText.Localize(lang,"Cancel monitoring","إلغاء المراقبة") : BidiText.Localize(lang,"Cancel removal","إلغاء الإزالة")));
     }
 }

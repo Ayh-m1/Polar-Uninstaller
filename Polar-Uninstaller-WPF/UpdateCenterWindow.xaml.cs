@@ -29,7 +29,7 @@ public partial class UpdateCenterWindow : Window
     private bool actionMessageIsError;
     private DownloadProgress? lastProgress;
 
-    private string L(string en, string ar) => arabic ? ar : en;
+    private string L(string en, string ar) => BidiText.Localize(arabic,en,ar);
 
     public UpdateCenterWindow(bool arabic, UpdateResult result)
     {
@@ -81,13 +81,13 @@ public partial class UpdateCenterWindow : Window
     {
         if (actionMessageProvider is not null)
         {
-            StatusText.Text = actionMessageProvider();
+            LocalizedPresentation.SetRuns(StatusText, actionMessageProvider());
             if (actionMessageIsError)
                 InstallNotice.Text = L("Your working installation has not been changed.", "لم يتم تغيير التثبيت العامل لديك.");
         }
         else if (statusTextProvider is not null)
         {
-            StatusText.Text = statusTextProvider();
+            LocalizedPresentation.SetRuns(StatusText, statusTextProvider());
         }
         if (transferTextProvider is not null) TransferText.Text = transferTextProvider();
         if (installNoticeProvider is not null && actionMessageProvider is null) InstallNotice.Text = installNoticeProvider();
@@ -133,8 +133,8 @@ public partial class UpdateCenterWindow : Window
         bool available = current.State == UpdateState.Available && release != null;
         bool validAsset = HasVerifiedDigest(asset);
 
-        CurrentVersionText.Text = "v" + WpfUpdateService.CurrentVersion;
-        LatestVersionText.Text = release == null ? "—" : "v" + release.Version;
+        LocalizedPresentation.SetLeftToRight(CurrentVersionText,"v" + WpfUpdateService.CurrentVersion,arabic);
+        LocalizedPresentation.SetLeftToRight(LatestVersionText,release == null ? "—" : "v" + release.Version,arabic);
 
         headingProvider = () => available ? L("Update Available", "يتوفر تحديث جديد") : L("Polar Update Center", "مركز تحديث Polar");
         Heading.Text = headingProvider();
@@ -215,7 +215,7 @@ public partial class UpdateCenterWindow : Window
             "سيتم التحقق من ملف GitHub الرسمي عبر SHA-256 قبل التثبيت.");
         lastProgress = null;
         actionMessageProvider = null;
-        StatusText.Text = statusTextProvider();
+        LocalizedPresentation.SetRuns(StatusText, statusTextProvider());
         TransferText.Text = "";
         InstallNotice.Text = installNoticeProvider();
         SetBusy(true);
@@ -230,7 +230,7 @@ public partial class UpdateCenterWindow : Window
                 double percent = p.Total is > 0 ? Math.Clamp(100.0 * p.Bytes / p.Total.Value, 0, 100) : 0;
                 DownloadBar.Value = percent;
                 transferTextProvider = () => BuildTransferText(p);
-                StatusText.Text = statusTextProvider!();
+                LocalizedPresentation.SetRuns(StatusText, statusTextProvider!());
                 TransferText.Text = transferTextProvider();
             });
 
@@ -244,7 +244,7 @@ public partial class UpdateCenterWindow : Window
             statusTextProvider = () => L("Download complete. Verifying the update…", "اكتمل التنزيل. جارٍ التحقق من التحديث…");
             transferTextProvider = () => L("SHA-256 and executable verification passed.", "نجح التحقق من SHA-256 والملف التنفيذي.");
             actionMessageProvider = null;
-            StatusText.Text = statusTextProvider();
+            LocalizedPresentation.SetRuns(StatusText, statusTextProvider());
             TransferText.Text = transferTextProvider();
             await InstallVerifiedUpdateAsync(asset);
         }
@@ -254,7 +254,7 @@ public partial class UpdateCenterWindow : Window
             statusTextProvider = () => L("Download cancelled.", "أُلغي التنزيل.");
             transferTextProvider = () => "";
             actionMessageProvider = null;
-            StatusText.Text = statusTextProvider();
+            LocalizedPresentation.SetRuns(StatusText, statusTextProvider());
             TransferText.Text = "";
             downloadedPath = null;
             downloadedDigest = null;
@@ -267,7 +267,7 @@ public partial class UpdateCenterWindow : Window
             transferTextProvider = () => "";
             installNoticeProvider = () => "";
             actionMessageProvider = null;
-            StatusText.Text = statusTextProvider();
+            LocalizedPresentation.SetRuns(StatusText, statusTextProvider());
             TransferText.Text = "";
             InstallNotice.Text = "";
             downloadedPath = null;
@@ -324,7 +324,7 @@ public partial class UpdateCenterWindow : Window
             "يُحتفظ بالإصدار السابق العامل حتى يتم التحقق من الاستبدال.");
         actionMessageProvider = null;
         lastProgress = null;
-        StatusText.Text = statusTextProvider();
+        LocalizedPresentation.SetRuns(StatusText, statusTextProvider());
         TransferText.Text = "";
         InstallNotice.Text = installNoticeProvider();
 
@@ -342,7 +342,7 @@ public partial class UpdateCenterWindow : Window
                     statusTextProvider = () => L("The update was not installed.", "لم يتم تثبيت التحديث.");
                     installNoticeProvider = () => L("Could not prepare the update: ", "تعذر تجهيز التحديث: ") + UpdateErrorText(capturedError);
                     actionMessageProvider = null;
-                    StatusText.Text = statusTextProvider();
+                    LocalizedPresentation.SetRuns(StatusText, statusTextProvider());
                     InstallNotice.Text = installNoticeProvider();
                     SetBusy(false);
                     return;
@@ -356,7 +356,7 @@ public partial class UpdateCenterWindow : Window
                 transferTextProvider = () => L("The running version stays untouched until the helper takes over.",
                     "لن يتغير الإصدار العامل حتى يتولى المساعد العملية.");
                 actionMessageProvider = null;
-                StatusText.Text = statusTextProvider();
+                LocalizedPresentation.SetRuns(StatusText, statusTextProvider());
                 TransferText.Text = transferTextProvider();
                 await Task.Delay(700);
                 Application.Current.Shutdown(0);
@@ -374,7 +374,7 @@ public partial class UpdateCenterWindow : Window
             statusTextProvider = () => L("The Setup package was started. Polar Uninstaller will close while it installs.",
                 "تم تشغيل حزمة التثبيت. سيُغلق Polar Uninstaller أثناء التثبيت.");
             actionMessageProvider = null;
-            StatusText.Text = statusTextProvider();
+            LocalizedPresentation.SetRuns(StatusText, statusTextProvider());
             await Task.Delay(1500);
             Application.Current.Shutdown(0);
         }
@@ -386,7 +386,7 @@ public partial class UpdateCenterWindow : Window
             statusTextProvider = () => L("The update could not be started.", "تعذر بدء التحديث.");
             installNoticeProvider = () => L("Could not start the update: ", "تعذر بدء التحديث: ") + UpdateErrorText(captured.Message);
             actionMessageProvider = null;
-            StatusText.Text = statusTextProvider();
+            LocalizedPresentation.SetRuns(StatusText, statusTextProvider());
             InstallNotice.Text = installNoticeProvider();
             SetBusy(false);
         }
@@ -410,7 +410,7 @@ public partial class UpdateCenterWindow : Window
         statusTextProvider = null;
         transferTextProvider = () => "";
         installNoticeProvider = error ? () => L("Your working installation has not been changed.", "لم يتم تغيير التثبيت العامل لديك.") : installNoticeProvider;
-        StatusText.Text = messageProvider();
+        LocalizedPresentation.SetRuns(StatusText, messageProvider());
         TransferText.Text = "";
         InstallNotice.Text = error ? L("Your working installation has not been changed.", "لم يتم تغيير التثبيت العامل لديك.") : "";
     }

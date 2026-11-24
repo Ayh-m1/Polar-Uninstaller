@@ -1,2 +1,0 @@
-59844f0cf9eb9db6a7e9913acde0e4e80b8ae227b45dd129e69fc9ad999631a0  PolarUninstaller.exe
-35ec11d3ddce190b2108b5a06b3a8edb0ffe1b53996d78b54ed5ef9ee0bd9c30  PolarUninstaller-Setup-v1.0.146.exe

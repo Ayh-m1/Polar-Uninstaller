@@ -13,7 +13,11 @@ public static class BrowserText
         using var stream=Application.GetResourceStream(new Uri($"pack://application:,,,/PolarUninstaller;component/Localization/FileBrowser.{language}.json"))!.Stream;
         return JsonSerializer.Deserialize<Dictionary<string,string>>(stream)??throw new InvalidDataException("File Browser translations unavailable");
     }
-    public static string Get(string key,bool arabic,params object[] values)=>string.Format(DisplayFormat.NumericCulture,(arabic?Arabic:English).Value[key],values);
+    public static string Get(string key,bool arabic,params object[] values)
+    {
+        string result=string.Format(DisplayFormat.NumericCulture,(arabic?Arabic:English).Value[key],values);
+        return arabic?BidiText.IsolateLatin(result):result;
+    }
     public static string ActionLabel(string action,int count,bool arabic)
     {
         string form=count==1?"One":arabic&&count==2?"Two":arabic&&count%100 is >=3 and <=10?"Few":arabic&&count%100 is >=11 and <=99?"Many":"Other";

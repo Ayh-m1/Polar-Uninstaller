@@ -42,13 +42,14 @@ public partial class FileBrowserView
         if((key is Key.Enter or Key.Space)&&ShortcutUi.Ancestor<GridViewColumnHeader>(e.OriginalSource as DependencyObject)!=null)return false;
         var command=ExplorerShortcuts.Resolve(key,Keyboard.Modifiers,false,ShortcutUi.TextInputFocused(e.OriginalSource as DependencyObject),fromList||Files.IsKeyboardFocusWithin);
         if(command==ExplorerCommand.None)return false;
-        e.Handled=true;if(e.IsRepeat&&command is ExplorerCommand.Recycle or ExplorerCommand.Permanent or ExplorerCommand.Help)return true;
+        e.Handled=true;if(e.IsRepeat&&command is ExplorerCommand.Recycle or ExplorerCommand.Permanent or ExplorerCommand.Help or ExplorerCommand.ToggleHidden)return true;
         await RunBrowserAction(()=>DispatchBrowserCommand(command));return true;
     }
     private async Task DispatchBrowserCommand(ExplorerCommand command)
     {
         if(command==ExplorerCommand.Help){ShowShortcutHelp();return;}
         if(command==ExplorerCommand.Search){Search.Focus();Search.SelectAll();return;}
+        if(command==ExplorerCommand.ToggleHidden){await ToggleHiddenItemsAsync();return;}
         if(command==ExplorerCommand.Address){ShowAddress();return;}
         string? navigationKey=command switch{ExplorerCommand.Back=>L("Back","رجوع"),ExplorerCommand.Forward=>L("Forward","التالي"),ExplorerCommand.Up=>L("Up","للأعلى"),ExplorerCommand.Refresh=>L("Refresh","تحديث"),_=>null};
         if(navigationKey!=null){if(navigation.TryGetValue(navigationKey,out var button)&&button.IsEnabled)button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));return;}

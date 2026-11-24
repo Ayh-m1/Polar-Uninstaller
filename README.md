@@ -21,19 +21,17 @@ Polar Uninstaller is a C# / WPF utility for 64-bit Windows 10 and 11. It removes
 - **Dashboard.** See drive usage, installed program count, space freed, and recent removals. Scan a folder to list its largest files and folders. **Refresh** updates the view. **Clear Cache** resets saved scans, dashboard statistics, and uninstall history after confirmation. It does not delete files listed in the scan results.
 - **File Browser.** Navigate with breadcrumbs and history, search and sort the current folder, and calculate folder sizes. The right-click menu offers opening items or their location, copying paths, moving to the Recycle Bin, and permanent deletion.
 - **Find Duplicate Files.** Open it from the File Browser’s **…** menu. It compares file contents in the chosen folder and its subfolders. **Smart select** marks extra copies and protects one copy per group. Review the selection before cleaning up.
-- **Preferences and updates.** Choose a theme from the Appearance gallery. The update button checks for compatible releases and opens Update Center for an available update.
+- **Preferences and updates.** Preview and choose from 12 themes in the Appearance gallery. The update button checks for compatible releases and opens Update Center for an available update.
 
 Use **?** or **F1** outside a text field for shortcut help in File Browser and Duplicate Finder. **Ctrl+F** focuses search. With the results list focused, **Ctrl+A** selects all and **Ctrl+D** or **Esc** clears the selection. **Delete** moves selected items to the Recycle Bin, and **Shift+Delete** requests permanent deletion.
 
-### What's new in v1.0.147
+### What's new in v1.0.151
 
-- Keep active operations running when switching language or theme.
-- Restore the Dashboard’s scan progress when you return to the page.
-- Fix Arabic number, unit, date, and path order and align Dashboard values with their labels.
-- Restore working program and game icons, improve Steam icon detection, and merge duplicate inventory entries.
-- Record Dashboard scan starts, completions, and cancellations in the Activity Log.
-- Recover settings from a valid backup and offer **Retry** when a page fails to load.
-- Save local crash reports and activate the existing window on a second launch.
+- Check Steam game files roughly once a second after Steam clears the installation record.
+- Allow more time for large Steam removals and show when game files are still pending.
+- Wait for the tracked official uninstaller to finish and retry verification if registration changes are delayed.
+- Use targeted evidence for final verification, avoiding a repeat scan of the full inventory.
+- Make the version and Polar credit at the bottom of the sidebar slightly larger.
 
 See [GitHub Releases](https://github.com/Ayh-m1/Polar-Uninstaller/releases) for older versions.
 
@@ -44,11 +42,11 @@ Download the latest C# / WPF release from the [Releases page](https://github.com
 | File | How to run |
 | --- | --- |
 | `PolarUninstaller.exe` | Run the standalone portable executable directly. |
-| `PolarUninstaller-Setup-v1.0.147.exe` | Run Setup to install. |
+| `PolarUninstaller-Setup-v1.0.151.exe` | Run Setup to install. |
 
 The app includes the required runtime and asks for administrator permission, so Windows shows a User Account Control prompt. Releases are not code-signed yet, so Windows SmartScreen may warn you the first time you run a file. Verify your download first. Older Python releases are separate builds.
 
-To verify a download, run `Get-FileHash -Algorithm SHA256 -LiteralPath '.\PolarUninstaller.exe'` in PowerShell (use the name of the file you downloaded) and compare the result with the `sha256:` value shown next to that file on the release page.
+To verify a download, run `Get-FileHash -Algorithm SHA256 -LiteralPath '.\PolarUninstaller.exe'` in PowerShell (use the name of the file you downloaded) and compare the result with the matching entry in `SHA256SUMS.txt` from the same release.
 
 ### Safety and limitations
 
@@ -88,7 +86,7 @@ dotnet restore .\PolarUninstallerWpf.csproj -p:PublishProfile=WindowsSingleFile
 
 The standalone output is `Build/SingleFile/PolarUninstaller.exe`. Setup is built with NSIS using `Installer-NSIS/PolarUninstaller.nsi`.
 
-GitHub Actions builds the Windows EXE from the public source and uploads it as an artifact. Signing requests require manual approval if the SignPath application is approved.
+GitHub Actions builds and checks the Windows EXE and Setup, then uploads both with their checksums. Signing requests require manual approval if the SignPath application is approved.
 
 ---
 
@@ -107,19 +105,17 @@ GitHub Actions builds the Windows EXE from the public source and uploads it as a
 - **لوحة المعلومات.** تعرض استخدام الأقراص وعدد البرامج المثبّتة والمساحة المحرّرة وآخر عمليات الإزالة. افحص مجلدًا لعرض أكبر ملفاته ومجلداته. يحدّث زر **تحديث** البيانات. ويعيد خيار **إزالة الكاش** ضبط الفحوص المحفوظة والإحصاءات وسجل الإزالة بعد التأكيد، من دون حذف الملفات الظاهرة في النتائج.
 - **متصفح الملفات.** تنقّل عبر مسار المجلد وسجل الرجوع، وابحث داخل المجلد الحالي ورتّب محتوياته واحسب أحجام المجلدات. من قائمة الزر الأيمن يمكنك فتح العناصر أو مواقعها، ونسخ المسارات، والنقل إلى سلة المحذوفات أو الحذف النهائي.
 - **البحث عن الملفات المكررة.** افتحه من قائمة **…** في متصفح الملفات. يقارن محتوى الملفات داخل المجلد المحدد ومجلداته الفرعية. يحدد **التحديد الذكي** النسخ الزائدة ويحمي نسخة واحدة في كل مجموعة. راجع التحديد قبل التنظيف.
-- **المظهر والتحديثات.** اختر مظهرًا من معرض المظاهر. يتحقق زر التحديث من الإصدارات المتوافقة، ويفتح مركز التحديث عند توفر إصدار جديد.
+- **المظهر والتحديثات.** عاين واختر من بين 12 مظهرًا في معرض المظاهر. يتحقق زر التحديث من الإصدارات المتوافقة، ويفتح مركز التحديث عند توفر إصدار جديد.
 
 تجد مساعدة الاختصارات في متصفح الملفات والبحث عن المكررات عبر زر **?** أو مفتاح ⁦F1⁩ خارج حقول النص. استخدم ⁦Ctrl+F⁩ للانتقال إلى البحث. عندما تكون قائمة النتائج نشطة، يحدد ⁦Ctrl+A⁩ الكل، ويلغي ⁦Ctrl+D⁩ أو ⁦Esc⁩ التحديد. ينقل ⁦Delete⁩ العناصر المحددة إلى السلة، ويطلب ⁦Shift+Delete⁩ حذفها نهائيًا.
 
-### ما الجديد في ⁦v1.0.147⁩
+### ما الجديد في ⁦v1.0.151⁩
 
-- تستمر العمليات الجارية عند تبديل اللغة أو المظهر.
-- تستعيد لوحة المعلومات تقدّم الفحص الجاري عند العودة إليها.
-- تظهر الأرقام والوحدات والنسب والتواريخ والمسارات بالترتيب الصحيح، وتبقى قيم البطاقات بمحاذاة عناوينها.
-- استعادة أيقونات البرامج والألعاب، وتحسين اكتشاف أيقونات ⁦Steam⁩، ودمج الإدخالات المكررة في القائمة.
-- يسجّل البرنامج بدء فحص لوحة المعلومات، ثم اكتماله أو إلغائه في سجل النشاط.
-- استعادة الإعدادات من نسخة احتياطية سليمة وإتاحة **إعادة المحاولة** عند تعذّر تحميل صفحة.
-- حفظ تقارير الأعطال محليًا وإظهار النافذة الحالية عند تشغيل البرنامج مرة أخرى.
+- يتحقق البرنامج من ملفات اللعبة كل ثانية تقريبًا بعد أن يزيل ⁦Steam⁩ سجل التثبيت.
+- تحصل ألعاب ⁦Steam⁩ الكبيرة على مهلة أطول، وتوضح الحالة إذا كانت بعض الملفات ما تزال موجودة.
+- ينتظر البرنامج انتهاء مزيل التثبيت الرسمي الذي يتتبّعه، ويعيد التحقق إذا تأخر تحديث السجل.
+- يقتصر التحقق النهائي على أدلة الإزالة الخاصة بالعنصر، دون إعادة فحص القائمة كاملة.
+- أصبح نص الإصدار واسم ⁦Polar⁩ أسفل الشريط الجانبي أكبر قليلًا.
 
 راجع [إصدارات GitHub](https://github.com/Ayh-m1/Polar-Uninstaller/releases) للاطلاع على الإصدارات السابقة.
 
@@ -128,11 +124,11 @@ GitHub Actions builds the Windows EXE from the public source and uploads it as a
 نزّل أحدث إصدار ⁦C# / WPF⁩ من [صفحة الإصدارات](https://github.com/Ayh-m1/Polar-Uninstaller/releases):
 
 - ⁦`PolarUninstaller.exe`⁩ — ملف تنفيذي محمول ومستقل، شغّله مباشرة.
-- ⁦`PolarUninstaller-Setup-v1.0.147.exe`⁩ — شغّله لتثبيت البرنامج.
+- ⁦`PolarUninstaller-Setup-v1.0.151.exe`⁩ — شغّله لتثبيت البرنامج.
 
 يتضمن البرنامج بيئة التشغيل المطلوبة، ويطلب صلاحيات المسؤول، لذلك ستظهر نافذة التحكم بحساب المستخدم (⁦UAC⁩). الإصدارات غير موقّعة رقميًا بعد، فقد يعرض ⁦Windows SmartScreen⁩ تحذيرًا عند أول تشغيل، فتحقق من الملف قبل تشغيله. إصدارات ⁦Python⁩ القديمة منفصلة عن هذه النسخة.
 
-للتحقق من التنزيل، نفّذ في ⁦PowerShell⁩ الأمر ⁦`Get-FileHash -Algorithm SHA256 -LiteralPath '.\PolarUninstaller.exe'`⁩ مع اسم الملف الذي نزّلته، ثم قارن النتيجة بقيمة ⁦`sha256:`⁩ الظاهرة بجانب الملف في صفحة الإصدار.
+للتحقق من التنزيل، نفّذ في ⁦PowerShell⁩ الأمر ⁦`Get-FileHash -Algorithm SHA256 -LiteralPath '.\PolarUninstaller.exe'`⁩ مع اسم الملف الذي نزّلته، ثم قارن البصمة بالسطر المطابق في ملف ⁦`SHA256SUMS.txt`⁩ من نفس الإصدار.
 
 ### الأمان والقيود
 
@@ -172,4 +168,4 @@ dotnet restore .\PolarUninstallerWpf.csproj -p:PublishProfile=WindowsSingleFile
 
 ينتج الملف المستقل في ⁦`Build/SingleFile/PolarUninstaller.exe`⁩. يُبنى برنامج التثبيت باستخدام ⁦NSIS⁩ وملف ⁦`Installer-NSIS/PolarUninstaller.nsi`⁩.
 
-يبني ⁦GitHub Actions⁩ ملف ويندوز التنفيذي من المصدر العام ويرفعه ضمن مخرجات البناء. إذا قُبل طلب ⁦SignPath⁩، فستتطلب طلبات التوقيع موافقة يدوية.
+يبني ⁦GitHub Actions⁩ الملف التنفيذي والمثبّت ويتحقق منهما، ثم يرفعهما مع بصماتهما ضمن مخرجات البناء. إذا قُبل طلب ⁦SignPath⁩، فستتطلب طلبات التوقيع موافقة يدوية.

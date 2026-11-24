@@ -39,7 +39,7 @@ public sealed class SortMenuButton:Button
             var item=new MenuItem{Header=BrowserText.Get(direction?"Ascending":"Descending",rtl),Tag=direction,IsCheckable=true,Style=menuStyle};
             item.Click+=(_,_)=>SortRequested?.Invoke(key,direction);menu.Items.Add(item);
         }
-        ToolTip=new ToolTip{Content=BrowserText.Get("SortBy",rtl),PlacementTarget=this};SetState(selected,asc);
+        ShortcutUi.SetTooltip(this,BrowserText.Get("SortBy",rtl),"Enter / Space",rtl);SetState(selected,asc);
     }
     public void SetState(string selected,bool asc)
     {

@@ -75,7 +75,7 @@ internal static partial class Parts146Checks
             Check(!((Button)dashboard.FindName("RefreshButton")).IsEnabled,"Header refresh exposes busy state AR="+ar);Wait(refresh);Pump();
             var applied=(StorageSnapshot)Field(dashboard,"displayedSnapshot")!;
             Check(applied.TotalBytes==21&&applied.FilesScanned==3&&applied.CompletedAt>restored.CompletedAt,"Header refresh replaces current scope scan and timestamp AR="+ar);
-            Check(((TextBlock)dashboard.FindName("ProgramsValue")).Text=="1"&&((Button)dashboard.FindName("RefreshButton")).IsEnabled,"Overview count refreshes and button recovers AR="+ar);
+            Check(((SelectableText)dashboard.FindName("ProgramsValue")).Text=="1"&&((Button)dashboard.FindName("RefreshButton")).IsEnabled,"Overview count refreshes and button recovers AR="+ar);
             Check(log.Entries.Any(e=>e.Severity=="INFO"&&e.Message.Contains(ar?"حُدّثت":"Dashboard refreshed")),"Successful refresh records INFO in current language AR="+ar);
             Set(dashboard,"scanRoot",Path.Combine(root,"missing"));Wait((Task)Invoke(dashboard,"RefreshAllAsync")!);Pump();
             Check(ReferenceEquals(Field(dashboard,"displayedSnapshot"),applied)&&log.Entries.Any(e=>e.Severity=="ERROR"),"Refresh failure preserves old scan and reports ERROR AR="+ar);
@@ -86,6 +86,6 @@ internal static partial class Parts146Checks
             slow.CancelWork();Wait(pending);
             Check(((Button)slow.FindName("RefreshButton")).IsEnabled,"Explicit cancellation recovers the refresh button AR="+ar);
         }
-        Check(AppInfo.Version=="1.0.147","Version stays v1.0.147");return Finish("A");
+        Check(AppInfo.Version=="1.0.150","Version stays v1.0.150");return Finish("A");
     }
 }

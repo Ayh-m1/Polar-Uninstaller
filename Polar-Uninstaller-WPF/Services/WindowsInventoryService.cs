@@ -2,13 +2,11 @@ using Microsoft.Win32;
 
 namespace PolarUninstallerWpf.Services;
 
-public sealed record ApplicationRegistration(RegistryHive Hive, RegistryView View, string Path);
-
 public sealed record InstalledProgram(string Name, string Publisher, string Version, string Location = "", string IconPath = "", long? SizeKb = null, string Uninstall = "", string Source = "Windows", string Identifier = "", IReadOnlyList<string>? Sources = null, IReadOnlyList<string>? IconCandidates = null,bool RequiresOfficialRemoval=false)
 {
-    public string LaunchUri { get; init; } = "";
     public string RegisteredIcon { get; init; } = "";
-    public ApplicationRegistration? Registration { get; init; }
+    public string LaunchUri { get; init; } = "";
+    public RegistryLeftover? Registration {get;init;}
 }
 
 public sealed class WindowsInventoryService
@@ -45,7 +43,9 @@ public sealed class WindowsInventoryService
                             if (string.IsNullOrWhiteSpace(name) || Convert.ToString(item?.GetValue("SystemComponent")) == "1") continue;
                             var size = item?.GetValue("EstimatedSize");
                             long? sizeKb = long.TryParse(Convert.ToString(size), out long parsed) && parsed > 0 ? parsed : null;
-                            string command = Convert.ToString(item?.GetValue("UninstallString")) ?? "";
+                            string command = UninstallCommandService.ResolveRegistered(
+                                Convert.ToString(item?.GetValue("UninstallString"))??"",Convert.ToString(item?.GetValue("QuietUninstallString"))??"",
+                                Convert.ToString(item?.GetValue("ModifyPath"))??"",keyName,Convert.ToString(item?.GetValue("WindowsInstaller"))=="1");
                             var steam = System.Text.RegularExpressions.Regex.Match(keyName + " " + command, @"(?:Steam App\s+|steam://uninstall/)(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
                             string identifier = steam.Success ? "steam:" + steam.Groups[1].Value : "";
                             string publisher = Convert.ToString(item?.GetValue("Publisher")) ?? "";
@@ -74,7 +74,7 @@ public sealed class WindowsInventoryService
                             }
                             bool managed=Convert.ToString(item?.GetValue("WindowsInstaller"))=="1" || !string.IsNullOrEmpty(Convert.ToString(item?.GetValue("ReleaseType"))) || !string.IsNullOrEmpty(Convert.ToString(item?.GetValue("ParentKeyName"))) || Convert.ToString(item?.GetValue("NoRemove"))=="1" || riotProtected || identifier.StartsWith("riot:", StringComparison.OrdinalIgnoreCase);
                             programs.Add(new(name.Trim(), publisher, Convert.ToString(item?.GetValue("DisplayVersion")) ?? "", location, icon, sizeKb, command, "Windows", identifier, null, icons,managed)
-                            { RegisteredIcon = icon, Registration = new(hive, view, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\" + keyName) });
+                            {RegisteredIcon=icon,Registration=new(hive,view,@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\"+keyName,name.Trim(),Convert.ToString(item?.GetValue("InstallLocation"))??"",Convert.ToString(item?.GetValue("UninstallString"))??"",Convert.ToString(item?.GetValue("DisplayVersion"))??"")});
                         }
                         catch (Exception error) when (error is UnauthorizedAccessException or System.Security.SecurityException or System.IO.IOException) { }
                     }

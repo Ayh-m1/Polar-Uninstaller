@@ -44,10 +44,8 @@ public partial class FileBrowserView
         header.HorizontalContentAlignment=key==nameof(BrowserEntry.Size)?HorizontalAlignment.Right:HorizontalAlignment.Left;
         var next=NextHeaderSort(key);
         string action=T("SortNext",SortLabel(next.Key),T(next.Ascending?(next.Key==nameof(BrowserEntry.Size)?"SmallestFirst":next.Key==nameof(BrowserEntry.Modified)?"OldestFirst":"Ascending"):(next.Key==nameof(BrowserEntry.Size)?"LargestFirst":next.Key==nameof(BrowserEntry.Modified)?"NewestFirst":"Descending")));
-        if(header.ToolTip is not ToolTip previous||!Equals(previous.Content,action))
-        {bool open=header.ToolTip is ToolTip old&&old.IsOpen;if(header.ToolTip is ToolTip oldTip)oldTip.IsOpen=false;header.ToolTip=new ToolTip{Content=action,PlacementTarget=header,IsOpen=open};}
-        ToolTipService.SetShowOnDisabled(header,true);
-        AutomationProperties.SetHelpText(header,action);AutomationProperties.SetItemStatus(header,active?(direction==ListSortDirection.Ascending?"ascending":"descending"):"none");
+        ShortcutUi.SetTooltip(header,action,"Enter / Space",arabic);
+        AutomationProperties.SetItemStatus(header,active?(direction==ListSortDirection.Ascending?"ascending":"descending"):"none");
     }
     private void ClearSearchClick(object sender,RoutedEventArgs e){Search.Clear();Search.Focus();}
 }

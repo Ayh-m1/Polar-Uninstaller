@@ -150,11 +150,17 @@ internal static class LauncherExpansionChecks
                 string text=File.ReadAllText(path);int start=text.IndexOf(signature,StringComparison.Ordinal),brace=text.IndexOf('{',start),depth=1,end=brace+1;
                 while(depth>0&&end<text.Length){if(text[end]=='{')depth++;if(text[end]=='}')depth--;end++;}return text[start..end];
             }
-            foreach(var pair in new[]{("Services/LauncherInventoryService.cs","internal static void ScanSteam("),("Services/UninstallMonitorService.cs","private static RemovalProbe ProbeSteam("),("Services/UninstallMonitorService.cs","private static IEnumerable<string> SteamRoots(")})
+            foreach(var pair in new[]{("Services/LauncherInventoryService.cs","internal static void ScanSteam("),("Services/UninstallMonitorService.cs","private static IEnumerable<string> SteamRoots(")})
             {
                 string before=Extract(Path.Combine(original,pair.Item1.Replace('/','_')+".bak"),pair.Item2),after=Extract(Path.Combine(project,pair.Item1),pair.Item2);
                 Check(before==after,"Unchanged Steam method: "+pair.Item2);
             }
+            string retained=Directory.CreateDirectory(Path.Combine(root,"steam-fixture","steamapps","common","Retained Images")).FullName;
+            string image=Path.Combine(retained,"cached.png");
+            File.WriteAllText(image,"fixture");
+            var removedSteam=new InstalledProgram("Retained Images","Fixture","1",retained,Source:"Steam",Identifier:"steam:991501502");
+            Check(UninstallMonitorService.Probe(removedSteam,null) is { Confirmed:true,RetainedSteamAssets:true }&&File.Exists(image),
+                "Steam verification recognizes an unregistered image-only folder and preserves its files");
         }
         finally{if(!root.StartsWith(Path.Combine(AppContext.BaseDirectory,"fixtures","launcher-expansion-"),StringComparison.OrdinalIgnoreCase))throw new IOException("Invalid fixture scope");Directory.Delete(root,true);}
         Console.WriteLine($"{count} focused launcher checks, {failed} failures. Real launchers were not closed and no installed game was uninstalled. Native executions used disposable fixture stubs only.");return failed==0?0:1;

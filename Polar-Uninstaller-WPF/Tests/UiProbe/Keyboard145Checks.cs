@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Automation;
@@ -96,7 +96,7 @@ internal static class Keyboard145Checks
         }
         picker.SelectedItem=ThemeCatalog.DefaultTheme;Set(window,"arabic",true);Invoke(window,"Render",false,true);Layout(rootView,1200,750);Render(rootView,"sidebar-ar",1200,750);
         Check(label.FlowDirection==FlowDirection.LeftToRight&&label.Text.StartsWith("v"+AppInfo.Version),"Arabic sidebar never reorders version/publisher");
-        Check(AppInfo.Version=="1.0.147","Release version is v1.0.147");
+        Check(AppInfo.Version=="1.0.150","Release version is v1.0.150");
         Console.WriteLine($"{checks} checks, {failures} failures. Offscreen only; no deletion, installer, real application removal or welcome windows. Renders: {root}");return failures==0?0:1;
     }
 }

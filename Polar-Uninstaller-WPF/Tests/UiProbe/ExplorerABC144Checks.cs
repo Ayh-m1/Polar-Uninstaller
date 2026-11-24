@@ -23,7 +23,7 @@ internal static class ExplorerABC144Checks
         var app=new Application();System.Threading.SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(app.Dispatcher));
         string project=AppContext.BaseDirectory;while(!File.Exists(Path.Combine(project,"PolarUninstallerWpf.csproj")))project=Directory.GetParent(project)!.FullName;
         var xml=System.Xml.Linq.XDocument.Load(Path.Combine(project,"App.xaml"));System.Xml.Linq.XNamespace ns="http://schemas.microsoft.com/winfx/2006/xaml/presentation";
-        app.Resources=(ResourceDictionary)System.Windows.Markup.XamlReader.Parse(new System.Xml.Linq.XElement(ns+"ResourceDictionary",new System.Xml.Linq.XAttribute(System.Xml.Linq.XNamespace.Xmlns+"x","http://schemas.microsoft.com/winfx/2006/xaml"),xml.Root!.Element(ns+"Application.Resources")!.Elements()).ToString());
+        app.Resources=(ResourceDictionary)System.Windows.Markup.XamlReader.Parse(new System.Xml.Linq.XElement(ns+"ResourceDictionary",new System.Xml.Linq.XAttribute(System.Xml.Linq.XNamespace.Xmlns+"x","http://schemas.microsoft.com/winfx/2006/xaml"),xml.Root!.Element(ns+"Application.Resources")!.Elements()).ToString().Replace("clr-namespace:PolarUninstallerWpf\"","clr-namespace:PolarUninstallerWpf;assembly=PolarUninstaller\""));
         var root=Path.Combine(project,"Build","Validation","ExplorerABC144-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         var ctor=typeof(MainWindow).GetConstructor(BindingFlags.NonPublic|BindingFlags.Instance,null,new[]{typeof(SettingsService),typeof(ActivityMetricsService)},null)!;
         var window=(MainWindow)ctor.Invoke(new object[]{new SettingsService(root),new ActivityMetricsService(root)});
@@ -65,7 +65,7 @@ internal static class ExplorerABC144Checks
             Check(headers.All(header=>((StackPanel)header.Content).Children.OfType<TextBlock>().Last().Text.Length>0),"C1 inactive columns have neutral sort icons "+rtl);
             var type=headers[2];Invoke(browser,"SortClick",type,new RoutedEventArgs());
             Check((ListSortDirection)Field(browser,"direction")! ==ListSortDirection.Ascending&&AutomationProperties.GetItemStatus(type)=="ascending","C1 Type first click ascending "+rtl);
-            Check(((ToolTip)type.ToolTip).Content.ToString()!.Contains(BrowserText.Get("Descending",rtl)),"C1 tooltip describes the next reverse click "+rtl);
+            Check(AutomationProperties.GetHelpText(type).Contains(BrowserText.Get("Descending",rtl)),"C1 tooltip describes the next reverse click "+rtl);
             Invoke(browser,"SortClick",type,new RoutedEventArgs());
             Check((ListSortDirection)Field(browser,"direction")! ==ListSortDirection.Descending,"C1 second click reverses "+rtl);
             Invoke(browser,"SortClick",type,new RoutedEventArgs());
@@ -126,7 +126,7 @@ internal static class ExplorerABC144Checks
                     Check(Visuals<TextBlock>(duplicates).Where(text=>text.Text=="archive.zip").All(text=>text.Foreground==app.Resources["HomeTextBrush"]),"B5 group/copy names resolve high-contrast theme text "+rtl);
                 }
             }
-            Check(((TextBlock)duplicates.FindName("SelectionSummary")).Inlines.OfType<Run>().Any(run=>run.FlowDirection==FlowDirection.LeftToRight&&run.Text.Contains("KB")),"B4/B5 selected size uses LTR value "+rtl);
+            Check(((SelectableText)duplicates.FindName("SelectionSummary")).Inlines.OfType<Run>().Any(run=>run.FlowDirection==FlowDirection.LeftToRight&&run.Text.Contains("KB")),"B4/B5 selected size uses LTR value "+rtl);
             duplicates.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));browser.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));restored.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
         }
         var large=new DuplicateFilesView(false,scanRoot,log,new ApplicationInventoryService(),new SettingsService(Path.Combine(root,"large-settings")));
@@ -139,7 +139,7 @@ internal static class ExplorerABC144Checks
         Check(((ListBox)partialView.FindName("Results")).Items.Count==1&&((ListBox)partialView.FindName("Results")).Items.Cast<DuplicateGroupCard>().All(card=>card.Copies.All(row=>!row.Selected)),"B5 partial verified groups are visible without selection or a completed scan");
         var cancelView=new DuplicateFilesView(false,scanRoot,log,new ApplicationInventoryService(),new SettingsService(Path.Combine(root,"cancel-settings")));
         var cancelled=(Task)Invoke(cancelView,"StartScanAsync")!;cancelView.CancelOperation();Wait(cancelled);
-        Check(!cancelView.IsBusy&&((TextBlock)cancelView.FindName("Status")).Text.StartsWith("Scan cancelled")&&Directory.GetFiles(scanRoot,"*",SearchOption.AllDirectories).Length==9,"B5 cancellation restores responsive controls without touching scanned files");
+        Check(!cancelView.IsBusy&&((SelectableText)cancelView.FindName("Status")).Text.StartsWith("Scan cancelled")&&Directory.GetFiles(scanRoot,"*",SearchOption.AllDirectories).Length==9,"B5 cancellation restores responsive controls without touching scanned files");
         string emptyFolder=Path.Combine(root,"empty");Directory.CreateDirectory(emptyFolder);
         var emptyView=new DuplicateFilesView(false,emptyFolder,log,new ApplicationInventoryService());Wait((Task)Invoke(emptyView,"StartScanAsync")!);
         Check(((TextBlock)emptyView.FindName("EmptyHint")).Text==BrowserText.Get("DupEmpty",false),"B5 completed empty scan shows the friendly clean-folder state");
@@ -165,7 +165,7 @@ internal static class ExplorerABC144Checks
         var allScan=new DuplicateScanService().ScanAsync(allRoot,null,CancellationToken.None).GetAwaiter().GetResult();
         var allOutcome=new DuplicateCleanupService().CleanAsync(allScan,allPaths,true,Array.Empty<string>(),null,CancellationToken.None).GetAwaiter().GetResult();
         Check(allPaths.Count(File.Exists)==1&&allOutcome.Items.Any(item=>item.Code=="last_copy"),"B4 backend retains a verified copy even if every fixture path is requested");
-        Check(AppInfo.Version=="1.0.144","Version unchanged");
+        Check(AppInfo.Version=="1.0.150","Version is v1.0.150");
         Console.WriteLine($"{checks} checks, {failures} failures. Owned fixtures only; no live Recycle Bin or installer. Renders: {root}");return failures==0?0:1;
     }
 }

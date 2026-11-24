@@ -36,7 +36,8 @@ public sealed class LeftoverService
                     if (key == null) continue;
                     string title = key.GetValue("DisplayName") as string ?? "", location = key.GetValue("InstallLocation") as string ?? "";
                     string command=key.GetValue("UninstallString") as string??"";
-                    if (!IdentityMatches(program, name, title, location, command)) continue;
+                    bool exact=program.Registration is {} identity&&identity.Hive==hive&&identity.View==view&&identity.Path.Equals(Uninstall+"\\"+name,StringComparison.OrdinalIgnoreCase)&&Matches(key,identity);
+                    if (!exact&&!IdentityMatches(program, name, title, location, command)) continue;
                     records.Add(new(hive, view, Uninstall + "\\" + name, title, location,command,Convert.ToString(key.GetValue("DisplayVersion"))??""));
                 }
             }
@@ -75,6 +76,7 @@ public sealed class LeftoverService
     /// </summary>
     public static bool RegistrationExists(InstalledProgram program)
     {
+        if(program.Registration is {} registration)return RegistrationExists(registration);
         try
         {
             foreach (var hive in new[] { RegistryHive.CurrentUser, RegistryHive.LocalMachine })

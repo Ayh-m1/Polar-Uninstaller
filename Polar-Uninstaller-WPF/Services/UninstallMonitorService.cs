@@ -1,4 +1,5 @@
 using System.IO;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
@@ -11,7 +12,10 @@ namespace PolarUninstallerWpf.Services;
 /// the captured installation folder is gone/empty. Opening a launcher or a
 /// process exit never confirms anything on its own.
 /// </summary>
-public sealed record RemovalProbe(bool Confirmed, bool LauncherRecordPresent, bool InstallationFolderPresent, string Detail, bool MainExecutablePresent = false);
+public sealed record RemovalProbe(bool Confirmed, bool LauncherRecordPresent, bool InstallationFolderPresent, string Detail, bool MainExecutablePresent = false)
+{
+    public bool RetainedSteamAssets { get; init; }
+}
 
 /// <summary>
 /// Cheap, launcher-specific polling for official uninstall completion.
@@ -30,6 +34,35 @@ public static class UninstallMonitorService
         _ => TimeSpan.FromSeconds(4)
     };
 
+    /// <summary>Waits for the official process, then retries live evidence while registration catches up.</summary>
+    public static async Task<RemovalProbe> MonitorAsync(Func<RemovalProbe> probe,
+        Task? officialExit, bool isSteam, IProgress<RemovalProbe>? progress, CancellationToken token)
+    {
+        if (officialExit != null)
+        {
+            // A bootstrapper or its tracked worker can legitimately take longer than the polling window.
+            await officialExit.WaitAsync(token).ConfigureAwait(false);
+        }
+
+        var clock = Stopwatch.StartNew();
+        var deadline = officialExit == null ? TotalWindow : TimeSpan.FromSeconds(8);
+        var steamCleanupWindow = TimeSpan.FromMinutes(15);
+        int attempt = 0;
+        while (true)
+        {
+            token.ThrowIfCancellationRequested();
+            var result = await Task.Run(probe, token).ConfigureAwait(false);
+            token.ThrowIfCancellationRequested();
+            if (result.Confirmed) return result;
+            bool steamCleanup = isSteam && !result.LauncherRecordPresent && result.InstallationFolderPresent;
+            var remaining = (steamCleanup ? steamCleanupWindow : deadline) - clock.Elapsed;
+            if (remaining <= TimeSpan.Zero) return result;
+            progress?.Report(result);
+            var delay = steamCleanup ? TimeSpan.FromSeconds(1) : IntervalFor(attempt++);
+            await Task.Delay(delay < remaining ? delay : remaining, token).ConfigureAwait(false);
+        }
+    }
+
     public static RemovalProbe Probe(InstalledProgram program, UninstallSnapshot? snapshot)
     {
         try
@@ -47,7 +80,7 @@ public static class UninstallMonitorService
             }
             string id = program.Identifier ?? "";
             if (id.StartsWith("steam:", StringComparison.OrdinalIgnoreCase))
-                return WithCapturedEvidence(ProbeSteam(program, id["steam:".Length..], executable));
+                return ProbeSteam(program, id["steam:".Length..], executable);
             if (id.StartsWith("epic:", StringComparison.OrdinalIgnoreCase))
                 return WithCapturedEvidence(ProbeEpic(program, id["epic:".Length..], executable));
             if (id.StartsWith("ubisoft:", StringComparison.OrdinalIgnoreCase))
@@ -76,11 +109,50 @@ public static class UninstallMonitorService
     {
         if (appId.Length == 0 || !appId.All(char.IsAsciiDigit) || appId == "0")
             return new(false, true, true, "Invalid Steam App ID; removal cannot be monitored.", executable);
-        bool record = SteamRoots(program.Location).Any(root => File.Exists(Path.Combine(root, "steamapps", $"appmanifest_{appId}.acf")));
+        string manifestName = $"appmanifest_{appId}.acf";
+        int libraryBoundary = program.Location.IndexOf("\\steamapps\\", StringComparison.OrdinalIgnoreCase);
+        // Usually the record is in the captured library. Check it before opening other Steam libraries.
+        bool record = (libraryBoundary > 0 && ManifestPresent(Path.Combine(program.Location[..libraryBoundary], "steamapps", manifestName)))
+            || SteamRoots(program.Location).Any(root => ManifestPresent(Path.Combine(root, "steamapps", manifestName)));
         bool folder = FolderHasFiles(program.Location);
         if (record) return new(false, true, folder, $"Steam still records App ID {appId}.", executable);
+        if (!executable && folder && OnlyPassiveSteamFilesRemain(program.Location))
+            return new(true, false, true, "Steam manifest removed; only non-executable images or logs remain. These files were preserved.") { RetainedSteamAssets = true };
         if (folder) return new(false, false, true, "Steam manifest removed; the game folder still exists.", executable);
+        if (executable) return new(false, false, false, "A captured game executable is still present.", true);
         return new(true, false, false, "Steam manifest and installation folder are gone.", false);
+    }
+
+    private static bool ManifestPresent(string path)
+    {
+        try { _ = File.GetAttributes(path); return true; }
+        catch (FileNotFoundException) { return false; }
+        catch (DirectoryNotFoundException) { return false; }
+    }
+
+    private static bool OnlyPassiveSteamFilesRemain(string location)
+    {
+        if (!Path.IsPathFullyQualified(location)) return false;
+        var root = new DirectoryInfo(location);
+        if (root.Parent?.Name.Equals("common", StringComparison.OrdinalIgnoreCase) != true ||
+            root.Parent.Parent?.Name.Equals("steamapps", StringComparison.OrdinalIgnoreCase) != true) return false;
+
+        for (DirectoryInfo? path = root; path is not null; path = path.Parent)
+            if ((path.Attributes & FileAttributes.ReparsePoint) != 0) return false;
+
+        var pending = new Stack<DirectoryInfo>();
+        pending.Push(root);
+        int inspected = 0;
+        while (pending.TryPop(out var directory))
+        {
+            foreach (var item in directory.EnumerateFileSystemInfos())
+            {
+                if (++inspected > 4096 || (item.Attributes & FileAttributes.ReparsePoint) != 0) return false;
+                if (item is DirectoryInfo child) pending.Push(child);
+                else if (item.Extension.ToLowerInvariant() is not (".png" or ".jpg" or ".jpeg" or ".webp" or ".log")) return false;
+            }
+        }
+        return inspected > 0 && DirectRemovalService.RunningProcesses(location).Count == 0;
     }
 
     private static IEnumerable<string> SteamRoots(string location)

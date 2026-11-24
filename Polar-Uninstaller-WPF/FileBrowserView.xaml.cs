@@ -12,7 +12,7 @@ namespace PolarUninstallerWpf;
 
 public partial class FileBrowserView : UserControl
 {
-    public bool IsOperationActive => deleting;
+    public bool IsOperationActive => deleting || confirmationOpen;
     private bool arabic;
     private readonly ApplicationInventoryService inventory;
     private DuplicateFilesView? duplicates;
@@ -32,6 +32,7 @@ public partial class FileBrowserView : UserControl
     private readonly DispatcherTimer filterTimer=new(){Interval=TimeSpan.FromMilliseconds(150)};
     private readonly DispatcherTimer sortRefreshTimer=new(){Interval=TimeSpan.FromMilliseconds(250)};
     private CancellationTokenSource? sizeRequest;
+    private int manualSizeCount;
     private CancellationTokenSource? autoSizeRequest;
     private int navigationGeneration;
     private int autoSizeGeneration=-1;
@@ -39,8 +40,9 @@ public partial class FileBrowserView : UserControl
     private bool sortRefreshScheduled;
     private List<BrowserEntry> items = new();
     private bool showDetails = true;
-    private readonly List<string> history = new();
-    private int position = -1;
+    private readonly FolderNavigationHistory folderHistory;
+    private readonly List<string> history;
+    private int position=>folderHistory.Position;
     private CancellationTokenSource? load;
     private ListCollectionView? view;
     private string current;
@@ -51,13 +53,13 @@ public partial class FileBrowserView : UserControl
     private TextBlock? nameSortArrow, sizeSortArrow, typeSortArrow, dateSortArrow;
     private bool bulkSelection;
     private int selectionAnchor = -1;
-    private string L(string en, string ar) => arabic ? ar : en;
+    private string L(string en, string ar) => BidiText.Localize(arabic,en,ar);
     public FileBrowserView(bool arabic, string initial, ActivityLogService activity, string? initialSelection = null, SettingsService? settings = null, ApplicationInventoryService? inventory = null)
     {
         this.inventory=inventory??new ApplicationInventoryService();
-        this.arabic = arabic; this.activity = activity; current = initial; pendingReveal = initialSelection;
+        this.arabic = arabic; this.activity = activity; folderHistory=new FolderNavigationHistory(initial);history=folderHistory.Entries;current = folderHistory.Current; pendingReveal = initialSelection;
         this.settingsService = settings ?? new SettingsService();
-        InitializeComponent(); FlowDirection = arabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
+        InitializeComponent();UiPerformanceProbe.Attach(this); FlowDirection = arabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
         LoadSortPreference();
         nameSortArrow = SetColumnHeader(NameColumn, L("Name", "الاسم"));
         sizeSortArrow = SetColumnHeader(SizeColumn, L("Size", "الحجم"));
@@ -83,7 +85,6 @@ SearchPlaceholder.Visibility = Visibility.Visible;
             if(sort==nameof(BrowserEntry.Size))RefreshSortPreservingSelection();
             UpdateSelectionState(false);
         };
-        PreviewKeyDown+=async (_,e)=>await HandleBrowserKey(e);
         Files.PreviewKeyDown+=FilesPreviewKeyDown;
         SizeChanged += (_, _) =>
         {
@@ -92,20 +93,45 @@ SearchPlaceholder.Visibility = Visibility.Visible;
             SearchColumn.Width=new GridLength(searchWidth);
             Toolbar.MaxWidth=Math.Clamp(ActualWidth-searchWidth-160,160,450);
         };
+        showHiddenItems=settingsService.Load().ShowHiddenItems;
         InitializeActions();
         ApplyExplorerAccessibility();
-        InitializeShortcutExperience();
+        PreviewMouseDown+=async(_,e)=>{if(deleting)return;if(e.ChangedButton==MouseButton.XButton1){e.Handled=true;if(duplicatesActive)await ReturnToBrowserAsync();else await RunBrowserAction(()=>GoHistoryAsync(-1));}else if(e.ChangedButton==MouseButton.XButton2&&!duplicatesActive){e.Handled=true;await RunBrowserAction(()=>GoHistoryAsync(1));}};
         Unloaded += (_,_) => { sizeRequest?.Cancel();autoSizeRequest?.Cancel();filterTimer.Stop();sortRefreshTimer.Stop(); };
         Loaded += async (_,_) => { LoadSortPreference(); if(skipNextLoad){skipNextLoad=false;return;} if(!duplicatesActive) await Navigate(current, position); };
-        Unloaded += (_,_) => load?.Cancel();
+        Unloaded += (_,_) => {load?.Cancel();deletionRequest?.Cancel();};
     }
+    private bool showHiddenItems;
+    private MenuItem? hiddenItemsMenu;
+
+    private void UpdateHiddenMenu()
+    {
+        if(hiddenItemsMenu==null)return;
+        hiddenItemsMenu.IsChecked=showHiddenItems;
+        ((TextBlock)hiddenItemsMenu.Icon).Text=showHiddenItems?"✓":"";
+        Status.ToolTip=showHiddenItems?null:T("HiddenSizesTooltip");
+    }
+
+    private async Task ToggleHiddenItemsAsync()
+    {
+        if(deleting||confirmationOpen||duplicatesActive){UpdateHiddenMenu();return;}
+        showHiddenItems=!showHiddenItems;
+        UpdateHiddenMenu();
+        var save=settingsService.SaveAsync(settingsService.Load() with { ShowHiddenItems=showHiddenItems });
+        try { await Navigate(requestedFolder??current, requestedFolder!=null?requestedHistoryIndex:position); }
+        finally { await save; }
+    }
+
+    private string? requestedFolder;
+    private int? requestedHistoryIndex;
+
     private void InitializeActions()
     {
         Toolbar.Children.Clear();Actions.Children.Clear();more.Items.Clear();quickAccess.Items.Clear();itemMenu.Items.Clear();
         selectionActions.Clear();navigation.Clear();
         Add(L("Details", "التفاصيل"), () => { showDetails = !showDetails; DetailsPanel.Visibility = showDetails && ActualWidth >= 850 ? Visibility.Visible : Visibility.Collapsed; return Task.CompletedTask; });
-        Add(L("Back", "رجوع"), async () => { if(duplicatesActive){await ReturnToBrowserAsync();return;} if(position > 0) await Navigate(history[position - 1], position - 1); });
-        Add(L("Forward", "التالي"), async () => { if(position + 1 < history.Count) await Navigate(history[position + 1], position + 1); });
+        Add(L("Back", "رجوع"), async () => { if(duplicatesActive){await ReturnToBrowserAsync();return;} await GoHistoryAsync(-1); });
+        Add(L("Forward", "التالي"), async () => { await GoHistoryAsync(1); });
         Add(L("Up", "للأعلى"), async () => { var p = Directory.GetParent(current); if(p != null) await Navigate(p.FullName); });
         Add(L("Refresh", "تحديث"), async () => await Navigate(current, position));
         Add(T("Home"),async()=>await Navigate(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)));
@@ -139,6 +165,7 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         AddMenuButton("▣", quickAccess,T("DrivesMenu"));
         AddMenuButton("⋯", more,L("More", "المزيد"));
         AddSortControl();
+        AddShortcutHelpButton();
         ConfigureMenu(itemMenu); Files.ContextMenu=itemMenu;
         more.Items.Add(new Separator());
         var duplicateIcon=new System.Windows.Shapes.Path{Data=System.Windows.Media.Geometry.Parse("M 6,2 L 16,2 L 16,14 M 2,6 L 12,6 L 12,18 L 2,18 Z"),Width=18,Height=18,StrokeThickness=1.5,Stretch=System.Windows.Media.Stretch.Uniform};
@@ -146,7 +173,6 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         var duplicateItem=new MenuItem { Header=L("Find Duplicate Files","البحث عن الملفات المكررة"), Icon=duplicateIcon, Style=(Style)Resources["ExplorerMenuItem"] };
         duplicateItem.Click+=(_,_)=>OpenDuplicates();more.Items.Add(duplicateItem);
         ReorganizeMenus();UpdateNavigationState();
-        AddShortcutHelpButton();
     }
     private void LoadSortPreference()
     {
@@ -178,6 +204,7 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         System.Windows.Automation.AutomationProperties.SetName(Address,T("Address"));
         System.Windows.Automation.AutomationProperties.SetName(Search,T("Search"));
         duplicates?.SetLanguage(arabic);
+        if(manualSizing) ShowManualSizeProgress();
         RefreshShortcutLanguage();
         if(duplicatesActive){Actions.Visibility=Visibility.Collapsed;Status.Visibility=Visibility.Collapsed;}
     }
@@ -192,6 +219,7 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         duplicates.FilesChanged+=(_,_)=>{duplicateChanges=true;if(!duplicatesActive)_=Navigate(current,position);};
         DuplicateHost.Content=duplicates;duplicateChanges=false;duplicatesActive=true;
         NavigationBar.Visibility=Visibility.Collapsed;
+        StatusFooter.Visibility=Visibility.Collapsed;
         BrowserBody.Visibility=Actions.Visibility=Status.Visibility=Visibility.Collapsed;
         DuplicateHost.Visibility=Visibility.Visible;
         navigation[L("Back","رجوع")].IsEnabled=true;
@@ -200,6 +228,7 @@ SearchPlaceholder.Visibility = Visibility.Visible;
     {
         duplicates?.CancelOperation();duplicatesActive=false;DuplicateHost.Visibility=Visibility.Collapsed;
         NavigationBar.Visibility=Visibility.Visible;
+        StatusFooter.Visibility=Visibility.Visible;
         BrowserBody.Visibility=Status.Visibility=Visibility.Visible;UpdateSelectionState(false);
         navigation[L("Back","رجوع")].IsEnabled=position>0;
     }
@@ -316,27 +345,14 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         button.Click+=(_,_)=> { menu.PlacementTarget=button; menu.Placement=System.Windows.Controls.Primitives.PlacementMode.Bottom; menu.IsOpen=true; };
         Toolbar.Children.Add(button);
     }
-    private void FilesPreviewKeyDown(object sender,KeyEventArgs e)
-    {
-        // Native ListView handles Ctrl+Click and Shift+Click in Extended mode.
-        // Ctrl+A is handled explicitly so it also works after filtering or
-        // when the focus is on a row rather than the ListView surface.
-        if(e.Key==Key.A && Keyboard.Modifiers==ModifierKeys.Control)
-        {
-            Files.SelectAll();
-            selectionAnchor=Files.Items.Count>0?0:-1;
-            UpdateSelectionState(false);
-            e.Handled=true;
-        }
-        else if((e.Key==Key.D&&Keyboard.Modifiers==ModifierKeys.Control)||e.Key==Key.Escape)
-        {Files.UnselectAll();selectionAnchor=-1;UpdateSelectionState(false);e.Handled=true;}
-        else if(e.Key==Key.Enter&&Keyboard.Modifiers==ModifierKeys.None)
-        {e.Handled=true;_=RunBrowserAction(OpenCurrent);}
-    }
+    private async void FilesPreviewKeyDown(object sender,KeyEventArgs e)=>await HandleBrowserKey(e,true);
+    private CancellationTokenSource? deletionRequest;
+
     private async Task Delete(bool permanent)
     {
-        if(deleting||confirmationOpen) return;
-        var selected=Files.SelectedItems.Cast<BrowserEntry>().Select(e=>e.FullPath).ToArray();
+        if(deleting||confirmationOpen||load!=null) return;
+        var selectedRows=Files.SelectedItems.Cast<BrowserEntry>().ToArray();
+        var selected=selectedRows.Select(e=>e.FullPath).ToArray();
         if(selected.Length==0) return;
 
         IReadOnlyList<string> paths;
@@ -344,49 +360,60 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         catch(Exception ex) when(ex is ArgumentException or NotSupportedException or PathTooLongException)
         { Status.Text=L("Some selected paths are invalid.","بعض المسارات المحددة غير صالحة."); return; }
 
-        // Protected locations (drive roots, Windows, Program Files, links) block
-        // the whole batch instead of silently deleting the remaining items.
-        var blocked=new List<string>();
-        foreach(var path in paths)
-        {
-            try { BrowserOperationsService.ValidateDeletion(path); }
-            catch(DeletionProtectionException ex) { blocked.Add($"{path} — {ex.Message}"); }
-            catch(Exception ex) when(ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or ArgumentException) { }
-        }
-        if(blocked.Count>0)
-        {
-            string warning=L($"Deletion was cancelled because {blocked.Count:N0} selected item(s) are protected or unsafe to remove:",$"أُلغي الحذف لأن {blocked.Count:N0} من العناصر المحددة محمية أو غير آمنة للإزالة:")+"\n\n"+string.Join("\n",blocked.Take(10))+(blocked.Count>10?"\n…":"");
-            MessageBox.Show(Window.GetWindow(this),warning,L("Deletion blocked","تم منع الحذف"),MessageBoxButton.OK,MessageBoxImage.Warning);
-            activity.Write("WARNING","Batch deletion blocked by safety validation.");
-            return;
-        }
-
-        int count=paths.Count;
-        string header=permanent
-            ? L($"Permanently delete {count:N0} selected item(s)? This cannot be undone.",$"حذف {count:N0} عنصرًا محددًا نهائيًا؟ لا يمكن التراجع.")
-            : L($"Move {count:N0} selected item(s) to the Recycle Bin?",$"نقل {count:N0} عنصرًا محددًا إلى سلة المحذوفات؟");
-        string listing=string.Join("\n",paths.Take(12))+(count>12?"\n…":"");
-        string detail=permanent
-            ? L("\n\nPermanent deletion bypasses the Recycle Bin.", "\n\nالحذف النهائي يتجاوز سلة المحذوفات.")
-            : L("\n\nItems can be restored from the Recycle Bin.", "\n\nيمكن استعادة العناصر من سلة المحذوفات.");
-        var prompt=header+"\n\n"+listing+detail;
         confirmationOpen=true;
         try
         {
-            if(permanent)
+            bool hiddenOrSystem=selectedRows.Any(entry=>entry.IsHiddenOrSystem);
+            // Protected locations (drive roots, Windows, Program Files, links) block
+            // the whole batch instead of silently deleting the remaining items.
+            var blocked=new List<string>();
+            hiddenOrSystem |= await Task.Run(() =>
             {
-                var rows=Files.SelectedItems.Cast<BrowserEntry>().Where(entry=>paths.Contains(entry.FullPath,StringComparer.OrdinalIgnoreCase)).ToArray();
-                var dialog=new PermanentDeleteDialog(arabic,Files.SelectedItems.Count,rows.Sum(entry=>entry.Size??0),rows.Any(entry=>!entry.Size.HasValue||entry.SizeState==BrowserSizeState.Partial),paths,(Style)Resources["ExplorerDangerButton"],(Style)Resources["ExplorerActionButton"]){Owner=Window.GetWindow(this),Icon=Window.GetWindow(this)?.Icon};
-                if(dialog.ShowDialog()!=true)return;
+                bool found=false;
+                foreach(var path in paths)
+                {
+                    try
+                    {
+                        found |= (BrowserOperationsService.DeletionAttributes(path) & (FileAttributes.Hidden | FileAttributes.System)) != 0;
+                    }
+                    catch(DeletionProtectionException ex) { blocked.Add($"{path} — {ex.Message}"); }
+                    catch(Exception ex) when(ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or ArgumentException) { }
+                }
+                return found;
+            });
+            if(blocked.Count>0)
+            {
+                string warning=L($"Deletion was cancelled because {blocked.Count:N0} selected item(s) are protected or unsafe to remove:",$"أُلغي الحذف لأن {blocked.Count:N0} من العناصر المحددة محمية أو غير آمنة للإزالة:")+"\n\n"+string.Join("\n",blocked.Take(10))+(blocked.Count>10?"\n…":"");
+                MessageBox.Show(Window.GetWindow(this),warning,L("Deletion blocked","تم منع الحذف"),MessageBoxButton.OK,MessageBoxImage.Warning,MessageBoxResult.OK,arabic?MessageBoxOptions.RtlReading|MessageBoxOptions.RightAlign:MessageBoxOptions.None);
+                activity.Write("WARNING","Batch deletion blocked by safety validation.");
+                return;
             }
-            else if(MessageBox.Show(Window.GetWindow(this),prompt,L("Confirm deletion","تأكيد الحذف"),MessageBoxButton.YesNo,MessageBoxImage.Warning,MessageBoxResult.No)!=MessageBoxResult.Yes)return;
+
+            int count=paths.Count;
+            string header=permanent
+                ? L($"Permanently delete {count:N0} selected item(s)? This cannot be undone.",$"حذف {count:N0} عنصرًا محددًا نهائيًا؟ لا يمكن التراجع.")
+                : L($"Move {count:N0} selected item(s) to the Recycle Bin?",$"نقل {count:N0} عنصرًا محددًا إلى سلة المحذوفات؟");
+            string listing=string.Join("\n",paths.Take(12).Select(path=>DisplayFormat.Directional(path,arabic)))+(count>12?"\n…":"");
+            string detail=permanent
+                ? L("\n\nPermanent deletion bypasses the Recycle Bin.", "\n\nالحذف النهائي يتجاوز سلة المحذوفات.")
+                : L("\n\nItems can be restored from the Recycle Bin.", "\n\nيمكن استعادة العناصر من سلة المحذوفات.");
+            var prompt=header+(hiddenOrSystem?"\n\n"+T("HiddenDeleteWarning"):"")+"\n\n"+listing+detail;
+                if(permanent)
+                {
+                    var rows=selectedRows.Where(entry=>paths.Contains(entry.FullPath,StringComparer.OrdinalIgnoreCase)).ToArray();
+                    var dialog=new PermanentDeleteDialog(arabic,selectedRows.Length,rows.Sum(entry=>entry.CountedSize??0),rows.Any(entry=>!entry.CountedSize.HasValue||entry.SizeState==BrowserSizeState.Partial),paths,(Style)Resources["ExplorerDangerButton"],(Style)Resources["ExplorerActionButton"],hiddenOrSystem){Owner=Window.GetWindow(this),Icon=Window.GetWindow(this)?.Icon};
+                    if(dialog.ShowDialog()!=true)return;
+                }
+                else if(MessageBox.Show(Window.GetWindow(this),prompt,L("Confirm deletion","تأكيد الحذف"),MessageBoxButton.YesNo,MessageBoxImage.Warning,MessageBoxResult.No,arabic?MessageBoxOptions.RtlReading|MessageBoxOptions.RightAlign:MessageBoxOptions.None)!=MessageBoxResult.Yes)return;
         }
         finally{confirmationOpen=false;}
 
+        using var request=new CancellationTokenSource();
+        deletionRequest=request;
         deleting=true; Toolbar.IsEnabled=Actions.IsEnabled=Files.IsEnabled=false;
         try
         {
-            var results=await operations.DeleteAsync(paths,permanent,CancellationToken.None);
+            var results=await operations.DeleteAsync(paths,permanent,request.Token);
             await Navigate(current,position);
             int failed=results.Count(r=>!r.Success);
             int removed=results.Count-failed;
@@ -401,22 +428,25 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         catch(OperationCanceledException) { Status.Text=L("Deletion cancelled.","أُلغي الحذف."); }
         catch(Exception ex) when(ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or ArgumentException)
         { Status.Text=L("Deletion failed: ","تعذر الحذف: ")+ex.Message; }
-        finally { deleting=false; Toolbar.IsEnabled=Actions.IsEnabled=Files.IsEnabled=true; }
+        finally { deletionRequest=null;deleting=false; Toolbar.IsEnabled=Actions.IsEnabled=Files.IsEnabled=true; }
     }
     private async Task Navigate(string path, int? index = null)
     {
+        if(confirmationOpen)return;
         if(duplicatesActive)HideDuplicates();
         sizeRequest?.Cancel();
         autoSizeRequest?.Cancel();
         autoSizeRunning=false;
         autoSizeGeneration=-1;
         load?.Cancel(); var request=load=new CancellationTokenSource();
+        requestedFolder=path; requestedHistoryIndex=index;
         int generation=++navigationGeneration;
         try
         {
-            Status.Text=L("Loading…","جارٍ التحميل…"); path=Path.GetFullPath(path);
-            var entries=await browser.ListAsync(path,request.Token);
+            Status.Text=L("Loading…","جارٍ التحميل…");
+            var opened=await browser.OpenFolderAsync(path,showHiddenItems,request.Token);
             if(request.IsCancellationRequested || generation!=navigationGeneration) return;
+            path=opened.Path;
             current=path; LocationChanged?.Invoke(current); Address.Text=path;Address.Visibility=Visibility.Collapsed;
             breadcrumbParts.Clear();
             string? root=Path.GetPathRoot(path); string accumulated=root ?? path;
@@ -424,9 +454,8 @@ SearchPlaceholder.Visibility = Visibility.Visible;
             if(root!=null) Crumb(root,root);
             foreach(var segment in path[(root?.Length ?? 0)..].Split(Path.DirectorySeparatorChar,StringSplitOptions.RemoveEmptyEntries)) { accumulated=Path.Combine(accumulated,segment); Crumb(segment,accumulated); }
             BuildBreadcrumbs();
-            if(index is >=0) position=index.Value;
-            else { if(position+1<history.Count) history.RemoveRange(position+1,history.Count-position-1); history.Add(path); position=history.Count-1; }
-            items=entries.ToList();
+            folderHistory.Commit(path,index);
+            items=opened.Entries.ToList();
             foreach(var entry in items) entry.Arabic=arabic;
             // Fresh cached measurements are applied before the first sort so
             // Back/Forward/Refresh and restarted views show the correct order
@@ -434,7 +463,7 @@ SearchPlaceholder.Visibility = Visibility.Visible;
             foreach(var entry in items)
             {
                 if(!entry.IsDirectory||entry.Size.HasValue)continue;
-                if(FolderSizeService.TryGetCached(entry.FullPath) is { } cached) ApplyFolderSize(entry,cached);
+                if(!entry.IsDirectoryLink && FolderSizeService.TryGetCached(entry.FullPath) is { } cached) ApplyFolderSize(entry,cached);
             }
             view=new ListCollectionView(items); Files.ItemsSource=view; Filter(); ApplySort();
             selectionAnchor=-1;
@@ -451,6 +480,18 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         }
         catch(OperationCanceledException) { }
         catch(Exception ex) when(ex is IOException or UnauthorizedAccessException or ArgumentException or System.Security.SecurityException) { if(!request.IsCancellationRequested) Status.Text=L("Cannot open folder: ","تعذر فتح المجلد: ")+ex.Message; }
+        finally{if(ReferenceEquals(load,request)){load=null;requestedFolder=null;requestedHistoryIndex=null;}request.Dispose();}
+    }
+    private async Task GoHistoryAsync(int direction)
+    {
+        var move=folderHistory.Find(direction);
+        if(move==null){UpdateNavigationState();return;}
+        await Navigate(move.Path,move.Index);
+        if(move.Recovered&&string.Equals(current,move.Path,StringComparison.OrdinalIgnoreCase))
+        {
+            Status.Text=L("Previous folder unavailable; opened nearest existing parent: ","المجلد السابق غير متاح؛ فُتح أقرب مجلد أب موجود: ")+DisplayFormat.Isolate(move.Path);
+            activity.Write("INFO",Status.Text);
+        }
     }
     private void Filter() { if(view != null) { var query=Search.Text; view.Filter=item=>item is BrowserEntry e && e.Name.Contains(query,StringComparison.CurrentCultureIgnoreCase); } }
     private void ApplyPendingReveal()
@@ -465,7 +506,7 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         if (string.Equals(trimmedReveal, trimmedCurrent, StringComparison.OrdinalIgnoreCase))
         {
             pendingReveal = null;
-            Status.Text = L("Opened selected folder: ", "فُتح المجلد المحدد: ") + current;
+            LocalizedPresentation.SetRuns(Status,L("Opened selected folder: ", "فُتح المجلد المحدد: ") + DisplayFormat.Directional(current,arabic));
             return;
         }
 
@@ -486,12 +527,12 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         selectionAnchor = Files.Items.IndexOf(entry);
         Files.ScrollIntoView(entry);
         Files.Focus();
-        Status.Text = L("Selected: ", "المحدد: ") + entry.FullPath;
+        LocalizedPresentation.SetRuns(Status,L("Selected: ", "المحدد: ") + DisplayFormat.Directional(entry.FullPath,arabic));
     }
     private void SearchChanged(object sender, TextChangedEventArgs e) { SearchPlaceholder.Visibility = string.IsNullOrEmpty(Search.Text) ? Visibility.Visible : Visibility.Collapsed; filterTimer.Stop();filterTimer.Start(); }
-    private async void AddressKey(object sender, KeyEventArgs e) { if(e.Key==Key.Enter) await Navigate(Address.Text);else if(e.Key==Key.Escape){Address.Text=current;Address.Visibility=Visibility.Collapsed;} }
+    private async void AddressKey(object sender, KeyEventArgs e) { if(e.Key==Key.Enter){e.Handled=true;await RunBrowserAction(()=>Navigate(Address.Text));}else if(e.Key==Key.Escape){e.Handled=true;Address.Text=current;Address.Visibility=Visibility.Collapsed;Files.Focus();} }
     private void ShowAddress(){Address.Text=current;Address.Visibility=Visibility.Visible;Address.Focus();Address.SelectAll();}
-    private void EditAddress(object sender,MouseButtonEventArgs e){if(e.ClickCount==2)ShowAddress();}
+    private void EditAddress(object sender,MouseButtonEventArgs e){if(ShortcutUi.Ancestor<Button>(e.OriginalSource as DependencyObject)==null){e.Handled=true;ShowAddress();}}
     private void AddressBlur(object sender,KeyboardFocusChangedEventArgs e)=>Address.Visibility=Visibility.Collapsed;
     private async void OpenSelected(object sender, MouseButtonEventArgs e)
     {
@@ -557,7 +598,7 @@ SearchPlaceholder.Visibility = Visibility.Visible;
             foreach(var folder in folders)
             {
                 if(folder.Size.HasValue) continue;
-                if(FolderSizeService.TryGetCached(folder.FullPath) is { } cached)
+                if(!folder.IsDirectoryLink && FolderSizeService.TryGetCached(folder.FullPath) is { } cached)
                 {
                     ApplyFolderSize(folder,cached);
                     continue;
@@ -590,7 +631,7 @@ SearchPlaceholder.Visibility = Visibility.Visible;
             {
                 try
                 {
-                    var result=await FolderSizeService.GetAsync(entry.FullPath,request.Token);
+                    var result=await MeasureBrowserFolderAsync(entry,false,request.Token);
                     if(request.IsCancellationRequested||generation!=navigationGeneration)return;
                     if(!snapshot.Contains(entry))return;
                     ApplyFolderSize(entry,result);
@@ -624,6 +665,11 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         {
             if(autoSizeGeneration==generation)autoSizeRunning=false;
         }
+    }
+    private static Task<FolderSizeResult> MeasureBrowserFolderAsync(BrowserEntry entry,bool recalculate,CancellationToken token)
+    {
+        if(entry.IsDirectoryLink)return FolderSizeService.GetDirectoryLinkTargetSizeAsync(entry.FullPath,recalculate,token);
+        return recalculate?FolderSizeService.RecalculateAsync(entry.FullPath,token):FolderSizeService.GetAsync(entry.FullPath,token);
     }
     private Dictionary<BrowserEntry,int> ViewOrder(List<BrowserEntry> snapshot)
     {
@@ -695,6 +741,7 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         var selected=Files.SelectedItems.Cast<BrowserEntry>().ToArray();
         if(cancelManualSize)sizeRequest?.Cancel();
         ShowActionBar(selected.Length>0&&!duplicatesActive);
+        selectionTip?.SelectionChanged(selected.Length>0&&!duplicatesActive);
         bool hasSelection=selected.Length>0&&!deleting;
         foreach(var action in selectionActions)action.IsEnabled=hasSelection;
         if(openAction!=null) openAction.IsEnabled=hasSelection;
@@ -709,17 +756,20 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         DetailsSize.Content=T(manualSizing?"CancelCalculation":"CalculateSize");
         DetailsPath.Text=selected.Length==1?selected[0].FullPath:"";
         DetailsPath.ToolTip=DetailsPath.Text;
+        DetailsPath.TextAlignment=arabic?TextAlignment.Right:TextAlignment.Left;
         if(selected.Length==1)
         {
             DetailsText.Text=selected[0].Name+"\n";
-            AddDetailField(T("Size"),selected[0].DisplaySize,true);
+            AddDetailField(T(selected[0].IsDirectoryLink?"LinkTargetSize":"Size"),selected[0].DisplaySize,true);
+            if(selected[0].IsDirectoryLink && selected[0].SizeState==BrowserSizeState.Unavailable)
+                DetailsText.Inlines.Add(new System.Windows.Documents.Run("\n"+T("LinkTargetSizeUnavailable")));
             AddDetailField(T("Type"),selected[0].IsDirectory?L("Folder","مجلد"):selected[0].Type,false);
             AddDetailField(T("Created"),selected[0].Created.ToString("g",DisplayFormat.NumericCulture),true);
             AddDetailField(T("Modified"),selected[0].Modified.ToString("g",DisplayFormat.NumericCulture),true);
         }
         else if(selected.Length>1)
         {
-            long known=selected.Sum(x=>x.Size??0);
+            long known=selected.Sum(x=>x.CountedSize??0);
             int folders=selected.Count(x=>x.IsDirectory);
             int calculating=selected.Count(x=>x.IsDirectory&&x.SizeState==BrowserSizeState.Calculating);
             int unknown=selected.Count(x=>x.IsDirectory&&!x.Size.HasValue&&x.SizeState!=BrowserSizeState.Calculating);
@@ -739,15 +789,18 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         if(index<0)return;
         if(e.ClickCount==2)
         {Files.UnselectAll();container.IsSelected=true;container.Focus();e.Handled=true;_=RunBrowserAction(OpenCurrent);return;}
-        var modifiers=Keyboard.Modifiers;
+        ApplyFileSelection(container,index,Keyboard.Modifiers,e.ClickCount);e.Handled=true;
+    }
+    private void ApplyFileSelection(ListViewItem container,int index,ModifierKeys modifiers,int clickCount)
+    {
         bool control=(modifiers&ModifierKeys.Control)!=0;
         bool shift=(modifiers&ModifierKeys.Shift)!=0;
+        if(control||shift)selectionTip?.Dismiss();
         if(shift)
         {
             int anchor=selectionAnchor>=0?selectionAnchor:index;
             SelectRange(anchor,index,control);
             selectionAnchor=anchor;
-            e.Handled=true;
         }
         else if(control)
         {
@@ -755,14 +808,13 @@ SearchPlaceholder.Visibility = Visibility.Visible;
             container.IsSelected=!container.IsSelected;
             container.Focus();
             UpdateSelectionState(false);
-            e.Handled=true;
         }
         else
         {
             selectionAnchor=index;
-            bool deselect=container.IsSelected&&Files.SelectedItems.Count==1&&e.ClickCount==1;
+            bool deselect=container.IsSelected&&Files.SelectedItems.Count==1&&clickCount==1;
             Files.UnselectAll();container.IsSelected=!deselect;container.Focus();
-            UpdateSelectionState(false);e.Handled=true;
+            UpdateSelectionState(false);
         }
     }
     private void SelectionCircleClick(object sender,MouseButtonEventArgs e)
@@ -815,13 +867,15 @@ SearchPlaceholder.Visibility = Visibility.Visible;
     {
         if(Files==null)return;
         var selected=Files.SelectedItems.Cast<BrowserEntry>().ToArray();
-        long known=selected.Sum(x=>x.Size??0);
+        bool oneLink=selected.Length==1&&selected[0].IsDirectoryLink;
+        long known=selected.Sum(x=>x.CountedSize??0);
         int calculating=selected.Count(x=>x.IsDirectory&&x.SizeState==BrowserSizeState.Calculating);
         int unknown=selected.Count(x=>x.IsDirectory&&!x.Size.HasValue&&x.SizeState!=BrowserSizeState.Calculating);
-        Status.Text=T("ItemCount",Files.Items.Count)+" · "+T("SelectedCount",selected.Length)+" · "+T("KnownSize")+": ";
-        Status.Inlines.Add(new System.Windows.Documents.Run(BrowserEntry.FormatBytes(known)){FlowDirection=FlowDirection.LeftToRight});
+        Status.Text=T("ItemCount",Files.Items.Count)+" · "+T("SelectedCount",selected.Length)+" · "+T(oneLink?"LinkTargetSize":"KnownSize")+": ";
+        Status.Inlines.Add(new System.Windows.Documents.Run(oneLink?selected[0].DisplaySize:BrowserEntry.FormatBytes(known)){FlowDirection=FlowDirection.LeftToRight});
         if(calculating>0)Status.Inlines.Add(" · "+T("Calculating"));
         else if(unknown>0)Status.Inlines.Add(" · "+T("UnknownSizes"));
+        FitBrowserHint();
     }
     private void OpenLocation()
     {
@@ -835,6 +889,10 @@ SearchPlaceholder.Visibility = Visibility.Visible;
     private void DetailsOpenLocation(object sender,RoutedEventArgs e){try{OpenLocation();}catch(Exception ex){Status.Text=ex.Message;}}
     private async void DetailsCalculateSize(object sender,RoutedEventArgs e)
     {if(manualSizing){sizeRequest?.Cancel();return;}await RunBrowserAction(CalculateSize);}
+    private void ShowManualSizeProgress() => LocalizedPresentation.SetRuns(Status,L(
+        $"Calculating {manualSizeCount:N0} folder size(s)… Cancel is available in More.",
+        $"جارٍ حساب أحجام المجلدات ({manualSizeCount:N0})… الإلغاء متاح في المزيد."));
+
     private async Task CalculateSize()
     {
         var selected=Files.SelectedItems.Cast<BrowserEntry>().Where(entry=>entry.IsDirectory).ToArray();
@@ -844,13 +902,15 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         try
         {
         foreach(var entry in selected)entry.SizeState=BrowserSizeState.Calculating;
-        Status.Text=L($"Calculating {selected.Length:N0} folder size(s)… Cancel is available in More.",$"جارٍ حساب حجم {selected.Length:N0} مجلد… الإلغاء متاح في المزيد.");
+        manualSizeCount=selected.Length;
+        ShowManualSizeProgress();
+        activity.WriteBilingual("INFO","Folder size calculation started.","بدأ حساب أحجام المجلدات.");
         int completed=0;
         var tasks=selected.Select(async entry=>
         {
             try
             {
-                var result=await FolderSizeService.RecalculateAsync(entry.FullPath,request.Token);
+                var result=await MeasureBrowserFolderAsync(entry,true,request.Token);
                 if(request.IsCancellationRequested)return;
                 ApplyFolderSize(entry,result);
                 ScheduleSortRefresh();
@@ -864,10 +924,13 @@ SearchPlaceholder.Visibility = Visibility.Visible;
         }).ToArray();
         try { await Task.WhenAll(tasks); }
         catch(OperationCanceledException) { }
-        if(request.IsCancellationRequested)return;
+        if(request.IsCancellationRequested)
+        {
+            activity.WriteBilingual("INFO","Folder size calculation cancelled.","أُلغي حساب أحجام المجلدات.");
+            return;
+        }
         RefreshSortPreservingSelection();
-        long total=selected.Sum(entry=>entry.Size??0);
-        Status.Text=L($"{selected.Length:N0} folder(s) · {BrowserEntry.FormatBytes(total)}",$"{selected.Length:N0} مجلد · {BrowserEntry.FormatBytes(total)}");
+        activity.WriteBilingual("INFO","Folder size calculation completed.","اكتمل حساب أحجام المجلدات.");
         UpdateSelectionState(false);
         }
         finally

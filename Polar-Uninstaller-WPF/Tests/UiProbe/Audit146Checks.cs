@@ -164,7 +164,7 @@ internal static class Audit146Checks
         log.WriteBilingual("INFO","Fixture report","تقرير تجريبي");Pump();log.SetLanguage(true);Check(log.Entries.Last().Display.Contains("تقرير تجريبي"),"Structured report retains exact Arabic display after a language change");
         string source=File.ReadAllText(Path.Combine(project,"DeepUninstallerView.xaml.cs"));Check(!source.Contains("Start the verified uninstall workflow for ")&&!source.Contains("بدء الإزالة المتحقق منها لـ "),"Start confirmation and both unused strings are absent");
         Check(System.Text.RegularExpressions.Regex.IsMatch(File.ReadAllText(Path.Combine(project,"PermanentDeleteDialog.cs")),@"IsCancel\s*=\s*true"),"File Browser permanent-delete cancellation/confirmation remains");
-        Check(AppInfo.Version=="1.0.147","Current release is v1.0.147");
+        Check(AppInfo.Version=="1.0.150","Current release is v1.0.150");
         Console.WriteLine($"{checks} checks, {failures} failures. No real uninstaller, launcher, Recycle Bin, user cleanup or external feedback request ran. Fixtures: {root}");return failures==0?0:1;
     }
     private sealed class OfflineHandler:HttpMessageHandler

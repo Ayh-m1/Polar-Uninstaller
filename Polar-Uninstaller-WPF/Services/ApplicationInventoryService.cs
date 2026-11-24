@@ -24,6 +24,7 @@ public sealed class ApplicationInventoryService
     private int lastIncompleteCount;
     private int incompleteStreak;
     private ApplicationInventory? current;
+    private readonly List<(InstalledProgram Program,IReadOnlyList<string> Executables)> verifiedAbsences=new();
 
     public ApplicationInventoryService() { scan = ScanAsync; }
 
@@ -68,11 +69,16 @@ public sealed class ApplicationInventoryService
     /// without waiting for the next full scan. A fresh scan follows to confirm
     /// the authoritative state.
     /// </summary>
-    public void NotifyRemoved(InstalledProgram program)
+    public void NotifyRemoved(InstalledProgram program,IReadOnlyList<string>? capturedExecutables=null)
     {
         ApplicationInventory? updated = null;
         lock (gate)
         {
+            if(capturedExecutables?.Count>0)
+            {
+                verifiedAbsences.RemoveAll(x=>SameProgram(x.Program,program));
+                verifiedAbsences.Add((program,capturedExecutables.ToArray()));
+            }
             if (current is null) return;
             var remaining = current.Programs.Where(item => !SameProgram(item, program)).ToArray();
             if (remaining.Length == current.Programs.Count) return;
@@ -87,6 +93,19 @@ public sealed class ApplicationInventoryService
     {
         var raw = await scan(token).ConfigureAwait(false);
         var merged = await Task.Run(() => InventoryMerger.Merge(raw, token), token).ConfigureAwait(false);
+        (InstalledProgram Program,IReadOnlyList<string> Executables)[] absences;
+        lock(gate)absences=verifiedAbsences.ToArray();
+        var liveSteamIds = raw.Where(program => program.Source == "Steam").Select(program => program.Identifier).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var visible=await Task.Run(()=>merged.Where(candidate=>!absences.Any(absence=>
+            SameProgram(absence.Program,candidate)&&absence.Program.Version==candidate.Version&&absence.Program.Uninstall==candidate.Uninstall&&
+            !UninstallVerificationService.AnyExecutablePresent(absence.Executables)&&
+            !UninstallVerificationService.AnyExecutablePresent((candidate.IconCandidates??Array.Empty<string>()).Prepend(candidate.IconPath)
+                .Select(InstallationPathResolver.Executable).Where(p=>p.EndsWith(".exe",StringComparison.OrdinalIgnoreCase)&&!System.IO.Path.GetFileName(p).Contains("unins",StringComparison.OrdinalIgnoreCase)))))
+            .Where(candidate => !candidate.Identifier.StartsWith("steam:", StringComparison.OrdinalIgnoreCase) ||
+                liveSteamIds.Contains(candidate.Identifier) || !UninstallMonitorService.Probe(candidate, null).RetainedSteamAssets)
+            .ToArray(),token).ConfigureAwait(false);
+        bool verifiedEmpty=merged.Count>0&&visible.Length==0;
+        merged=visible;
 
         ApplicationInventory result;
         bool publish = false;
@@ -98,7 +117,7 @@ public sealed class ApplicationInventoryService
             // scans agree, so a one-off failed read is still rejected.
             bool stableDrop = merged.Count > 0 && incompleteStreak >= 1 &&
                               Math.Abs(merged.Count - lastIncompleteCount) <= Math.Max(2, lastIncompleteCount / 10);
-            bool complete = plausible || stableDrop;
+            bool complete = plausible || stableDrop || verifiedEmpty;
 
             result = new ApplicationInventory(merged, complete, request, DateTimeOffset.Now);
             if (request == generation)
@@ -125,11 +144,13 @@ public sealed class ApplicationInventoryService
     private static bool SameProgram(InstalledProgram a, InstalledProgram b)
     {
         if (!string.IsNullOrWhiteSpace(a.Identifier) && !string.IsNullOrWhiteSpace(b.Identifier))
-            return string.Equals(a.Identifier, b.Identifier, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(a.Identifier, b.Identifier, StringComparison.OrdinalIgnoreCase)&&
+                (string.IsNullOrWhiteSpace(a.Location)||string.IsNullOrWhiteSpace(b.Location)||LeftoverService.EqualPath(a.Location,b.Location));
         string pathA = InventoryMerger.NormalizePath(a.Location ?? "");
         string pathB = InventoryMerger.NormalizePath(b.Location ?? "");
         if (pathA.Length > 0 && pathB.Length > 0)
-            return string.Equals(pathA, pathB, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(pathA, pathB, StringComparison.OrdinalIgnoreCase)&&string.Equals(a.Name,b.Name,StringComparison.OrdinalIgnoreCase)&&
+                (string.IsNullOrWhiteSpace(a.Publisher)||string.IsNullOrWhiteSpace(b.Publisher)||string.Equals(a.Publisher,b.Publisher,StringComparison.OrdinalIgnoreCase));
         return string.Equals(a.Name, b.Name, StringComparison.OrdinalIgnoreCase) &&
                string.Equals(a.Publisher, b.Publisher, StringComparison.OrdinalIgnoreCase) &&
                string.Equals(a.Version, b.Version, StringComparison.OrdinalIgnoreCase);

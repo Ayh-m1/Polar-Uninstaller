@@ -21,13 +21,14 @@ public static class WindowsRecycleService
 
     private static void Recycle(string path,CancellationToken token)
     {
-        token.ThrowIfCancellationRequested();BrowserOperationsService.ValidateDeletion(path);
+        token.ThrowIfCancellationRequested();
+        bool isLink=(BrowserOperationsService.DeletionAttributes(path)&FileAttributes.ReparsePoint)!=0;
         // Network/removable targets are not silently converted into permanent
         // deletion if their Shell provider cannot offer normal recycling.
         if(new DriveInfo(Path.GetPathRoot(path)!).DriveType!=DriveType.Fixed)
             throw new IOException("Recycle Bin support is not verified for this volume. No permanent-delete fallback was used.");
         IFileOperation? operation=null;IShellItem? item=null;
-        var sink=new DeleteSink(token,path);
+        var sink=new DeleteSink(token,path,isLink);
         try
         {
             operation=(IFileOperation)new FileOperation();
@@ -108,7 +109,7 @@ public static class WindowsRecycleService
         [PreserveSig]int UpdateProgress(uint total,uint completed);[PreserveSig]int ResetTimer();[PreserveSig]int PauseTimer();[PreserveSig]int ResumeTimer();
     }
     [ComVisible(true),ClassInterface(ClassInterfaceType.None)]
-    public sealed class DeleteSink(CancellationToken token,string selectedPath):IFileOperationProgressSink
+    public sealed class DeleteSink(CancellationToken token,string selectedPath,bool linkOnly=false):IFileOperationProgressSink
     {
         public bool Recycled;public int Error;public int PreCount,PostCount;public uint TransferFlags;
         private int Continue()=>token.IsCancellationRequested?unchecked((int)0x800704C7):0;
@@ -119,9 +120,29 @@ public static class WindowsRecycleService
             int cancelled=Continue();if(cancelled!=0)return cancelled;
             // TSF_DELETE_RECYCLE_IF_POSSIBLE must be present on the actual
             // transfer. Refuse a provider's permanent-delete path before it runs.
-            if((flags&0x80)==0){Error=unchecked((int)0x80004004);return Error;}
+            if((flags&0x80)==0 || (linkOnly && !IsSelectedLink(item)))
+            {
+                Error=unchecked((int)0x80004004);
+                return Error;
+            }
             return 0;
         }
+        private bool IsSelectedLink(IShellItem item)
+        {
+            IntPtr name=IntPtr.Zero;
+            try
+            {
+                item.GetDisplayName(0x80058000,out name);
+                return string.Equals(Marshal.PtrToStringUni(name),selectedPath,StringComparison.OrdinalIgnoreCase)
+                    && (BrowserOperationsService.DeletionAttributes(selectedPath)&FileAttributes.ReparsePoint)!=0;
+            }
+            catch(Exception error) when(error is COMException or IOException or UnauthorizedAccessException or ArgumentException or System.Security.SecurityException)
+            {
+                return false;
+            }
+            finally { if(name!=IntPtr.Zero)Marshal.FreeCoTaskMem(name); }
+        }
+
         public int PostDeleteItem(uint flags,IShellItem item,int result,IShellItem? created)
         {
             PostCount++;if(result<0)Error=result;

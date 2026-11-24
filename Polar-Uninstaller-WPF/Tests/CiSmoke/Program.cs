@@ -41,7 +41,7 @@ try
     await DashboardStorageService.LoadCacheAsync();
     Check(DashboardStorageService.TryGetCached(data)?.FileIndex.Count == 2, "Disk cache preserves indexes");
 
-    var registration = new ApplicationRegistration(RegistryHive.CurrentUser, RegistryView.Registry64, @"Software\PolarCiFixture");
+    var registration = new RegistryLeftover(RegistryHive.CurrentUser, RegistryView.Registry64, @"Software\PolarCiFixture", "Fixture", data);
     var program = new InstalledProgram("Fixture", "Polar CI", "1", data, first)
         { RegisteredIcon = first, Registration = registration };
     var merged = InventoryMerger.Merge(new[] { program }).Single();
@@ -49,6 +49,18 @@ try
     var inventory = new ApplicationInventoryService(_ => Task.FromResult<IReadOnlyList<InstalledProgram>>(new[] { program }));
     await inventory.RefreshAsync(); inventory.NotifyRemoved(program);
     Check(inventory.Current?.Count == 0, "Verified removal updates shared inventory");
+
+    var officialExit = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+    int probes = 0;
+    using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+    var monitoring = UninstallMonitorService.MonitorAsync(
+        () => ++probes == 1
+            ? new RemovalProbe(false, true, true, "Registration update pending")
+            : new RemovalProbe(true, false, false, "Removal verified"),
+        officialExit.Task, false, null, deadline.Token);
+    Check(probes == 0 && !monitoring.IsCompleted, "Verification waits for the official uninstaller");
+    officialExit.SetResult();
+    Check((await monitoring).Confirmed && probes == 2, "Verification retries delayed registration changes");
 
     var duplicates = Path.Combine(root, "duplicates"); Directory.CreateDirectory(duplicates);
     File.WriteAllText(Path.Combine(duplicates, "a.txt"), "identical content");

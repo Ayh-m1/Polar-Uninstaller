@@ -44,10 +44,10 @@ internal static class Dashboard144Checks
         foreach(bool arabic in new[]{false,true})
         {
             var dashboard=new DashboardView(arabic,log,inventory:inventory,freedSpace:new SpaceFreedService(Path.Combine(root,"totals")));
-            TextBlock Text(string name)=>(TextBlock)dashboard.FindName(name);
+            SelectableText Text(string name)=>(SelectableText)dashboard.FindName(name);
             var show=typeof(DashboardView).GetMethod("ShowDrive",BindingFlags.NonPublic|BindingFlags.Instance)!;
             Check(Text("ProgramsValue").Text==DisplayFormat.Number(snapshot.Count)&&scans==1,"Dashboard reuses shared inventory without a second scan ("+arabic+")");
-            Check(Text("FreedValue").Text==DisplayFormat.Size(1500,arabic),"Dashboard shows the persisted freed-space total ("+arabic+")");
+            Check(Text("FreedValue").Text==DisplayFormat.Size(1500,false),"Dashboard shows the persisted freed-space total ("+arabic+")");
             var drive=new DriveSummary(@"C:\",100,15){Label="Fixture Disk"};
             Check(drive.ToString()=="C: (Fixture Disk)","Drive displays a friendly label rather than a record dump ("+arabic+")");
             show.Invoke(dashboard,new object[]{drive});

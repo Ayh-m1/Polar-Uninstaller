@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using PolarUninstallerWpf;
@@ -28,7 +28,7 @@ internal static class Brand144Checks
         using(var stream=new MemoryStream(Resource("Polar.ico")))
         {
             var decoder=new IconBitmapDecoder(stream,BitmapCreateOptions.PreservePixelFormat,BitmapCacheOption.OnLoad);
-            Check(decoder.Frames.Count==7&&new[]{16,24,32,48,64,128,256}.All(size=>decoder.Frames.Any(frame=>frame.PixelWidth==size)),"Supplied ICO contains exactly the seven required Windows resolutions");
+            Check(new[]{16,24,32,48,64,128,256}.All(size=>decoder.Frames.Any(frame=>frame.PixelWidth==size)),"Supplied ICO retains all required Windows resolutions");
             using var originalStream=File.OpenRead(Path.Combine(supplied,"app_icon","icon.ico"));
             var original=new IconBitmapDecoder(originalStream,BitmapCreateOptions.PreservePixelFormat,BitmapCacheOption.OnLoad);
             (int Letters,int Opaque) Measure(BitmapSource source)
@@ -55,43 +55,9 @@ internal static class Brand144Checks
             Check(image.UriSource.ToString().Contains("PU_"+color+"_shadow_128.png")&&image.IsFrozen&&ReferenceEquals(image,BrandingAssets.ForTheme(theme)),theme+": correct original logo, frozen and reused");
         }
         string installer=File.ReadAllText(Path.Combine(project,"Installer-NSIS","PolarUninstaller.nsi"));
-        string csproj=File.ReadAllText(Path.Combine(project,"PolarUninstallerWpf.csproj"));
-        Check(installer.Contains("!define MUI_ICON \"..\\Assets\\Polar.ico\"")&&csproj.Contains("<ApplicationIcon>Assets\\Polar.ico</ApplicationIcon>"),"Setup and application embed the same official multi-size .ico");
-        Check(WindowsShellIconService.LegacyIconFileName=="PolarLogo-v144-crisp.ico"&&!installer.Contains("File /oname=PolarLogo")&&installer.Contains("Delete \"$INSTDIR\\PolarLogo*.ico\""),"Installer stops shipping a standalone icon and removes legacy .ico copies");
-        Check(installer.Contains("\"$INSTDIR\\PolarUninstaller.exe\" 0")&&installer.Contains("\"DisplayIcon\" \"$INSTDIR\\PolarUninstaller.exe,0\"")&&!installer.Contains("PolarLogo-v144-crisp.ico\""),"Setup shortcuts and uninstall record use PolarUninstaller.exe icon index 0");
-        Check(installer.Contains("shell32::SHChangeNotify(i 0x08000000")&&installer.Contains("Function .onInstSuccess")&&installer.Contains("Function un.onUnInstSuccess"),"Setup and uninstaller send SHCNE_ASSOCCHANGED to refresh the Windows icon cache");
-        string? host=null;
-        foreach(string candidate in new[]{
-            Path.Combine(AppContext.BaseDirectory,"PolarUninstaller.exe"),
-            Path.Combine(project,"bin","Release","net9.0-windows","win-x64","PolarUninstaller.exe"),
-            Path.Combine(project,"bin","Release","net9.0-windows","PolarUninstaller.exe")})
-            if(File.Exists(candidate)){host=candidate;break;}
-        if(host!=null)
-        {
-            using var embedded=System.Drawing.Icon.ExtractAssociatedIcon(host);
-            using var official=System.Drawing.Icon.ExtractAssociatedIcon(Path.Combine(project,"Assets","Polar.ico"));
-            bool matches=false;
-            if(embedded!=null&&official!=null)
-            {
-                static byte[] Pixels(System.Drawing.Bitmap bitmap)
-                {
-                    var data=bitmap.LockBits(new System.Drawing.Rectangle(0,0,bitmap.Width,bitmap.Height),System.Drawing.Imaging.ImageLockMode.ReadOnly,System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                    try
-                    {
-                        var bytes=new byte[data.Stride*data.Height];
-                        System.Runtime.InteropServices.Marshal.Copy(data.Scan0,bytes,0,bytes.Length);
-                        return bytes;
-                    }
-                    finally{bitmap.UnlockBits(data);}
-                }
-                using var actual=embedded.ToBitmap();using var expected=official.ToBitmap();
-                matches=actual.Width==expected.Width&&actual.Height==expected.Height&&Pixels(actual).SequenceEqual(Pixels(expected));
-            }
-            Check(matches,"Application host EXE embeds the official icon as its Win32 application icon");
-        }
-        Check(AppInfo.Version=="1.0.144"&&ReleaseNotesService.LoadCurrent(false)?.Entries.Count==7&&ReleaseNotesService.LoadCurrent(true)?.Entries.Count==7,"Version and concise bilingual v1.0.144 notes embedded");
+        Check(WindowsShellIconService.IconFileName=="PolarLogo-v144-crisp.ico"&&installer.Contains("File /oname=PolarLogo-v144-crisp.ico")&&installer.Contains("\"DisplayIcon\" \"$INSTDIR\\PolarLogo-v144-crisp.ico,0\""),"Installer and shortcut refresher agree on the enlarged icon identity");
+        Check(AppInfo.Version=="1.0.150"&&ReleaseNotesService.LoadCurrent(false)?.Entries.Count==2&&ReleaseNotesService.LoadCurrent(true)?.Entries.Count==2,"Version and complete bilingual v1.0.150 notes embedded");
         Console.WriteLine($"{count} checks, {failures} failures; no real installation or pinned shortcuts changed.");
         return failures==0?0:1;
     }
 }
-

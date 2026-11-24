@@ -160,6 +160,7 @@ public sealed class EpicGameRemovalService
 
     public Task<EpicRemovalResult> RemoveAsync(EpicRemovalPlan plan,IReadOnlyList<InstalledProgram> inventory,IProgress<string>? progress,CancellationToken token)=>Task.Run(async()=>
     {
+        await using var changes=new FileChangeCollector();
         var messages=new List<string>();int removed=0,preserved=0;
         void Idle(bool full=true){if(launcherRunning())throw new IOException("Epic restarted during removal; the operation stopped safely.");if(full&&DirectRemovalService.RunningProcesses(plan.Root).Count>0)throw new IOException("Close the selected game before removing it.");}
         Idle();var fresh=await PrepareAsync(plan.Game,inventory,token);
@@ -209,7 +210,7 @@ public sealed class EpicGameRemovalService
             token.ThrowIfCancellationRequested();Idle(false);string path=Path.Combine(plan.Root,file.RelativePath);Physical(path,plan.Root);
             if(!await Original(file))throw new IOException("Game file changed during removal; remaining files and metadata were preserved: "+file.RelativePath);
             try{File.GetAttributes(path);}catch(FileNotFoundException){continue;}catch(DirectoryNotFoundException){continue;}
-            File.Delete(path);BrowserOperationsService.VerifyAbsent(path);removed++;progress?.Report("Removed: "+file.RelativePath);
+            File.Delete(path);BrowserOperationsService.VerifyAbsent(path);changes.Add(path,file.Size);removed++;progress?.Report("Removed: "+file.RelativePath);
         }
         token.ThrowIfCancellationRequested();Idle();CheckMetadata();
         messages.Add("Epic payload removal: "+phase.ElapsedMilliseconds+" ms");ReleaseLeases();
@@ -259,7 +260,7 @@ public sealed class EpicGameRemovalService
         // modified data, game saves, and all folders outside this root are untouched.
         var directories=plan.Files.Select(f=>Path.GetDirectoryName(Path.Combine(plan.Root,f.RelativePath))!).Append(Path.GetDirectoryName(plan.BuildPath)!).Append(plan.Root)
             .Distinct(StringComparer.OrdinalIgnoreCase).OrderByDescending(x=>x.Length);
-        foreach(var dir in directories)try{if(Directory.Exists(dir)){if(!Same(dir,plan.Root))Physical(dir,plan.Root);Directory.Delete(dir,false);}}catch(IOException){}catch(UnauthorizedAccessException){}
+        foreach(var dir in directories)try{if(Directory.Exists(dir)){if(!Same(dir,plan.Root))Physical(dir,plan.Root);Directory.Delete(dir,false);changes.Add(dir,0,true);}}catch(IOException){}catch(UnauthorizedAccessException){}
         preserved=plan.Files.Count(f=>Personal(f.RelativePath)&&File.Exists(Path.Combine(plan.Root,f.RelativePath)));
         bool registered=manifests().Where(File.Exists).Any(path=>{using var doc=JsonDocument.Parse(Bytes(path));var e=doc.RootElement;return Text(e,"AppName")==plan.AppName||Same(Text(e,"InstallLocation"),plan.Root);});
         bool indexed=plan.Indexes.Keys.Any(path=>{using var doc=JsonDocument.Parse(Bytes(path));return doc.RootElement.GetProperty("InstallationList").EnumerateArray().Any(e=>Text(e,"AppName")==plan.AppName||Same(Text(e,"InstallLocation"),plan.Root));});

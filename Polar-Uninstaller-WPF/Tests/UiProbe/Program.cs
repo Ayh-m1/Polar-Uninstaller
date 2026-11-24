@@ -20,6 +20,29 @@ internal static class Program
     [STAThread]
     private static void Main(string[] args)
     {
+        if(args.Contains("--audit-process-child")){Thread.Sleep(900);return;}
+        if(args.Contains("--audit-process-parent"))
+        {
+            var start=new System.Diagnostics.ProcessStartInfo(Environment.ProcessPath!){UseShellExecute=false,CreateNoWindow=true};
+            start.ArgumentList.Add(typeof(Program).Assembly.Location);start.ArgumentList.Add("--audit-process-child");
+            using var child=System.Diagnostics.Process.Start(start);return;
+        }
+        DashboardStorageService.UseCacheDirectory(Path.Combine(AppContext.BaseDirectory,"fixtures","storage-cache-"+Guid.NewGuid().ToString("N")));
+        if(args.Contains("--icons-audit")){Environment.ExitCode=IconAudit146.Run();return;}
+        if(args.Contains("--dup-audit")){Environment.ExitCode=DuplicateAudit146.Run();return;}
+        if(args.Contains("--hidden148")){Environment.ExitCode=Parts146Checks.RunHidden148();return;}
+        if(args.Contains("--deep149")){Environment.ExitCode=Parts146Checks.RunDeep149();return;}
+        if(args.Contains("--deep150")){Environment.ExitCode=Parts146Checks.RunDeep150();return;}
+        if(args.Contains("--themes150")){Environment.ExitCode=Parts146Checks.RunThemes150();return;}
+        if(args.Contains("--rtl-layout147")){Environment.ExitCode=Parts146Checks.RunRtlLayout147();return;}
+        if(args.Contains("--locale147")){Environment.ExitCode=Parts146Checks.RunLocale147();return;}
+        if(args.Contains("--stability147")){Environment.ExitCode=Parts146Checks.RunStability147();return;}
+        if(args.Contains("--parts146-d")){Environment.ExitCode=Parts146Checks.RunD();return;}
+        if(args.Contains("--parts146-c")){Environment.ExitCode=Parts146Checks.RunC();return;}
+        if(args.Contains("--parts146-a")){Environment.ExitCode=Parts146Checks.RunA();return;}
+        if(args.Contains("--parts146-b")){Environment.ExitCode=Parts146Checks.RunB();return;}
+        if(args.Contains("--audit146")){Environment.ExitCode=Audit146Checks.Run();return;}
+        if(args.Contains("--keyboard145")){Environment.ExitCode=Keyboard145Checks.Run();return;}
         if(args.Contains("--explorer-abc144")){Environment.ExitCode=ExplorerABC144Checks.Run();return;}
         if(args.Contains("--explorer144")){Environment.ExitCode=Explorer144Checks.Run();return;}
         if(args.Contains("--dashboard144")){Environment.ExitCode=Dashboard144Checks.Run();return;}
@@ -142,7 +165,7 @@ internal static class Program
             Check(Field(dupView,"result")==null&&!dupView.IsBusy,"Opening Duplicate Files does not automatically start a scan");
             WaitTask(InvokeTask(dupView,"StartScanAsync"),app.Dispatcher);
             var dupRows=(ListBox)dupView.FindName("Results")!;
-            Check(dupRows.Items.Count==1&&((TextBlock)dupView.FindName("GroupsValue")!).Text=="1","Integrated results display one actual content-matched group card");
+            Check(dupRows.Items.Count==1&&((SelectableText)dupView.FindName("GroupsValue")!).Text=="1","Integrated results display one actual content-matched group card");
             typeof(DuplicateFilesView).GetMethod("ApplySmartSelection",BindingFlags.NonPublic|BindingFlags.Instance)!.Invoke(dupView,new object?[]{"shortest",null});
             Check(dupRows.Items.Cast<DuplicateGroupCard>().SelectMany(card=>card.Copies).Count(r=>r.Selected)==2,"Smart selection leaves an initial keeper unchecked");
             object? dupResultBefore=Field(dupView,"result");
@@ -172,7 +195,7 @@ internal static class Program
             var dupPending=InvokeTask(dupCancelView,"StartScanAsync");
             ((Button)dupCancelView.FindName("CancelButton")!).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             WaitTask(dupPending,app.Dispatcher);
-            Check(((TextBlock)dupCancelView.FindName("Status")!).Text.StartsWith("Scan cancelled",StringComparison.Ordinal),"Cancel Scan provides visible feedback even for a fast fixture scan");
+            Check(((SelectableText)dupCancelView.FindName("Status")!).Text.StartsWith("Scan cancelled",StringComparison.Ordinal),"Cancel Scan provides visible feedback even for a fast fixture scan");
             Check((string)Field(dupCancelView,"state")! =="cancelled"&&((ListBox)dupCancelView.FindName("Results")).Items.Cast<DuplicateGroupCard>().All(card=>card.Copies.All(row=>!row.Selected)),"Cancelled scans retain only verified partial groups without selecting copies");
             var invalidDuplicate=new DuplicateFilesView(false,"",log,new ApplicationInventoryService());
             Check(!((Button)invalidDuplicate.FindName("ScanButton")!).IsEnabled,"Virtual or missing locations require a physical folder before scanning");
@@ -182,7 +205,7 @@ internal static class Program
 
             // === Version display ===
             var home = new HomeView(false, new ApplicationInventoryService());
-            Check(((TextBlock)home.FindName("VersionText")!).Text == "v" + AppInfo.Version,
+            Check(((SelectableText)home.FindName("VersionText")!).Text == "v" + AppInfo.Version,
                 "Home view displays v" + AppInfo.Version);
 
             // === What's New page shows the installed version only ===
@@ -208,14 +231,11 @@ internal static class Program
                 Pump(app.Dispatcher);
                 notesHost.UpdateLayout();
 
-                var expanders = FindAllVisual<Expander>(notesPage).ToList();
-                Check(expanders.Count == 1,
-                    "The What's New page contains exactly the Show All Changes expander (" + language + ")");
-                Check((expanders[0].Header as string) == (arabicNotes ? "عرض جميع التغييرات" : "Show All Changes"),
-                    "Show All Changes keeps its localized label (" + language + ")");
-
+                var expander = FindAllVisual<Expander>(notesPage).Single();
+                Check((expander.Header as string) == (arabicNotes ? "عرض جميع التغييرات" : "Show All Changes") && !expander.IsExpanded,
+                    "Show All Changes keeps its localized label and initial state (" + language + ")");
                 var noteTexts = FindAllVisual<TextBlock>(notesPage).Select(block => block.Text).ToList();
-                Check(noteTexts.Any(text => text == (arabicNotes ? "ما الجديد في v" : "What's New in v") + AppInfo.Version),
+                Check(noteTexts.Contains((arabicNotes ? "ما الجديد في v" : "What's New in v") + AppInfo.Version),
                     "The What's New heading names the installed version (" + language + ")");
                 Check(!noteTexts.Any(text => text.Contains("Previous Releases", StringComparison.Ordinal) ||
                                              text.Contains("الإصدارات السابقة", StringComparison.Ordinal)),
@@ -232,15 +252,10 @@ internal static class Program
                     Snapshot(notesHost, Path.Combine(snapshotDir, arabicNotes ? "whatsnew-ar.png" : "whatsnew-en.png"));
                 }
 
-                expanders[0].IsExpanded = true;
-                notesHost.UpdateLayout();
-                Pump(app.Dispatcher);
-                var allChanges = FindAllVisual<TextBlock>(expanders[0])
-                    .Select(block => block.Text)
-                    .Where(text => text.StartsWith("•", StringComparison.Ordinal))
-                    .ToList();
-                Check(currentNote != null && allChanges.Count == currentNote.Entries.Count,
-                    "Show All Changes expands only the installed version's entries (" + language + ")");
+                expander.IsExpanded = true;
+                var allChanges = (RichTextBox)expander.Content;
+                Check(currentNote != null && allChanges.Document.Blocks.Count == currentNote.Entries.Count,
+                    "The expanded list contains only the installed version's entries (" + language + ")");
                 notesHost.Close();
             }
 
@@ -274,8 +289,7 @@ internal static class Program
                 themedHost.Show();
                 Pump(app.Dispatcher);
                 themedHost.UpdateLayout();
-                var pageTitle = FindAllVisual<TextBlock>(themedPage)
-                    .FirstOrDefault(block => block.Text == "What's New in Polar?");
+                var pageTitle = FindAllVisual<TextBlock>(themedPage).FirstOrDefault(block => block.Text == "What's New in Polar?");
                 notesThemeText &= pageTitle?.Foreground is SolidColorBrush titleBrush &&
                                   titleBrush.Color == (Color)ColorConverter.ConvertFromString(theme.Text);
                 themedHost.Close();
@@ -360,7 +374,7 @@ internal static class Program
             updateWindow.Width = updateWindow.MinWidth;
             updateWindow.Height = updateWindow.MinHeight;
             var progressPanel = (StackPanel)updateWindow.FindName("ProgressPanel")!;
-            var statusText = (TextBlock)updateWindow.FindName("StatusText")!;
+            var statusText = (SelectableText)updateWindow.FindName("StatusText")!;
             progressPanel.Visibility = Visibility.Visible;
             statusText.Text = "Downloading update… 42% · 27.0 / 64.0 MB · Speed: 8.20 MB/s";
             updateWindow.UpdateLayout();

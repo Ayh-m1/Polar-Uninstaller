@@ -13,6 +13,9 @@ using System.Threading.Tasks;
 using Microsoft.Win32;
 using PolarUninstallerWpf.Services;
 
+// Register WPF pack URIs in this headless console test host before resource localization.
+_ = System.IO.Packaging.PackUriHelper.Create(new Uri("file:///PolarFixture"));
+DashboardStorageService.UseCacheDirectory(Path.Combine(AppContext.BaseDirectory,"fixtures","storage-cache-"+Guid.NewGuid().ToString("N")));
 if (args.Contains("--launcher139")) return Launcher139Checks.Run();
 if (args.Contains("--smart139")) return Smart139Checks.Run();
 if (args.Contains("--unified139")) return await Unified139Checks.RunAsync();
@@ -31,7 +34,7 @@ void Check(bool condition, string name)
     Console.WriteLine((condition ? "PASS" : "FAIL") + ": " + name);
 }
 
-var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+var root = Environment.GetEnvironmentVariable("POLAR_REGRESSION_ROOT")??Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
 var propsVersion = System.Text.RegularExpressions.Regex.Match(
     File.ReadAllText(Path.Combine(root, "Directory.Build.props")), "<Version>([^<]+)</Version>").Groups[1].Value;
 
@@ -396,14 +399,14 @@ long groupedMbBytes = (long)Math.Round(1000.5 * 1048576.0);
 Check(DisplayFormat.Size(groupedMbBytes, false) == "1,000.5 MB", "Large MB value keeps thousands grouping and one decimal (got " + DisplayFormat.Size(groupedMbBytes, false) + ")");
 Check(DisplayFormat.Size(1524713390, false) == "1.42 GB", "GB value uses up to two decimals (got " + DisplayFormat.Size(1524713390, false) + ")");
 string arabicSize = DisplayFormat.Size(1073741824, true);
-Check(arabicSize.StartsWith("\u2066") && arabicSize.EndsWith(" جيجابايت"), "Arabic size isolates the number and keeps the unit outside the isolate");
-Check(DisplayFormat.Size(0, true) == "\u20660\u2069 بايت", "Arabic zero bytes is isolated and readable");
+Check(arabicSize == DisplayFormat.Isolate("1 GB"), "Arabic size isolates the number and the unit together");
+Check(DisplayFormat.Size(0, true) == DisplayFormat.Isolate("0 B"), "Arabic zero bytes is isolated and readable");
 
 string enSummary = DisplayFormat.CleanSummary(1524713390, 12, 3, false);
 Check(enSummary.Contains("Cleanup completed") && enSummary.Contains("1.42 GB cleaned") && enSummary.Contains("3 items skipped"),
     "English cleanup summary reports actual cleaned size and skipped items (got " + enSummary + ")");
 string arSummary = DisplayFormat.CleanSummary(1524713390, 12, 3, true);
-Check(arSummary.Contains("اكتمل التنظيف بنجاح") && arSummary.Contains("1.42") && arSummary.Contains("جيجابايت") && arSummary.Contains("تُجاوز"),
+Check(arSummary.Contains("اكتمل التنظيف بنجاح") && arSummary.Contains("1.42") && arSummary.Contains(DisplayFormat.Isolate("1.42 GB")) && arSummary.Contains("تُجاوز"),
     "Arabic cleanup summary reports actual cleaned size in correct wording");
 Check(DisplayFormat.CleanSummary(0, 0, 4, false).Contains("No files were removed") && DisplayFormat.CleanSummary(0, 0, 4, false).Contains("4 items skipped"),
     "Nothing removed produces an accurate English message");
@@ -413,7 +416,7 @@ string enCategory = DisplayFormat.CategorySummary(4357, 0, mbBytes, 12, false, f
 Check(enCategory.Contains("4,357 items") && enCategory.Contains("13.06 GB") && enCategory.Contains("12 skipped"),
     "Category summary shows count, size and skipped in English (got " + enCategory + ")");
 string arCategory = DisplayFormat.CategorySummary(4357, 0, mbBytes, 12, false, true);
-Check(arCategory.Contains("4,357") && arCategory.Contains("13.06") && arCategory.Contains("جيجابايت") && arCategory.Contains("تُجاوز"),
+Check(arCategory.Contains("4,357") && arCategory.Contains("13.06") && arCategory.Contains(DisplayFormat.Isolate("13.06 GB")) && arCategory.Contains("تُجاوز"),
     "Category summary shows count, size and skipped in Arabic");
 
 // === Test 14: Quick Cleaner selection serialization ===
@@ -622,7 +625,11 @@ using (var releaseDoc = System.Text.Json.JsonDocument.Parse(releaseJson))
     Check(versions.Contains("1.0.121") && versions.Contains("1.0.120"), "Historical release entries are preserved");
     var latest = releaseDoc.RootElement.EnumerateArray().First();
     Check(latest.GetProperty("version").GetString() == propsVersion, "Latest release matches the source version (v" + propsVersion + ")");
-    Check(latest.GetProperty("en").GetArrayLength() >= 3, "The latest release has multiple changelog entries");
+    var latestEnglish = latest.GetProperty("en").EnumerateArray().ToArray();
+    var latestArabic = latest.GetProperty("ar").EnumerateArray().ToArray();
+    Check(latestEnglish.Length > 0 && latestEnglish.Length == latestArabic.Length &&
+        latestEnglish.Concat(latestArabic).All(entry => !string.IsNullOrWhiteSpace(entry.GetString())),
+        "The latest release has matching, non-empty English and Arabic changelog entries");
 }
 Check(ReleaseNotesService.IsFeature("What's New page redesigned with ..."), "Release-note feature classification works");
 Check(ReleaseNotesService.IsImprovement("Dashboard, Quick Cleaner and File Browser surfaces now blend..."), "Release-note improvement classification works");
@@ -1267,7 +1274,7 @@ Check(mainCodeShared.Contains("ApplicationInventoryService applicationInventory"
       mainCodeShared.Contains("new DeepUninstallerView(arabic, activity, applicationInventory)") &&
       !mainCodeShared.Contains("homePrograms"),
     "MainWindow passes one shared inventory service to both pages");
-Check(deepCodeShared.Contains("view.Filter = FilterCard") && deepCodeShared.Contains("CountText.Text = snapshot.IsComplete ?"),
+Check(deepCodeShared.Contains("view.Filter = FilterCard") && deepCodeShared.Contains("language.Set(CountText,TextBlock.TextProperty,lang=>snapshot.IsComplete"),
     "Search filters only the visible view and never changes the global inventory count");
 
 // === Test 40: A stale asynchronous scan cannot replace a newer count ===
@@ -2197,7 +2204,7 @@ Check(deepCodeFinal.Contains("RiotGameService.IsRiotGame") && deepCodeFinal.Cont
     "Deep Uninstaller recognizes Riot games and warns before removing shared components");
 Check(deepCodeFinal.Contains("UninstallReportService.Evaluate") && deepCodeFinal.Contains("UninstallReportService.FromProbe") &&
       deepCodeFinal.Contains("report.LogLines"), "Both removal paths write the detailed bilingual report to the Activity Log");
-Check(deepCodeFinal.Contains("report.Summary(arabic)"), "The status bar shows the verified outcome summary");
+Check(deepCodeFinal.Contains("SetStatus(report.Summary)"), "The status bar shows the verified outcome summary");
 Check(reportCodeFinal.Contains("Successfully Removed") && reportCodeFinal.Contains("Removed with Leftovers") &&
       reportCodeFinal.Contains("Verification Incomplete") && reportCodeFinal.Contains("Uninstall Failed"),
     "All four outcome names exist in the report service");

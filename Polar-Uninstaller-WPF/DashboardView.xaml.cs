@@ -23,14 +23,21 @@ public sealed record StorageRow(string Name,string Path,long Bytes,double Percen
 public sealed record RecentUninstallRow(string Name,string Subtitle,string Size,ImageSource? Icon,string FallbackGlyph);
 public partial class DashboardView : UserControl
 {
-    private readonly bool arabic;
+    public string RowRefreshLabel=>L("Rescan item","أعد فحص العنصر");
+    public string RowRemoveLabel=>L("Remove from this list only","أزل من القائمة فقط");
+    private bool arabic;
+    private readonly LocalizedPresentation language = new();
+    private readonly DashboardScanSession scanSession;
+    private StorageSnapshot? renderedScanSnapshot;
+    private bool snapshotCached;
+    private bool IsScanning => scan != null || scanSession.Phase == DashboardScanPhase.Running;
     private readonly ActivityLogService activity;
     private readonly Action<string,string?>? openInBrowser;
     private readonly ApplicationInventoryService inventory;
     private readonly SpaceFreedService freedSpace;
     public event Action<string>? NavigationRequested;
     private readonly DashboardStorageService storage=new();
-    private readonly UninstallHistoryService history=new();
+    private readonly UninstallHistoryService history;
     private CancellationTokenSource? scan;
     private string scanRoot="";
     private bool scanIsDriveRoot;
@@ -42,8 +49,11 @@ public partial class DashboardView : UserControl
     private Task? driveRefresh;
     private Task? historyRefresh;
     private bool refreshing;
+    private CancellationTokenSource? refreshCancellation;
+    private StorageSnapshot? displayedSnapshot;
+    private string[] hiddenDashboardPaths=[];
     private bool overviewScheduled;
-    private readonly ManualStorageService manualService=new();
+    private readonly ManualStorageService manualService;
     private readonly Dictionary<string,ManualStorageItem> manual=new(StringComparer.OrdinalIgnoreCase);
     private StorageRow[] automaticFolders=[];
     private StorageRow[] automaticFiles=[];
@@ -57,12 +67,24 @@ public partial class DashboardView : UserControl
     private const int PageSize=50;
     private enum StorageCategory { Folders, Files }
     private sealed record SizeFilterOption(string Label,long Bytes){public override string ToString()=>Label;}
-    private string L(string en,string ar)=>arabic?ar:en;
-    public DashboardView(bool arabic,ActivityLogService activity,Action<string,string?>? openInBrowser=null,ApplicationInventoryService? inventory=null,SpaceFreedService? freedSpace=null)
+    private string L(string en,string ar)=> BidiText.Localize(arabic,en,ar);
+    public DashboardView(bool arabic,ActivityLogService activity,Action<string,string?>? openInBrowser=null,ApplicationInventoryService? inventory=null,SpaceFreedService? freedSpace=null,UninstallHistoryService? history=null,ManualStorageService? manualService=null,DashboardScanSession? scanSession=null)
     {
-        this.arabic=arabic;this.activity=activity;this.openInBrowser=openInBrowser;
+        this.arabic=arabic;this.scanSession=scanSession??new DashboardScanSession(activity);this.activity=activity;this.openInBrowser=openInBrowser;
         this.inventory=inventory??new ApplicationInventoryService();this.freedSpace=freedSpace??SpaceFreedService.Instance;
-        InitializeComponent();
+        this.history=history??new UninstallHistoryService();this.manualService=manualService??new ManualStorageService();
+        InitializeComponent();UiPerformanceProbe.Attach(this);
+        SetLanguage(arabic);
+        language.Text(ScanStatus,"Select a drive and scan it, or choose a folder to analyze.","اختر قرصًا وافحصه، أو اختر مجلدًا للتحليل.");
+        ScanScopeText.Text=L("No scan yet","لم يتم الفحص بعد");
+        Loaded+=async (_,_)=>await RunDashboardActionAsync(LoadDashboardAsync);
+        Unloaded+=(_,_)=> {lifetime++;this.scanSession.Changed-=ShowScanSession;if(subscribed) {this.inventory.Changed-=InventoryChanged;this.freedSpace.Changed-=OverviewChanged;FileChangeHub.Changed-=DashboardFilesChanged;UninstallHistoryService.HistoryChanged-=HistoryChanged;subscribed=false;} };
+    }
+
+    public void SetLanguage(bool value)
+    {
+        arabic=value;
+        language.Refresh(value);
         FlowDirection=arabic?FlowDirection.RightToLeft:FlowDirection.LeftToRight;
         Heading.Text=L("Dashboard","لوحة المعلومات"); Subtitle.Text=L("System overview and quick insights","نظرة على النظام وإحصاءات سريعة");
         RecentTitle.Text=L("Recent Uninstalls","آخر عمليات الإزالة");
@@ -84,12 +106,16 @@ public partial class DashboardView : UserControl
         UpdateCategoryChrome();
         ClearCacheButton.ToolTip=L("Reset dashboard statistics, uninstall history, cached scans and saved scan items","إعادة تعيين إحصاءات لوحة المعلومات وسجل الإزالة ونتائج الفحص المحفوظة وعناصر الفحص المضافة");
         
+        CancelScanButton.Content=L("Cancel scan","إلغاء الفحص");
         AddFolderButton.ToolTip=L("Scan an entire folder","فحص مجلد كامل");
         UsedCaption.Text=L("Used","مستخدم");FreeCaption.Text=L("Available","متاح");TotalCaption.Text=L("Total","الإجمالي");
-        ScanStatus.Text=L("Select a drive and scan it, or choose a folder to analyze.","اختر قرصًا وافحصه، أو اختر مجلدًا للتحليل.");
-        ScanScopeText.Text=L("No scan yet","لم يتم الفحص بعد");
-        Loaded+=async (_,_)=>await RunDashboardActionAsync(LoadDashboardAsync);
-        Unloaded+=(_,_)=> {lifetime++;scan?.Cancel();if(subscribed) {this.inventory.Changed-=InventoryChanged;this.freedSpace.Changed-=OverviewChanged;BrowserOperationsService.ContentChanged-=BrowserContentChanged;UninstallHistoryService.HistoryChanged-=HistoryChanged;subscribed=false;} };
+        RefreshButton.Content=refreshing?L("Refreshing…","جارٍ التحديث…"):L("Refresh","تحديث");
+        ShowDrive(DriveSelector.SelectedItem as DriveSummary);
+        LocalizedPresentation.SetRuns(ScanScopeText,string.IsNullOrWhiteSpace(scanRoot)?L("No scan yet","لم يتم الفحص بعد"):ScopeText());
+        if(scanSession.Phase is DashboardScanPhase.Running or DashboardScanPhase.Cancelled or DashboardScanPhase.Failed) ShowScanSession();
+        else if(displayedSnapshot is {} snapshot) ShowSnapshotStatus(snapshot,snapshotCached);
+        else if(scanSession.Phase==DashboardScanPhase.None && string.IsNullOrWhiteSpace(scanRoot))
+            language.Text(ScanStatus,"Select a drive and scan it, or choose a folder to analyze.","اختر قرصًا وافحصه، أو اختر مجلدًا للتحليل.");
     }
     private async Task LoadDashboardAsync()
     {
@@ -97,14 +123,17 @@ public partial class DashboardView : UserControl
         if(!subscribed)
         {
             inventory.Changed+=InventoryChanged;freedSpace.Changed+=OverviewChanged;
-            BrowserOperationsService.ContentChanged+=BrowserContentChanged;
+            FileChangeHub.Changed+=DashboardFilesChanged;
             UninstallHistoryService.HistoryChanged+=HistoryChanged;
+            scanSession.Changed+=ShowScanSession;
             subscribed=true;
         }
+        ShowScanSession();
         UpdateOverview();
+        await DashboardStorageService.LoadCacheAsync();
         await RefreshDrives();
         if(!IsLoaded||revision!=lifetime)return;
-        RestoreCachedScan(DriveSelector.SelectedItem as DriveSummary);
+        if(scanSession.Phase==DashboardScanPhase.None && !refreshing) RestoreCachedScan(DriveSelector.SelectedItem as DriveSummary);
         await RefreshHistoryAsync();
         var saved=await manualService.LoadAsync();
         if(!IsLoaded||revision!=lifetime)return;
@@ -125,8 +154,7 @@ public partial class DashboardView : UserControl
     }
     private void InitializeSizeFilter()
     {
-        if(sizeFilterReady)return;
-        sizeFilterReady=true;
+        sizeFilterReady=false;
         var options=new[]
         {
             new SizeFilterOption(L("All file sizes","كل أحجام الملفات"),0),
@@ -138,7 +166,8 @@ public partial class DashboardView : UserControl
             new SizeFilterOption(L("5 GB or larger","5 جيجابايت أو أكبر"),5L*1024*1024*1024)
         };
         FileSizeFilter.ItemsSource=options;
-        FileSizeFilter.SelectedIndex=0;
+        FileSizeFilter.SelectedItem=options.FirstOrDefault(option=>option.Bytes==minimumFileBytes)??options[0];
+        sizeFilterReady=true;
     }
     private void FileSizeFilterChanged(object sender,SelectionChangedEventArgs e)
     {
@@ -179,12 +208,12 @@ public partial class DashboardView : UserControl
         if(!Dispatcher.CheckAccess()){Dispatcher.InvokeAsync(OverviewChanged);return;}
         if(overviewScheduled)return;
         overviewScheduled=true;
-        Dispatcher.InvokeAsync(()=>{overviewScheduled=false;if(IsLoaded)UpdateOverview();},System.Windows.Threading.DispatcherPriority.Background);
+        Dispatcher.InvokeAsync(()=>{overviewScheduled=false;if(IsLoaded&&!refreshing)UpdateOverview();},System.Windows.Threading.DispatcherPriority.Background);
     }
     private void InventoryChanged(ApplicationInventory snapshot)=>OverviewChanged();
     private void OpenCleaner(object sender,RoutedEventArgs e)=>NavigationRequested?.Invoke("cleaner");
     private void OpenUninstaller(object sender,RoutedEventArgs e)=>NavigationRequested?.Invoke("uninstall");
-    private void BrowserContentChanged() { if(Dispatcher.HasShutdownStarted)return; Dispatcher.InvokeAsync(()=>{if(IsLoaded)_=RunDashboardActionAsync(RefreshAfterExternalChange);}); }
+    private void DashboardFilesChanged(FileChangeBatch batch) { refreshCancellation?.Cancel();if(Dispatcher.HasShutdownStarted)return; Dispatcher.InvokeAsync(()=>{if(IsLoaded)_=RunDashboardActionAsync(RefreshAfterExternalChange);}); }
     private void HistoryChanged() { if(Dispatcher.HasShutdownStarted)return; Dispatcher.InvokeAsync(()=>{if(IsLoaded)_=RunDashboardActionAsync(RefreshHistoryAsync);}); }
     private Task RefreshHistoryAsync() => historyRefresh is { IsCompleted:false } ? historyRefresh : historyRefresh=RefreshHistoryCoreAsync();
     private async Task RefreshHistoryCoreAsync()
@@ -193,6 +222,10 @@ public partial class DashboardView : UserControl
         try { entries=await history.LoadAsync(); }
         catch(Exception ex) when(ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { entries=Array.Empty<UninstallHistoryEntry>(); }
         if(!IsLoaded)return;
+        ApplyHistory(entries);
+    }
+    private void ApplyHistory(IReadOnlyList<UninstallHistoryEntry> entries)
+    {
         var rows=entries.Take(UninstallHistoryService.DisplayLimit).Select(entry =>
         {
             string? iconPath=history.ResolveIconPath(entry);
@@ -226,14 +259,17 @@ public partial class DashboardView : UserControl
     private async Task RefreshAfterExternalChange()
     {
         foreach (string path in manual.Keys.Where(p => !File.Exists(p) && !Directory.Exists(p)).ToArray()) manual.Remove(path);
+        if(displayedSnapshot is {} previous&&DashboardStorageService.TryGetCached(previous.Root) is {} updated)ApplySnapshot(updated,true);
         await RefreshDrives();
-        RenderItems();
+        await SaveItems();RenderItems();
     }
     private void UpdateOverview()
     {
         var snapshot=inventory.Current;
-        ProgramsValue.Text=snapshot is {IsComplete:true}?DisplayFormat.Number(snapshot.Count):L("Loading…","جارٍ التحميل…");
-        FreedValue.Text=freedSpace.Available?DisplayFormat.Size(freedSpace.TotalBytes,arabic):L("Unavailable","غير متاح");
+        if(snapshot is {IsComplete:true}) SetNumericValue(ProgramsValue,DisplayFormat.Number(snapshot.Count));
+        else ProgramsValue.Text=L("Loading…","جارٍ التحميل…");
+        if(freedSpace.Available) SetNumericValue(FreedValue,DisplayFormat.Size(freedSpace.TotalBytes,false));
+        else FreedValue.Text=L("Unavailable","غير متاح");
     }
     private Task RefreshDrives() => driveRefresh is { IsCompleted:false } ? driveRefresh : driveRefresh=RefreshDrivesCoreAsync();
     private async Task RefreshDrivesCoreAsync()
@@ -255,7 +291,7 @@ public partial class DashboardView : UserControl
         }
         catch(Exception e) when(e is IOException or UnauthorizedAccessException) {activity.Write("WARNING","Dashboard drive information unavailable.");}
     }
-    private void DriveChanged(object sender,SelectionChangedEventArgs e){if(updatingDrives)return;ShowDrive(DriveSelector.SelectedItem as DriveSummary);}
+    private void DriveChanged(object sender,SelectionChangedEventArgs e){if(updatingDrives)return;refreshCancellation?.Cancel();scan?.Cancel();scanSession.Reset();ShowDrive(DriveSelector.SelectedItem as DriveSummary);}
     private void ShowDrive(DriveSummary? drive)
     {
             bool warning=drive?.UsedPercent>=85;
@@ -266,27 +302,52 @@ public partial class DashboardView : UserControl
             FreeValue.SetResourceReference(TextBlock.ForegroundProperty,warning?"LogWarning":"ChromeAccent");
             if(drive==null) {FreeValue.Text=UsagePercent.Text="—";FreeDetail.Text=DriveSummaryText("Drive unavailable","القرص غير متاح");DriveTitle.Text="";DriveSummary.Text=L("Drive unavailable","القرص غير متاح");DriveDetails.Text="";UsageArc.Data=null;UsageBar.Value=0;UsedSpace.Text=FreeSpace.Text=TotalSpace.Text="—";return;}
             if(string.IsNullOrWhiteSpace(scanRoot))scanRoot=drive.Name;
-            FreeValue.Text=drive.Available;FreeDetail.Text=$"{drive.Letter} · {drive.UsedPercent:N0}% "+L("used","مستخدم");
-            DriveTitle.Text=drive.Letter;
-            if(!string.IsNullOrWhiteSpace(drive.Label))DriveTitle.Text=drive.Label+" · "+drive.Letter;
-            DriveSummary.Text=L($"{Services.DriveSummary.Format(drive.Used)} of {Services.DriveSummary.Format(drive.Total)} used",$"{Services.DriveSummary.Format(drive.Used)} مستخدم من {Services.DriveSummary.Format(drive.Total)}");
-            DriveDetails.Text=L($"Available: {drive.Available}",$"المتاح: {drive.Available}");
-            UsageBar.Value=drive.UsedPercent;UsagePercent.Text=$"{drive.UsedPercent:N0}%";
-            UsedSpace.Text=Services.DriveSummary.Format(drive.Used);FreeSpace.Text=drive.Available;TotalSpace.Text=Services.DriveSummary.Format(drive.Total);
+            SetNumericValue(FreeValue,drive.Available);LocalizedPresentation.SetRuns(FreeDetail,L($"{drive.Letter} · {drive.UsedPercent:N0}% used",$"المستخدم: {drive.UsedPercent:N0}% · {drive.Letter}"));
+            string title=string.IsNullOrWhiteSpace(drive.Label)?drive.Letter:drive.Label+" · "+drive.Letter;
+            SetNumericValue(DriveTitle,title);
+            LocalizedPresentation.SetRuns(DriveSummary,L($"{Services.DriveSummary.Format(drive.Used)} of {Services.DriveSummary.Format(drive.Total)} used",$"{Services.DriveSummary.Format(drive.Used)} مستخدم من {Services.DriveSummary.Format(drive.Total)}"));
+            LocalizedPresentation.SetRuns(DriveDetails,L($"Available: {drive.Available}",$"المتاح: {drive.Available}"));
+            UsageBar.Value=drive.UsedPercent;SetNumericValue(UsagePercent,DisplayFormat.Percent(drive.UsedPercent));
+            SetNumericValue(UsedSpace,Services.DriveSummary.Format(drive.Used));
+            SetNumericValue(FreeSpace,drive.Available);
+            SetNumericValue(TotalSpace,Services.DriveSummary.Format(drive.Total));
             double angle=Math.Clamp(drive.UsedPercent,0,99.999)/100*2*Math.PI; var end=new Point(80+64*Math.Sin(angle),80-64*Math.Cos(angle));
             var figure=new PathFigure {StartPoint=new(80,16)};figure.Segments.Add(new ArcSegment(end,new(64,64),0,angle>Math.PI,SweepDirection.Clockwise,true));UsageArc.Data=new PathGeometry(new[]{figure});
     }
+    private void SetNumericValue(SelectableText block,string value) => LocalizedPresentation.SetLeftToRight(block,value,arabic);
+
     private string DriveSummaryText(string en,string ar)=>L(en,ar);
-    private async void RefreshClick(object sender,RoutedEventArgs e)
+    private async void RefreshClick(object sender,RoutedEventArgs e)=>await RefreshAllAsync();
+    private async Task RefreshAllAsync()
     {
         if(refreshing||clearingCache)return;
-        refreshing=true;RefreshButton.IsEnabled=false;
-        try {await RunDashboardActionAsync(async()=>{await RefreshDrives();await RefreshHistoryAsync();});}
-        finally {refreshing=false;RefreshButton.IsEnabled=true;}
+        if(IsScanning)return;
+        using var cts=new CancellationTokenSource();refreshCancellation=cts;
+        string scope=scanRoot;
+        activity.WriteBilingual("INFO","Dashboard refresh started.","بدأ تحديث لوحة المعلومات.");
+        refreshing=true;RefreshButton.IsEnabled=ClearCacheButton.IsEnabled=false;RefreshButton.Content=L("Refreshing…","جارٍ التحديث…");
+        try
+        {
+            var drivesTask=storage.ReadDrivesAsync();var inventoryTask=inventory.RefreshAsync(cts.Token);
+            var historyTask=history.LoadAsync();var freedTask=freedSpace.ReloadAsync(cts.Token);
+            var scanTask=string.IsNullOrWhiteSpace(scope)?Task.FromResult<StorageSnapshot?>(null):RefreshScopeAsync(scope,cts.Token);
+            await Task.WhenAll(drivesTask,inventoryTask,historyTask,freedTask,scanTask);
+            cts.Token.ThrowIfCancellationRequested();
+            UpdateOverview();ApplyHistory(historyTask.Result);
+            updatingDrives=true;
+            try{string? selected=(DriveSelector.SelectedItem as DriveSummary)?.Name;DriveSelector.ItemsSource=drivesTask.Result;DriveSelector.SelectedItem=drivesTask.Result.FirstOrDefault(d=>d.Name==selected)??drivesTask.Result.FirstOrDefault();ShowDrive(DriveSelector.SelectedItem as DriveSummary);}
+            finally{updatingDrives=false;}
+            if(scanTask.Result is {} snapshot)ApplySnapshot(snapshot,false);
+            activity.Write("INFO",L("Dashboard refreshed.","حُدّثت لوحة المعلومات."));
+        }
+        catch(OperationCanceledException){activity.WriteBilingual("INFO","Dashboard refresh cancelled.","أُلغي تحديث لوحة المعلومات.");}
+        catch(Exception error){CrashDiagnostics.Record("Dashboard refresh",error);ScanStatus.Text=L("Could not refresh. Previous data is kept; check access and try again.","تعذر التحديث. بقيت البيانات السابقة؛ تحقق من الصلاحيات وحاول مجددًا.");activity.Write("ERROR",ScanStatus.Text);}
+        finally{if(ReferenceEquals(refreshCancellation,cts))refreshCancellation=null;refreshing=false;RefreshButton.Content=L("Refresh","تحديث");RefreshButton.IsEnabled=ClearCacheButton.IsEnabled=true;}
     }
+    private async Task<StorageSnapshot?> RefreshScopeAsync(string scope,CancellationToken token)=>await storage.ScanAsync(scope,token);
     private async void ClearCacheClick(object sender,RoutedEventArgs e)
     {
-        if(clearingCache)return;
+        if(clearingCache||refreshing)return;
         ClearCacheButton.IsEnabled=false;
         try
         {
@@ -299,8 +360,9 @@ public partial class DashboardView : UserControl
             // Stop any active scan first so a late progress callback cannot
             // repopulate the results that are about to be cleared.
             scan?.Cancel();
+            scanSession.Reset();
             Interlocked.Increment(ref cacheGeneration);
-            DashboardStorageService.ClearCache();
+            DashboardStorageService.ClearCache();await DashboardStorageService.FlushCacheAsync();
             try { await pendingSave; }
             catch(Exception ex) when(ex is IOException or UnauthorizedAccessException or System.Security.SecurityException) { }
             await manualService.ClearAsync();
@@ -320,7 +382,7 @@ public partial class DashboardView : UserControl
             ScanStatus.Text=summary;activity.Write("SUCCESS",summary);
         }
         catch(Exception ex) when(ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or InvalidOperationException or OperationCanceledException)
-        {ScanStatus.Text=L("Reset failed: ","تعذرت إعادة التعيين: ")+ex.Message;activity.Write("WARNING",ScanStatus.Text);}
+        {ScanStatus.Text=L("Could not reset cached data. Check permissions and try again.","تعذرت إعادة تعيين البيانات المؤقتة. تحقق من الصلاحيات وحاول مجددًا.");CrashDiagnostics.Record("Dashboard reset",ex);activity.Write("WARNING",ScanStatus.Text);}
         finally {clearingCache=false;ClearCacheButton.IsEnabled=true;}
     }
 
@@ -328,32 +390,66 @@ public partial class DashboardView : UserControl
     /// <summary>Recursively scans exactly the requested scope and labels the results.</summary>
     private async Task RunStorageScanAsync(string root,bool isDrive)
     {
-        if(scan!=null){ScanStatus.Text=L("A scan is already running.","يوجد فحص قيد التنفيذ.");return;}
-        using var source=new CancellationTokenSource();scan=source;
-        int generation=cacheGeneration;
-        scanRoot=root;scanIsDriveRoot=isDrive;scanIncomplete=false;
-        automaticFolders=[];automaticFiles=[];visibleLimit=DefaultVisible;RenderItems();
-        ScanScopeText.Text=ScopeText();
-        try
+        if(IsScanning||refreshing||clearingCache)return;
+        await scanSession.RunAsync(storage,root,isDrive);
+    }
+
+    public void CancelWork()
+    {
+        scanSession.Cancel();
+        scan?.Cancel();
+        refreshCancellation?.Cancel();
+    }
+
+    private void CancelScanClick(object sender,RoutedEventArgs e) => scanSession.Cancel();
+
+    private void ShowScanSession()
+    {
+        CancelScanButton.Visibility=scanSession.Phase==DashboardScanPhase.Running?Visibility.Visible:Visibility.Collapsed;
+        if(scanSession.Phase==DashboardScanPhase.None)return;
+        if(!string.Equals(scanRoot,scanSession.Root,StringComparison.OrdinalIgnoreCase) ||
+            (scanSession.Phase==DashboardScanPhase.Running && displayedSnapshot!=null))
         {
-            activity.Write("INFO",$"Dashboard storage scan started: {(isDrive?"drive":"folder")} {root}");
-            ScanStatus.Text=L($"Scanning {ScopeText()}…","جارٍ فحص "+ScopeText()+"…");
-            var progress=new Progress<int>(n=> {if(ReferenceEquals(scan,source)&&generation==cacheGeneration)ScanStatus.Text=L($"Scanning {ScopeText()} · {n:N0} files",$"جارٍ الفحص {ScopeText()} · {n:N0} ملف");});
-            var partial=new Progress<StorageSnapshot>(snapshot=>{if(!ReferenceEquals(scan,source)||generation!=cacheGeneration)return;scanIncomplete=true;automaticFiles=snapshot.Largest.Select(f=>new StorageRow(f.Name,f.Path,f.Bytes,0,"📄")).ToArray();RenderItems();});
-            var result=await storage.ScanAsync(root,source.Token,progress,partial);source.Token.ThrowIfCancellationRequested();
-            if(generation!=cacheGeneration)return;
-            ApplySnapshot(result,false);
-            activity.Write(result.Limited?"WARNING":"INFO","Dashboard storage scan completed."+(result.Limited?" Some locations were inaccessible.":""));
+            displayedSnapshot=null;
+            renderedScanSnapshot=null;
+            automaticFolders=[];automaticFiles=[];visibleLimit=DefaultVisible;
         }
-        catch(OperationCanceledException) {if(generation==cacheGeneration){scanIncomplete=true;ScanStatus.Text=L("Scan cancelled; partial results are shown.","أُلغي الفحص؛ تُعرض النتائج الجزئية.");}}
-        catch(Exception error) when(error is IOException or UnauthorizedAccessException or ArgumentException or System.Security.SecurityException) {if(generation==cacheGeneration){ScanStatus.Text=L("Unable to scan this location.","تعذر فحص هذا الموقع.");activity.Write("WARNING","Dashboard storage scan failed.");}}
-        finally {if(ReferenceEquals(scan,source)){scan=null;}}
+        scanRoot=scanSession.Root;
+        scanIsDriveRoot=scanSession.IsDrive;
+        LocalizedPresentation.SetRuns(ScanScopeText,ScopeText());
+        var snapshot=scanSession.Snapshot;
+        switch(scanSession.Phase)
+        {
+            case DashboardScanPhase.Running:
+                if(!ReferenceEquals(renderedScanSnapshot,snapshot))
+                {
+                    renderedScanSnapshot=snapshot;
+                    scanIncomplete=true;
+                    automaticFiles=snapshot?.Largest.Select(f=>new StorageRow(f.Name,f.Path,f.Bytes,0,"📄")).ToArray()??[];
+                    RenderItems();
+                }
+                LocalizedPresentation.SetRuns(ScanStatus,L(
+                    $"Scanning {ScopeText()} · {scanSession.Files:N0} files",
+                    $"جارٍ الفحص: {ScopeText()} · الملفات: {scanSession.Files:N0}"));
+                break;
+            case DashboardScanPhase.Completed when snapshot!=null && !ReferenceEquals(renderedScanSnapshot,snapshot):
+                renderedScanSnapshot=snapshot;
+                ApplySnapshot(snapshot,false);
+                break;
+            case DashboardScanPhase.Cancelled:
+                scanIncomplete=true;
+                language.Text(ScanStatus,"Scan cancelled; partial results are shown.","أُلغي الفحص؛ تُعرض النتائج الجزئية.");
+                break;
+            case DashboardScanPhase.Failed:
+                language.Text(ScanStatus,"Unable to scan this location.","تعذر فحص هذا الموقع.");
+                break;
+        }
     }
 
     private string ScopeText()
     {
         if(string.IsNullOrWhiteSpace(scanRoot))return L("no scope","بدون نطاق");
-        return scanIsDriveRoot?L($"entire drive {scanRoot}",$"القرص بأكمله {scanRoot}"):L($"folder {scanRoot}",$"المجلد {scanRoot}");
+        return scanIsDriveRoot?L($"entire drive {scanRoot}",$"القرص بأكمله {DisplayFormat.Isolate(scanRoot)}"):L($"folder {scanRoot}",$"المجلد {DisplayFormat.Isolate(scanRoot)}");
     }
 
     private void RestoreCachedScan(DriveSummary? drive)
@@ -366,6 +462,7 @@ public partial class DashboardView : UserControl
 
     private void ApplySnapshot(StorageSnapshot result,bool cached)
     {
+        snapshotCached=cached;displayedSnapshot=result;hiddenDashboardPaths=result.HiddenPaths.ToArray();
         scanRoot=result.Root;scanIsDriveRoot=result.IsDriveRoot;scanIncomplete=result.Limited;
         // Folders and files are independent rankings. A large file can never
         // consume a folder slot, and folder results are never truncated.
@@ -378,12 +475,17 @@ public partial class DashboardView : UserControl
         visibleLimit=DefaultVisible;
         RenderItems();
         ScanScopeText.Text=ScopeText();
+        ShowSnapshotStatus(result,cached);
+    }
+    private void ShowSnapshotStatus(StorageSnapshot result,bool cached)
+    {
         var status=L($"{ScopeText()} · {result.FilesScanned:N0} files · {Services.DriveSummary.Format(result.TotalBytes)} · {result.FoldersScanned:N0} folders",$"{ScopeText()} · {result.FilesScanned:N0} ملف · {Services.DriveSummary.Format(result.TotalBytes)} · {result.FoldersScanned:N0} مجلد");
+        if(!cached)status=L($"Updated · {result.CompletedAt.ToLocalTime():G} · ",$"حُدّثت · {result.CompletedAt.ToLocalTime():G} · ")+status;
         if(cached)status=L($"Cached · {result.CompletedAt.ToLocalTime():g} · ",$"محفوظ مؤقتًا · {result.CompletedAt.ToLocalTime():g} · ")+status;
         if(result.IsDriveRoot && DriveSelector.SelectedItem is DriveSummary drive && result.TotalBytes>0 && result.TotalBytes<drive.Used)
             status+=L($" · scanned {Services.DriveSummary.Format(result.TotalBytes)} of {Services.DriveSummary.Format(drive.Used)} used; inaccessible or system-only areas are not included",$" · تم فحص {Services.DriveSummary.Format(result.TotalBytes)} من أصل {Services.DriveSummary.Format(drive.Used)} مستخدم؛ المناطق المتعذر الوصول إليها أو النظامية فقط غير مشمولة");
         if(result.Limited)status+=L($" · incomplete: {result.Inaccessible:N0} inaccessible · {result.Skipped:N0} skipped in total; folder sizes are at least the shown values",$" · غير مكتمل: {result.Inaccessible:N0} متعذر الوصول · {result.Skipped:N0} متجاوز إجمالًا؛ أحجام المجلدات لا تقل عن القيم المعروضة");
-        ScanStatus.Text=status;
+        LocalizedPresentation.SetRuns(ScanStatus,status);
     }
     private void LargestClick(object sender,MouseButtonEventArgs e)
     {
@@ -425,12 +527,12 @@ public partial class DashboardView : UserControl
             {Manual=true,Source=ManualSource(i)});
 
         // Automatic results win when the same path was also added manually.
-        var folders=automaticFolders.Concat(manualFolders)
+        var folders=automaticFolders.Concat(manualFolders).Where(r=>!hiddenDashboardPaths.Any(p=>StorageCacheUpdates.Within(r.Path,p)))
             .GroupBy(r=>r.Path,StringComparer.OrdinalIgnoreCase).Select(g=>g.First())
             .Select(r=>r.Manual?r:(r with{Source=scanSource}))
             .OrderByDescending(r=>r.Bytes).ThenBy(r=>r.Name,StringComparer.CurrentCultureIgnoreCase)
             .ToArray();
-        var files=automaticFiles.Concat(manualFiles)
+        var files=automaticFiles.Concat(manualFiles).Where(r=>!hiddenDashboardPaths.Any(p=>StorageCacheUpdates.Within(r.Path,p)))
             .GroupBy(r=>r.Path,StringComparer.OrdinalIgnoreCase).Select(g=>g.First())
             .Where(r=>r.Bytes>=minimumFileBytes)
             .Select(r=>r.Manual?r:(r with{Source=scanSource}))
@@ -446,13 +548,15 @@ public partial class DashboardView : UserControl
         ShowMoreButton.Visibility=remaining>0?Visibility.Visible:Visibility.Collapsed;
         if(remaining>0)ShowMoreButton.Content=L($"Show more ({remaining:N0} remaining)",$"عرض المزيد ({remaining:N0} متبقٍ)");
     }
-    private async void AddFileClick(object sender,RoutedEventArgs e)=>await RunDashboardActionAsync(async()=>{if(scan!=null)return;var picker=new Microsoft.Win32.OpenFileDialog{Multiselect=true};if(picker.ShowDialog(Window.GetWindow(this))==true)await Analyze(picker.FileNames);});
-    private async void AddFolderClick(object sender,RoutedEventArgs e)=>await RunDashboardActionAsync(async()=>{if(scan!=null)return;var picker=new Microsoft.Win32.OpenFolderDialog();if(picker.ShowDialog(Window.GetWindow(this))==true)await RunStorageScanAsync(picker.FolderName,false);});
+    private async void AddFileClick(object sender,RoutedEventArgs e)=>await RunDashboardActionAsync(async()=>{if(IsScanning)return;var picker=new Microsoft.Win32.OpenFileDialog{Multiselect=true};if(picker.ShowDialog(Window.GetWindow(this))==true)await Analyze(picker.FileNames);});
+    private async void AddFolderClick(object sender,RoutedEventArgs e)=>await RunDashboardActionAsync(async()=>{if(IsScanning)return;var picker=new Microsoft.Win32.OpenFolderDialog();if(picker.ShowDialog(Window.GetWindow(this))==true)await RunStorageScanAsync(picker.FolderName,false);});
     private async void StorageDrop(object sender,DragEventArgs e)=>await RunDashboardActionAsync(async()=>{if(e.Data.GetData(DataFormats.FileDrop) is string[] paths)await Analyze(paths);});
     private async void RefreshItem(object sender,RoutedEventArgs e)=>await RunDashboardActionAsync(async()=>{if(sender is Button{DataContext:StorageRow row})await Analyze(new[]{row.Path});});
     private async void RemoveItem(object sender,RoutedEventArgs e)
     {
-        if(scan!=null||sender is not Button{DataContext:StorageRow row})return;
+        if(IsScanning||refreshing||sender is not Button{DataContext:StorageRow row})return;
+        await FileChangeHub.PublishAsync(new[]{new FileChange(row.Path,true,row.Bytes,row.IsDirectory)},FileChangeKind.HiddenFromDashboard);
+        hiddenDashboardPaths=hiddenDashboardPaths.Append(row.Path).ToArray();
         manual.Remove(row.Path);
         automaticFolders=automaticFolders.Where(r=>r.Path!=row.Path).ToArray();
         automaticFiles=automaticFiles.Where(r=>r.Path!=row.Path).ToArray();
@@ -474,7 +578,8 @@ public partial class DashboardView : UserControl
     }
     private async Task Analyze(IEnumerable<string> paths)
     {
-        if(scan!=null){ScanStatus.Text=L("A scan is already running.","يوجد فحص قيد التنفيذ.");return;}
+        if(refreshing)return;
+        if(IsScanning){ScanStatus.Text=L("A scan is already running.","يوجد فحص قيد التنفيذ.");return;}
         using var source=new CancellationTokenSource();scan=source;int generation=cacheGeneration;
         try
         {

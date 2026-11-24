@@ -64,6 +64,17 @@ public sealed class SpaceFreedService
         }
         Changed?.Invoke();return true;
     });
+    public Task ReloadAsync(CancellationToken token=default)=>Task.Run(async()=>
+    {
+        await gate.WaitAsync(token).ConfigureAwait(false);
+        try
+        {
+            var latest=File.Exists(file)?JsonSerializer.Deserialize<State>(await File.ReadAllTextAsync(file,token).ConfigureAwait(false)):new State(0,new(StringComparer.Ordinal));
+            if(latest is null||latest.Bytes<0||latest.Operations is null)throw new JsonException("Invalid space-freed state");
+            state=latest;Interlocked.Exchange(ref totalBytes,latest.Bytes);unreadable=false;
+        }
+        finally{gate.Release();}
+    },token);
     private async Task<FileStream> AcquireFileLockAsync()
     {
         for(int attempt=0;;attempt++)

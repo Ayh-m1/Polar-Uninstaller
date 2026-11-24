@@ -19,6 +19,8 @@ public static class UninstallVerificationService
     {
         if (!string.IsNullOrWhiteSpace(original.Identifier) && original.Identifier == current.Identifier) return true;
         if (!string.Equals(original.Name, current.Name, StringComparison.OrdinalIgnoreCase)) return false;
+        if(!string.IsNullOrWhiteSpace(original.Publisher)&&!string.IsNullOrWhiteSpace(current.Publisher)&&!string.Equals(original.Publisher,current.Publisher,StringComparison.OrdinalIgnoreCase))return false;
+        if(!string.IsNullOrWhiteSpace(original.Version)&&!string.IsNullOrWhiteSpace(current.Version)&&!string.Equals(original.Version,current.Version,StringComparison.OrdinalIgnoreCase))return false;
         if (string.IsNullOrWhiteSpace(original.Location) || string.IsNullOrWhiteSpace(current.Location))
             return string.Equals(original.Publisher, current.Publisher, StringComparison.OrdinalIgnoreCase);
         return LeftoverService.EqualPath(original.Location, current.Location);

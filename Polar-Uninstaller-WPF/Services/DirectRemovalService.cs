@@ -46,6 +46,14 @@ public sealed class DirectRemovalService
     public static void ValidateRoot(string root)
     {
         root=Path.GetFullPath(root).TrimEnd('\\');
+        BrowserOperationsService.ValidateProtectedVolumeLocation(root);
+        for(string? p=root; p!=null; p=Path.GetDirectoryName(p))
+            if(Directory.Exists(p)&&(File.GetAttributes(p)&FileAttributes.ReparsePoint)!=0)throw new IOException("Removal through a symbolic link or junction is not supported.");
+        if(Directory.Exists(root)&&root.Length>2)
+        {
+            root=BrowserOperationsService.ExpandDeletionPath(root);
+            BrowserOperationsService.ValidateProtectedVolumeLocation(root);
+        }
         bool Within(string child,string parent)=>child.Equals(parent,StringComparison.OrdinalIgnoreCase)||child.StartsWith(parent.TrimEnd('\\')+"\\",StringComparison.OrdinalIgnoreCase);
         var protectedRoots=new[]{Environment.SpecialFolder.Windows,Environment.SpecialFolder.ProgramFiles,Environment.SpecialFolder.ProgramFilesX86,
             Environment.SpecialFolder.CommonProgramFiles,Environment.SpecialFolder.CommonProgramFilesX86,
@@ -58,8 +66,6 @@ public sealed class DirectRemovalService
             throw new IOException("A shared or personal root directory cannot be removed.");
         foreach(var folder in new[]{Environment.SpecialFolder.Windows,Environment.SpecialFolder.CommonProgramFiles,Environment.SpecialFolder.CommonProgramFilesX86})
         {string p=Environment.GetFolderPath(folder);if(p.Length>0&&Within(root,p))throw new IOException("Protected system or shared components cannot be removed directly.");}
-        for(string? p=root;p!=null;p=Path.GetDirectoryName(p))
-            if(Directory.Exists(p)&&(File.GetAttributes(p)&FileAttributes.ReparsePoint)!=0)throw new IOException("Removal through a symbolic link or junction is not supported.");
     }
     public static IReadOnlyList<string> RunningProcesses(string root)
     {
@@ -70,8 +76,9 @@ public sealed class DirectRemovalService
         }
         return result;
     }
-    public Task<DirectRemovalResult> RemoveFilesAsync(InstalledProgram program,IReadOnlyList<InstalledProgram> inventory,IProgress<int>? progress,CancellationToken token=default)=>Task.Run(()=>
+    public Task<DirectRemovalResult> RemoveFilesAsync(InstalledProgram program,IReadOnlyList<InstalledProgram> inventory,IProgress<int>? progress,CancellationToken token=default)=>Task.Run(async()=>
     {
+        await using var changes=new FileChangeCollector();
         token.ThrowIfCancellationRequested();string root=Validate(program,inventory);
         if(RunningProcesses(root).Count>0)throw new IOException("Close the running application before direct removal.");
         int removed=0,skipped=0,foldersRemoved=0;long bytes=0;var messages=new List<string>();
@@ -95,7 +102,7 @@ public sealed class DirectRemovalService
                         {
                             long length=0;
                             try{length=((FileInfo)entry).Length;}catch(Exception ex)when(ex is IOException or UnauthorizedAccessException){ }
-                            File.Delete(entry.FullName);removed++;bytes+=length;
+                            File.Delete(entry.FullName);BrowserOperationsService.VerifyAbsent(entry.FullName);changes.Add(entry.FullName,length);removed++;bytes+=length;
                         }
                     }
                     catch(Exception ex)when(ex is IOException or UnauthorizedAccessException){skipped++;if(messages.Count<100)messages.Add("Skipped: "+entry.FullName);}
@@ -105,7 +112,7 @@ public sealed class DirectRemovalService
             catch(Exception ex)when(ex is IOException or UnauthorizedAccessException){skipped++;if(messages.Count<100)messages.Add("Skipped folder: "+path);}
         }
         foreach(var directory in directories.AsEnumerable().Reverse())
-        {token.ThrowIfCancellationRequested();try{Directory.Delete(directory,false);foldersRemoved++;}catch(Exception ex)when(ex is IOException or UnauthorizedAccessException){skipped++;messages.Add("Skipped folder: "+directory+" ("+RemovalEngine.Reason(ex)+")");}}
+        {token.ThrowIfCancellationRequested();try{Directory.Delete(directory,false);changes.Add(directory,0,true);foldersRemoved++;}catch(Exception ex)when(ex is IOException or UnauthorizedAccessException){skipped++;messages.Add("Skipped folder: "+directory+" ("+RemovalEngine.Reason(ex)+")");}}
         return new DirectRemovalResult(removed,skipped,messages,bytes){FoldersRemoved=foldersRemoved};
     },token);
 }

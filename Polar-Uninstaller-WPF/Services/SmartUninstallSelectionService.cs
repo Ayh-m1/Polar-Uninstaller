@@ -48,8 +48,9 @@ public static class SmartUninstallSelectionService
         }
         catch (Exception e) when (LauncherMetadataDiscovery.ReadFailure(e))
         {
-            return new(UninstallMethod.Unavailable, "Safe removal could not be established. " + e.Message,
-                "تعذر إثبات إمكانية الإزالة الآمنة. " + e.Message);
+            System.Diagnostics.Debug.WriteLine(e);
+            return new(UninstallMethod.Unavailable, "Safe removal could not be established. Refresh the list and check installation access.",
+                "تعذر التحقق من الإزالة الآمنة. حدّث القائمة وتحقق من صلاحيات الوصول إلى التثبيت.");
         }
     }
 

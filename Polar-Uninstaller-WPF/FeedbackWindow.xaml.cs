@@ -15,15 +15,16 @@ public partial class FeedbackWindow : Window
 {
     private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(12) };
     private static readonly Uri Endpoint = new("https://fhismwsluqusboiasxlj.supabase.co/functions/v1/submit-feedback");
+    private readonly HttpClient client;
     private readonly bool arabic;
     private readonly ActivityLogService activity;
     private bool sending;
-    private string L(string en, string ar) => arabic ? ar : en;
+    private string L(string en, string ar) => BidiText.Localize(arabic,en,ar);
 
-    public FeedbackWindow(bool arabic, ActivityLogService activity)
+    public FeedbackWindow(bool arabic, ActivityLogService activity,HttpClient? client=null)
     {
         this.arabic = arabic;
-        this.activity = activity;
+        this.activity = activity;this.client=client??Client;
         InitializeComponent(); VersionLabel.Text="v"+AppInfo.Version;
         FlowDirection = arabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
         Title = L("Feedback & Reports", "الملاحظات والبلاغات");
@@ -54,7 +55,7 @@ public partial class FeedbackWindow : Window
         activity.Write("INFO", "Feedback submission started.");
         try
         {
-            using var response = await Client.PostAsJsonAsync(Endpoint, new { category, message, app_version = AppInfo.Version });
+            using var response = await client.PostAsJsonAsync(Endpoint, new { category, message, app_version = AppInfo.Version });
             if (!response.IsSuccessStatusCode)
             {
                 Status.Text = response.StatusCode == HttpStatusCode.TooManyRequests ? L("Too many requests. Please try again later.", "طلبات كثيرة؛ حاول مجددًا لاحقًا.") : L("The feedback service could not accept the message. Please try again.", "تعذر على خدمة الملاحظات قبول الرسالة. حاول مرة أخرى.");

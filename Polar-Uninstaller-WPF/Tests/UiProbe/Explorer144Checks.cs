@@ -28,7 +28,7 @@ internal static class Explorer144Checks
         var xml=System.Xml.Linq.XDocument.Load(Path.Combine(project,"App.xaml"));
         System.Xml.Linq.XNamespace ns="http://schemas.microsoft.com/winfx/2006/xaml/presentation";
         var dictionary=new System.Xml.Linq.XElement(ns+"ResourceDictionary",new System.Xml.Linq.XAttribute(System.Xml.Linq.XNamespace.Xmlns+"x","http://schemas.microsoft.com/winfx/2006/xaml"),xml.Root!.Element(ns+"Application.Resources")!.Elements());
-        app.Resources=(ResourceDictionary)System.Windows.Markup.XamlReader.Parse(dictionary.ToString());
+        app.Resources=(ResourceDictionary)System.Windows.Markup.XamlReader.Parse(dictionary.ToString().Replace("clr-namespace:PolarUninstallerWpf\"","clr-namespace:PolarUninstallerWpf;assembly=PolarUninstaller\""));
         string root=Path.Combine(project,"Build","Validation","Explorer144-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         var ctor=typeof(MainWindow).GetConstructor(BindingFlags.NonPublic|BindingFlags.Instance,null,new[]{typeof(SettingsService),typeof(ActivityMetricsService)},null)!;
         var window=(MainWindow)ctor.Invoke(new object[]{new SettingsService(root),new ActivityMetricsService(root)});
@@ -67,7 +67,7 @@ internal static class Explorer144Checks
             var danger=actions.Children.OfType<Button>().Single(b=>Grid.GetColumn(b)==3);
             Check(danger.Style==browser.Resources["ExplorerDangerButton"]&&actions.Children.OfType<Button>().Single(b=>Grid.GetColumn(b)==1).Style==browser.Resources["ExplorerPrimaryButton"],"Recycle primary; permanent red at opposite end "+rtl);
             Check(files.ContextMenu.Items.OfType<MenuItem>().Count()==6&&files.ContextMenu.Items.OfType<MenuItem>().All(i=>i.Icon!=null&&i.IsEnabled),"Six multi-selection context commands including Recycle "+rtl);
-            Check(Get<TextBlock>("Status").Inlines.OfType<Run>().Any(r=>r.FlowDirection==FlowDirection.LeftToRight&&r.Text.Contains("KB")),"Status size is an LTR inline inside either reading direction "+rtl);
+            Check(Get<SelectableText>("Status").Inlines.OfType<Run>().Any(r=>r.FlowDirection==FlowDirection.LeftToRight&&r.Text.Contains("KB")),"Status size is an LTR inline inside either reading direction "+rtl);
             var entry=files.Items.Cast<BrowserEntry>().Single(e=>e.IsDirectory);files.SelectedItem=entry;files.UnselectAll();files.SelectedItem=entry;
             Check(Get<TextBox>("DetailsPath").IsReadOnly&&Get<TextBox>("DetailsPath").Text==entry.FullPath&&Get<Button>("DetailsCopy").IsEnabled,"Selectable full path and enabled copy action "+rtl);
             var task=(Task)Invoke(browser,"CalculateSize")!;
@@ -77,7 +77,7 @@ internal static class Explorer144Checks
             var cancelled=(Task)Invoke(browser,"CalculateSize")!;
             Invoke(browser,"DetailsCalculateSize",Get<Button>("DetailsSize"),new RoutedEventArgs());Wait(cancelled);
             Check(Get<ProgressBar>("DetailsProgress").Visibility==Visibility.Collapsed&&!(bool)Field(browser,"manualSizing")!,"Cancel calculation stops progress without stale busy state "+rtl);
-            Check(Get<TextBlock>("DetailsText").Inlines.OfType<Run>().Count(r=>r.FlowDirection==FlowDirection.LeftToRight)>=3,"Details sizes and dates use LTR runs "+rtl);
+            Check(Get<SelectableText>("DetailsText").Inlines.OfType<Run>().Count(r=>r.FlowDirection==FlowDirection.LeftToRight)>=3,"Details sizes and dates use LTR runs "+rtl);
             var grid=(GridView)files.View;
             Check(new[]{grid.Columns[2],grid.Columns[4]}.All(c=>((FrameworkElement)c.CellTemplate.LoadContent()).FlowDirection==FlowDirection.LeftToRight),"Size/date cells isolate RTL values "+rtl);
             var typeHeader=(GridViewColumnHeader)grid.Columns[3].Header;
@@ -104,7 +104,7 @@ internal static class Explorer144Checks
             double text=L(pair.Value.Text),background=L(pair.Value.Card);double ratio=(Math.Max(text,background)+.05)/(Math.Min(text,background)+.05);
             Check(ratio>=4.5,"Primary detail/header/status text exceeds AA on "+pair.Key);
         }
-        Check(AppInfo.Version=="1.0.144","Version unchanged");
+        Check(AppInfo.Version=="1.0.150","Version is v1.0.150");
         Console.WriteLine($"{count} checks, {failures} failures. Fixtures only; no deletion, installation or personal files touched. Renders: {root}");
         return failures==0?0:1;
     }

@@ -10,7 +10,7 @@ public sealed class LeftoverReviewWindow:Window
     public IReadOnlyList<LeftoverChoice> Selected=>choices.Where(c=>c.Check.IsChecked==true).Select(c=>c.Choice).ToArray();
     public LeftoverReviewWindow(bool arabic,IReadOnlyList<LeftoverChoice> items)
     {
-        string L(string en,string ar)=>arabic?ar:en;
+        string L(string en,string ar)=> BidiText.Localize(arabic,en,ar);
         Title=L("Review application leftovers","مراجعة بقايا البرنامج");Width=760;Height=520;MinWidth=500;MinHeight=340;WindowStartupLocation=WindowStartupLocation.CenterOwner;
         FlowDirection=arabic?FlowDirection.RightToLeft:FlowDirection.LeftToRight;
         SetResourceReference(BackgroundProperty,"ChromeBackground");SetResourceReference(ForegroundProperty,"ChromeText");SetResourceReference(FontFamilyProperty,"InterfaceFont");

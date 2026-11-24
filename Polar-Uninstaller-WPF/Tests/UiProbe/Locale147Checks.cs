@@ -14,7 +14,7 @@ internal static partial class Parts146Checks
     internal static int RunLocale147()
     {
         Setup("Locale147");
-        static string Rendered(TextBlock block)=>string.Concat(block.Inlines.OfType<Run>().Select(run=>run.Text));
+        static string Rendered(SelectableText block)=>string.Concat(block.Inlines.OfType<Run>().Select(run=>run.Text));
         var scope=Path.Combine(root,"تجربة scan");
         Directory.CreateDirectory(scope);
         for(int i=0;i<250;i++) File.WriteAllBytes(Path.Combine(scope,$"{i}.bin"),[1,2,3]);
@@ -33,18 +33,18 @@ internal static partial class Parts146Checks
             ((ComboBox)main.FindName("ThemePicker")).SelectedIndex=i;
             Check(ReferenceEquals(host.Content,dashboard)&&session.Phase==DashboardScanPhase.Running,"Language and theme keep the active Dashboard and scan");
         }
-        var status=(TextBlock)dashboard.FindName("ScanStatus");
+        var status=(SelectableText)dashboard.FindName("ScanStatus");
         Check(Rendered(status).Contains("جارٍ")&&status.Inlines.OfType<Run>().Any(r=>r.FlowDirection==FlowDirection.LeftToRight&&r.Text==scope),"Arabic progress keeps the full test path in one LTR run");
 
         dashboard.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
         var replacement=new DashboardView(true,log,scanSession:session);
         host.Content=replacement;
         replacement.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
-        Check(Rendered((TextBlock)replacement.FindName("ScanStatus")).Contains(scope),"Replacement Dashboard attaches to the existing scan");
+        Check(Rendered((SelectableText)replacement.FindName("ScanStatus")).Contains(scope),"Replacement Dashboard attaches to the existing scan");
         Wait(running);
         Pump();
         Check(session.Snapshot is {FilesScanned:250,TotalBytes:750},"Original scan completes with the correct fixture result");
-        Check(Rendered((TextBlock)replacement.FindName("ScanStatus")).Contains("250"),"Replacement Dashboard receives final result");
+        Check(Rendered((SelectableText)replacement.FindName("ScanStatus")).Contains("250"),"Replacement Dashboard receives final result");
         Check(log.Entries.Count(e=>e.Message.StartsWith("Dashboard storage scan started:"))==1&&
               log.Entries.Count(e=>e.Message.StartsWith("Dashboard storage scan completed."))==1,"One start and one completion without duplicate work");
 
@@ -81,7 +81,7 @@ internal static partial class Parts146Checks
             ((ComboBox)main.FindName("ThemePicker")).SelectedIndex=i;
         }
         Check(ReferenceEquals(host.Content,deep)&&!inventoryTask.IsCompleted,"The active Deep inventory view stays attached");
-        Check(Rendered((TextBlock)deep.FindName("Status")).Contains("جارٍ الفحص"),"Deep inventory status immediately translates");
+        Check(((TextBlock)deep.FindName("Status")).Text.Contains("جارٍ الفحص"),"Deep inventory status immediately translates");
         // An empty mock is classified as incomplete and cannot write an invented inventory baseline.
         inventoryGate.SetResult([]);
         Wait(inventoryTask);

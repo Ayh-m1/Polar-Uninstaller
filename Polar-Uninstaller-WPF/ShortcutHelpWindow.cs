@@ -10,14 +10,17 @@ public sealed class ShortcutHelpWindow:Window
     public Button CloseButton {get;}
     public IReadOnlyList<ShortcutHelpEntry> Entries {get;}
     public ShortcutHelpWindow(bool arabic,bool duplicate,Style buttonStyle,Style focusStyle)
+        : this(arabic,ExplorerShortcuts.Help(duplicate),BrowserText.Get("HelpScope",arabic),buttonStyle,focusStyle) { }
+
+    public ShortcutHelpWindow(bool arabic,IReadOnlyList<ShortcutHelpEntry> entries,string scope,Style buttonStyle,Style focusStyle)
     {
         string T(string key)=>BrowserText.Get(key,arabic);
         Title=T("HelpTitle");Width=Math.Min(760,SystemParameters.WorkArea.Width-40);MinWidth=Math.Min(460,Width);MaxHeight=Math.Min(760,Math.Max(300,SystemParameters.WorkArea.Height-80));SizeToContent=SizeToContent.Height;
         WindowStartupLocation=WindowStartupLocation.CenterOwner;FlowDirection=arabic?FlowDirection.RightToLeft:FlowDirection.LeftToRight;
         SetResourceReference(BackgroundProperty,"ChromeBackground");SetResourceReference(ForegroundProperty,"HomeTextBrush");SetResourceReference(FontFamilyProperty,"InterfaceFont");
         var root=new Grid{Margin=new Thickness(20),FlowDirection=FlowDirection};root.SetResourceReference(System.Windows.Documents.TextElement.ForegroundProperty,"HomeTextBrush");root.SetResourceReference(System.Windows.Documents.TextElement.FontFamilyProperty,"InterfaceFont");root.RowDefinitions.Add(new(){Height=GridLength.Auto});root.RowDefinitions.Add(new(){Height=new GridLength(1,GridUnitType.Star)});root.RowDefinitions.Add(new(){Height=GridLength.Auto});KeyboardNavigation.SetTabNavigation(root,KeyboardNavigationMode.Cycle);
-        var heading=new StackPanel();heading.Children.Add(new TextBlock{Text=Title,FontSize=21,FontWeight=FontWeights.SemiBold});heading.Children.Add(new TextBlock{Text=T("HelpScope"),TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,7,0,12)});root.Children.Add(heading);
-        var list=new StackPanel();Entries=ExplorerShortcuts.Help(duplicate);
+        var heading=new StackPanel();heading.Children.Add(new TextBlock{Text=Title,FontSize=21,FontWeight=FontWeights.SemiBold});heading.Children.Add(new TextBlock{Text=scope,TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,7,0,12)});root.Children.Add(heading);
+        var list=new StackPanel();Entries=entries;
         foreach(var group in Entries.GroupBy(entry=>entry.Group))
         {
             var title=new TextBlock{Text=T(group.Key),FontWeight=FontWeights.SemiBold,FontSize=15,Margin=new Thickness(0,12,0,6)};title.SetResourceReference(TextBlock.ForegroundProperty,"ChromeAccent");list.Children.Add(title);

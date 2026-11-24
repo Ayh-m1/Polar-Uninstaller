@@ -2,6 +2,7 @@
 **/bin/
 **/obj/
 **/.vs/
+*_wpftmp.csproj
 **/.dotnet/
 **/.nuget/packages/
 **/publish/

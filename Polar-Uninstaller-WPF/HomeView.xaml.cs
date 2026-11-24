@@ -8,6 +8,7 @@ public partial class HomeView : UserControl
 {
     private readonly bool arabic;
     private readonly ApplicationInventoryService inventory;
+    private bool hasVerifiedCount;
     public event Action<string>? NavigationRequested;
 
     public HomeView(bool arabic, ApplicationInventoryService inventory)
@@ -16,7 +17,7 @@ public partial class HomeView : UserControl
         this.arabic = arabic;
         this.inventory = inventory;
         FlowDirection = arabic ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
-        VersionText.Text = "v"+AppInfo.Version;
+        LocalizedPresentation.SetLeftToRight(VersionText,"v"+AppInfo.Version,arabic);
         Heading.Text = arabic ? "اختر قسماً للبدء" : "Choose a section to start";
         Subtitle.Text = arabic ? "افحص البرامج وأزلها ونظّف ما تتركه خلفها." : "Scan, remove and clean up everything an app leaves behind.";
         Count.Text = "…";
@@ -37,8 +38,8 @@ public partial class HomeView : UserControl
     {
         inventory.Changed -= InventoryChanged;
         inventory.Changed += InventoryChanged;
-        if (inventory.Current is { } cached) Apply(cached);
-        else
+        if (inventory.Current is { IsComplete: true } cached) Apply(cached);
+        else if (!hasVerifiedCount)
         {
             Count.Text = "…";
             CountCaption.Text = arabic ? "جارٍ الفحص…" : "scanning…";
@@ -49,11 +50,10 @@ public partial class HomeView : UserControl
             var snapshot = await inventory.RefreshAsync();
             if (inventory.IsCurrent(snapshot)) Apply(snapshot);
         }
-        catch (Exception)
+        catch (Exception error)
         {
-            if (!IsLoaded) return;
-            Count.Text = "—";
-            CountCaption.Text = arabic ? "تعذر الفحص" : "Scan unavailable";
+            CrashDiagnostics.Record("Home inventory", error);
+            if (IsLoaded && !hasVerifiedCount) ShowUnavailable();
         }
     }
 
@@ -61,22 +61,32 @@ public partial class HomeView : UserControl
 
     private void InventoryChanged(ApplicationInventory snapshot)
     {
-        if (!IsLoaded) return;
         if (!Dispatcher.CheckAccess())
         {
-            _ = Dispatcher.InvokeAsync(() => Apply(snapshot));
+            _ = Dispatcher.InvokeAsync(() => InventoryChanged(snapshot));
             return;
         }
-        Apply(snapshot);
+        if (IsLoaded && ReferenceEquals(inventory.Current, snapshot)) Apply(snapshot);
     }
 
     private void Apply(ApplicationInventory snapshot)
     {
         if (!IsLoaded) return;
-        Count.Text = snapshot.IsComplete ? snapshot.Count.ToString() : "…";
-        CountCaption.Text = snapshot.IsComplete
-            ? (arabic ? "برامج مسجلة" : "programs found")
-            : (arabic ? "جارٍ الفحص…" : "scanning…");
+        if (!snapshot.IsComplete)
+        {
+            if (!hasVerifiedCount) ShowUnavailable();
+            return;
+        }
+
+        hasVerifiedCount = true;
+        Count.Text = DisplayFormat.Number(snapshot.Count);
+        CountCaption.Text = arabic ? "برامج مسجلة" : "programs found";
+    }
+
+    private void ShowUnavailable()
+    {
+        Count.Text = "—";
+        CountCaption.Text = arabic ? "تعذر الفحص" : "Scan unavailable";
     }
 
     private void Navigate(object sender, RoutedEventArgs e)

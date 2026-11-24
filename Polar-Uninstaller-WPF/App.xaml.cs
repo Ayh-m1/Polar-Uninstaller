@@ -9,21 +9,20 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
-        base.OnStartup(e);
-        if (e.Args.Contains("--polar-icon-worker", StringComparer.Ordinal))
+        AppSafety.Install(this,e.Args.Contains("--polar-icon-worker")||UpdateInstallerService.IsApplyUpdateMode(e.Args));
+        using var startupTiming=PerformanceTrace.Measure("startup");
+        // Must remain the very first startup branch: the isolated icon worker runs
+        // headless and no window, inventory scan or update helper may be created.
+        if(e.Args.Contains("--polar-icon-worker"))
         {
-            ShutdownMode = ShutdownMode.OnExplicitShutdown;
-            IconWorkerPool.RunConsoleWorker();
+            ShutdownMode=ShutdownMode.OnExplicitShutdown;
+            try { IconWorkerPool.RunConsoleWorker(); }
+            catch (Exception error) { CrashDiagnostics.Record("Icon worker console",error);try{Console.Error.WriteLine(error.GetType().Name+": "+error.Message);}catch{}Shutdown(1);return;}
             Shutdown();
             return;
         }
-        Exit += (_, _) => IconWorkerPool.StopAll();
-        DispatcherUnhandledException+=(_,args)=>CrashDiagnostics.Record("Unhandled UI exception",args.Exception);
-        AppDomain.CurrentDomain.UnhandledException+=(_,args)=>
-        {
-            if(args.ExceptionObject is Exception error)CrashDiagnostics.Record("Unhandled process exception",error);
-        };
-        TaskScheduler.UnobservedTaskException+=(_,args)=>CrashDiagnostics.Record("Unobserved background task",args.Exception);
+        base.OnStartup(e);
+        Exit+=(_,_)=>IconWorkerPool.StopAll();
 
         if (UpdateInstallerService.IsApplyUpdateMode(e.Args))
         {
@@ -51,6 +50,8 @@ public partial class App : Application
         try { UpdateDownloadService.CleanupStaleDownloads(); }
         catch (Exception error) { WpfUpdateService.Log("Stale download cleanup failed: " + error.Message); }
 
+        if(!SingleInstance.Acquire()){SingleInstance.ActivateExisting();Shutdown();return;}
+        Exit+=(_,_)=>SingleInstance.Release();
         var window = new MainWindow();
 #if LAUNCHER_REMOVAL_TRIAL
         window.Title="Polar Uninstaller — Launcher Removal Trial (Steam unchanged)";
@@ -59,6 +60,6 @@ public partial class App : Application
 #endif
         MainWindow = window;
         window.Show();
-        WindowsShellIconService.RefreshInstalledIcons();
+        _=SafeTasks.Run(()=>Task.Run(WindowsShellIconService.RefreshInstalledIcons),"Refresh Windows icons");
     }
 }

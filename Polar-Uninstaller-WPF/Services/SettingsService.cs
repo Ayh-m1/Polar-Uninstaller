@@ -14,13 +14,15 @@ public sealed record AppSettings(
     string? FileBrowserSortDirection = null,
     string? DuplicateSort = null,
     bool DuplicateSortAscending = false,
-    bool SelectionTipDismissed = false);
+    bool SelectionTipDismissed = false,
+    bool ShowHiddenItems = false);
 
 public sealed class SettingsService
 {
     public string? LoadError { get; private set; }
     private readonly string[] paths;
     private string? activePath;
+    private volatile AppSettings? memory;private readonly object persistence=new();private long generation;private Task lastSave=Task.CompletedTask;
 
     public SettingsService(string? isolatedDirectory = null)
     {
@@ -35,27 +37,29 @@ public sealed class SettingsService
 
     public AppSettings Load()
     {
-        foreach (var candidate in paths)
+        if(memory is {} cached)return cached;
+        foreach (var candidate in paths.SelectMany(p=>new[]{p,p+".bak"}))
         {
             try
             {
+                if(new FileInfo(candidate).Length>1024*1024)throw new InvalidDataException("Settings file exceeds the supported size.");
                 string raw=File.ReadAllText(candidate);
                 var settings=JsonSerializer.Deserialize<AppSettings>(raw);
                 if(settings is null)continue;
-                activePath=candidate;LoadError=null;
+                activePath=candidate.EndsWith(".bak",StringComparison.OrdinalIgnoreCase)?candidate[..^4]:candidate;LoadError=candidate.EndsWith(".bak",StringComparison.OrdinalIgnoreCase)?"Recovered settings from backup.":null;
                 var normalized=settings with{Theme=ThemeCatalog.Resolve(settings.Theme)};
                 if(ThemeCatalog.IsLegacyDefault(settings.Theme))
                 {
                     try {MigrateThemeName(candidate,raw,normalized.Theme);}
                     catch(Exception error)when(error is IOException or UnauthorizedAccessException or System.Security.SecurityException){LoadError="Theme preference migration could not be saved: "+error.Message;}
                 }
-                return normalized;
+                memory=normalized;return normalized;
             }
             catch (FileNotFoundException) { }
             catch (DirectoryNotFoundException) { }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or System.Security.SecurityException) { LoadError = error.Message; }
         }
-        return new();
+        return memory=new();
     }
 
     private static void MigrateThemeName(string path,string captured,string theme)
@@ -69,7 +73,14 @@ public sealed class SettingsService
         finally {if(File.Exists(temporary))File.Delete(temporary);}
     }
 
-    public void Save(AppSettings settings)
+    public void Save(AppSettings settings){memory=settings with{Theme=ThemeCatalog.Resolve(settings.Theme)};Interlocked.Increment(ref generation);lock(persistence)Persist(memory);}
+    public Task SaveAsync(AppSettings settings)
+    {
+        var captured=memory=settings with{Theme=ThemeCatalog.Resolve(settings.Theme)};long version=Interlocked.Increment(ref generation);
+        return lastSave=Task.Run(()=>{lock(persistence){if(version==Interlocked.Read(ref generation))Persist(captured);}});
+    }
+    public Task FlushAsync()=>lastSave;
+    private void Persist(AppSettings settings)
     {
         settings=settings with{Theme=ThemeCatalog.Resolve(settings.Theme)};
         Exception? lastError = null;
@@ -79,9 +90,7 @@ public sealed class SettingsService
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(candidate)!);
-                var temporary = candidate + "." + Guid.NewGuid().ToString("N") + ".tmp";
-                File.WriteAllText(temporary, JsonSerializer.Serialize(settings));
-                File.Move(temporary, candidate, true);
+                AtomicStateFile.Write(candidate,JsonSerializer.Serialize(settings),LoadError==null);
                 activePath = candidate;
                 return;
             }

@@ -183,11 +183,6 @@ public static class UpdateInstallerService
             if (installed) SetInstalledVersion(targetDirectory, versionRaw);
             WriteMarker(target, backup, versionRaw);
 
-            // The EXE was replaced in place; make Explorer discard its cached icon
-            // before the new process (which also repairs shortcuts) starts.
-            try { WindowsShellIconService.NotifyIconCacheChanged(); }
-            catch { }
-
             if (noRestart)
             {
                 WpfUpdateService.Log("Update applied without restart (test mode).");
@@ -472,6 +467,7 @@ public static class UpdateInstallerService
                 string normalized = Path.GetFullPath(Environment.ExpandEnvironmentVariables(location.Trim().Trim('"')));
                 if (!PathEquals(normalized, installLocation)) continue;
                 key.SetValue("DisplayVersion", version, RegistryValueKind.String);
+
                 WpfUpdateService.Log($"Installed DisplayVersion updated to {version}.");
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or System.Security.SecurityException) { }

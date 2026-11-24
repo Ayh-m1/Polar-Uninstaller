@@ -105,6 +105,7 @@ public partial class DuplicateFilesView
         SelectionSummary.Text=T("DupSelected",rows.Count(row=>row.Selected))+" · ";
         SelectionSummary.Inlines.Add(new Run(DisplayFormat.Size(rows.Where(row=>row.Selected).Sum(row=>row.Bytes),false)){FlowDirection=FlowDirection.LeftToRight});
         SelectionSummary.Inlines.Add(" "+T("DupWillFree"));
+        FitDuplicateHint();
     }
     private void ClearSelection(object sender,RoutedEventArgs e)=>ApplySmartSelection("clear");
     private void SmartSelectMenu(object sender,RoutedEventArgs e)
@@ -162,7 +163,9 @@ public partial class DuplicateFilesView
     }
     private void ResultsKeyDown(object sender,KeyEventArgs e)
     {
-        if(IsBusy||Keyboard.FocusedElement is not ListBoxItem{DataContext:DuplicateGroupCard card})return;
+        if(IsBusy)return;
+        if(e.Key==Key.Space&&Keyboard.FocusedElement is ListBoxItem{DataContext:DuplicateRow row}){row.Selected=!row.Selected;e.Handled=true;return;}
+        if(Keyboard.FocusedElement is not ListBoxItem{DataContext:DuplicateGroupCard card})return;
         if(e.Key==Key.Enter){card.Expanded=!card.Expanded;e.Handled=true;}
         else if(e.Key==Key.Space){card.Selected=card.Selected!=true;e.Handled=true;}
     }

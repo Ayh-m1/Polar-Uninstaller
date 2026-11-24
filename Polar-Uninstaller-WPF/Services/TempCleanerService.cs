@@ -94,6 +94,9 @@ public sealed class TempCleanerService
         long bytes = 0;
         var clock = System.Diagnostics.Stopwatch.StartNew();
 
+        var changes=new List<FileChange>();
+        try
+        {
         // Delete files first, deepest independent operations first.
         foreach (var (path, size) in files)
         {
@@ -105,7 +108,7 @@ public sealed class TempCleanerService
                 if (delete)
                 {
                     if ((file.Attributes & FileAttributes.ReadOnly) != 0) file.Attributes &= ~FileAttributes.ReadOnly;
-                    file.Delete();
+                    file.Delete();BrowserOperationsService.VerifyAbsent(path);changes.Add(new(path,true,size));
                 }
                 deletedFiles++;
                 bytes += size;
@@ -127,7 +130,7 @@ public sealed class TempCleanerService
             {
                 if (!Directory.Exists(directory)) continue;
                 if (Directory.EnumerateFileSystemEntries(directory).Any()) continue;
-                if (delete) Directory.Delete(directory, false);
+                if (delete){Directory.Delete(directory, false);BrowserOperationsService.VerifyAbsent(directory);changes.Add(new(directory,true,0,true));}
                 deletedDirectories++;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
@@ -136,6 +139,8 @@ public sealed class TempCleanerService
             }
         }
 
+        }
+        finally{if(delete&&changes.Count>0)FileChangeHub.PublishAsync(changes).GetAwaiter().GetResult();}
         return new Result(deletedFiles, bytes, skipped, deletedDirectories);
     }, token);
 }

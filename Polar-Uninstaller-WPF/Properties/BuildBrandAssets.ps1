@@ -26,7 +26,7 @@ for($y=0;$y -lt $h;$y++){for($x=0;$x -lt $w;$x++){
 $glyph=[Windows.Media.Imaging.CroppedBitmap]::new($art,[Windows.Int32Rect]::new($left,$top,$right-$left+1,$bottom-$top+1))
 $background=[Windows.Media.LinearGradientBrush]::new([Windows.Media.ColorConverter]::ConvertFromString('#364555'),[Windows.Media.ColorConverter]::ConvertFromString('#1A232C'),45)
 $payloads=@()
-foreach($size in @(16,24,32,48,64,128,256)) {
+foreach($size in @(16,20,24,30,32,36,40,48,64,128,256)) {
  $visual=[Windows.Media.DrawingVisual]::new();$drawing=$visual.RenderOpen()
  [Windows.Media.RenderOptions]::SetBitmapScalingMode($visual,[Windows.Media.BitmapScalingMode]::HighQuality)
  # Compose once from the original flat letterforms: no enlarged low-resolution

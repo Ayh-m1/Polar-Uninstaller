@@ -30,37 +30,28 @@ public static class DisplayFormat
 
     /// <summary>Wraps a value in a left-to-right isolate so it cannot be reordered by surrounding RTL text.</summary>
     public static string Isolate(string value) => "\u2066" + value + "\u2069";
-    public static string Directional(string value, bool arabic) => arabic ? Isolate(value) : value;
+
+    public static string Directional(string value, bool arabic) => arabic && value.Length > 0 ? Isolate(value) : value;
+    public static string Percent(double value, bool arabic = false) => Directional(Number(value, 0) + "%", arabic);
+    public static string BinarySize(long bytes, bool arabic = false, bool compact = false)
+    {
+        double magnitude = Math.Abs((double)bytes);
+        string[] units = ["B", "KB", "MB", "GB", "TB"];
+        int unit = 0;
+        while (magnitude >= 1024 && unit < units.Length - 1)
+        {
+            magnitude /= 1024;
+            unit++;
+        }
+
+        string format = unit == 0 ? "N0" : compact ? "#,##0.##" : "N1";
+        return Directional((bytes < 0 ? -magnitude : magnitude).ToString(format, NumericCulture) + " " + units[unit], arabic);
+    }
 
     public static string Quantity(long value, string englishUnit, string arabicUnit, bool arabic) =>
         Isolate(Number(value)) + " " + (arabic ? arabicUnit : englishUnit);
 
-    public static string Size(long bytes, bool arabic)
-    {
-        string number;
-        string unit;
-        if (bytes >= 1L << 30)
-        {
-            number = (bytes / (double)(1L << 30)).ToString("#,##0.##", NumericCulture);
-            unit = arabic ? "جيجابايت" : "GB";
-        }
-        else if (bytes >= 1L << 20)
-        {
-            number = (bytes / (double)(1L << 20)).ToString("#,##0.##", NumericCulture);
-            unit = arabic ? "ميجابايت" : "MB";
-        }
-        else if (bytes >= 1L << 10)
-        {
-            number = (bytes / (double)(1L << 10)).ToString("#,##0.##", NumericCulture);
-            unit = arabic ? "كيلوبايت" : "KB";
-        }
-        else
-        {
-            number = Number(bytes);
-            unit = arabic ? "بايت" : "B";
-        }
-        return (arabic ? Isolate(number) : number) + " " + unit;
-    }
+    public static string Size(long bytes, bool arabic) => BinarySize(bytes, arabic, compact: true);
 
     public static string CleanSummary(long bytes, int files, int skipped, bool arabic) =>
         CleanSummary(bytes, files, 0, skipped, arabic);
