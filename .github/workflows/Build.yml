@@ -27,12 +27,12 @@ jobs:
         shell: pwsh
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '9.0.x'
 
@@ -70,7 +70,7 @@ jobs:
         run: ./scripts/Test-PublishedBuild.ps1 -BuildAssembly Polar-Uninstaller-WPF/bin/Release/net9.0-windows/win-x64/PolarUninstaller.dll -RequireSetup
 
       - name: Upload Windows release files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: PolarUninstaller-windows-x64
           path: artifacts/SingleFile/
