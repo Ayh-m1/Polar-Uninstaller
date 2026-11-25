@@ -23,6 +23,7 @@ if (args.Contains("--deletion139")) return await Deletion139Checks.RunAsync();
 if (args.Contains("--shortcut-cleanup")) return await ShortcutCleanupChecks.RunAsync();
 if (args.Contains("--quick152")) return await Quick152Checks.RunAsync();
 if (args.Contains("--large-games152")) return await LargeGame152Checks.RunAsync();
+if (args.Length >= 1 && args[0] == "--steam153") return await Steam153Checks.RunAsync(args.Skip(1).ToArray());
 if (args.Contains("--epic-direct")) return await EpicDirectChecks.RunAsync();
 if(args.Length==2&&args[0]=="--launcher-fixture-uninstall")return LauncherExpansionChecks.RemoveFixture(args[1]);
 if(args.Contains("--launchers"))return await LauncherExpansionChecks.RunAsync();

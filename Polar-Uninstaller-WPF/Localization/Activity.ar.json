@@ -391,6 +391,8 @@
   "The launched official uninstaller process is still running.": "ما زال مزيل التثبيت الرسمي قيد التشغيل.",
   "Steam manifest and installation folder are gone.": "أُزيل سجل Steam ومجلد التثبيت.",
   "Steam manifest removed; the game folder still exists.": "أُزيل سجل Steam؛ ما زال مجلد اللعبة موجودًا.",
+  "Steam installation record and game payload are gone. The remaining auxiliary files were preserved.": "أُزيل سجل التثبيت وملفات اللعبة الأساسية من Steam. احتُفظ بالملفات الإضافية المتبقية.",
+  "Steam removed the installation record, but game files could not be verified as removed. Review the remaining folder or refresh after Steam finishes.": "أزال Steam سجل التثبيت، لكن تعذر التأكد من زوال ملفات اللعبة. راجع المجلد المتبقي أو حدّث القائمة بعد انتهاء Steam.",
   "Epic Games still records this installation.": "ما زال Epic Games يسجل هذا التثبيت.",
   "Epic manifest and installation folder are gone.": "أُزيل سجل Epic ومجلد التثبيت.",
   "Epic manifest removed; the game folder still exists.": "أُزيل سجل Epic؛ ما زال مجلد اللعبة موجودًا.",

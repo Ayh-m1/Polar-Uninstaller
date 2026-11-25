@@ -92,6 +92,31 @@ internal static class EpicDirectChecks
             File.AppendAllText(Path.Combine(changedPlan.Root,"asset.bin"),"changed");bool blocked=false;
             try{await modified.Service.RemoveAsync(changedPlan,new[]{modified.Game},null,CancellationToken.None);}catch(IOException){blocked=true;}
             Check(blocked&&File.Exists(changedPlan.ItemPath)&&File.Exists(changedPlan.LaunchPath),"Modified file aborts before deleting payload or registration");
+            var large = Fixture(Path.Combine(root, "large"), assetBytes: 32 * 1024 * 1024);
+            var largePlan = await large.Service.PrepareAsync(large.Game, [large.Game], CancellationToken.None);
+            bool modificationBlocked = false;
+            var largeProgress = new InlineProgress(message =>
+            {
+                if (message != "Removing: asset.bin") return;
+                try
+                {
+                    using var writer = File.Open(Path.Combine(largePlan.Root, "asset.bin"), FileMode.Open, FileAccess.Write, FileShare.Read);
+                }
+                catch (IOException) { modificationBlocked = true; }
+            });
+            var largeResult = await large.Service.RemoveAsync(largePlan, [large.Game], largeProgress, CancellationToken.None);
+            Check(largeResult.Confirmed && modificationBlocked &&
+                largeResult.Messages.Contains("Epic large files verified without a second content read: 1"),
+                "Large Epic payload is hashed once and rejects writers between verification and removal");
+            var largeChanged = Fixture(Path.Combine(root, "large-changed"), assetBytes: 32 * 1024 * 1024);
+            var largeChangedPlan = await largeChanged.Service.PrepareAsync(largeChanged.Game, [largeChanged.Game], CancellationToken.None);
+            var changedAsset = Path.Combine(largeChangedPlan.Root, "asset.bin");
+            using (var writer = File.OpenWrite(changedAsset)) writer.WriteByte(1);
+            blocked = false;
+            try { await largeChanged.Service.RemoveAsync(largeChangedPlan, [largeChanged.Game], null, CancellationToken.None); }
+            catch (IOException) { blocked = true; }
+            Check(blocked && File.Exists(largeChangedPlan.ItemPath) && File.Exists(largeChangedPlan.LaunchPath) && File.Exists(changedAsset),
+                "A same-size modification to a large file aborts the initial cryptographic verification");
             var locked=Fixture(Path.Combine(root,"locked"));var lockedPlan=await locked.Service.PrepareAsync(locked.Game,new[]{locked.Game},CancellationToken.None);blocked=false;
             using(var hold=new FileStream(Path.Combine(lockedPlan.Root,"asset.bin"),FileMode.Open,FileAccess.ReadWrite,FileShare.None))
             {try{await locked.Service.RemoveAsync(lockedPlan,new[]{locked.Game},null,CancellationToken.None);}catch(IOException){blocked=true;}}
@@ -126,10 +151,15 @@ internal static class EpicDirectChecks
         Console.WriteLine($"{count} focused Epic checks, {failed} failures. Only disposable fixture payloads were deleted; ScourgeBringer was read only.");return failed==0?0:1;
     }
     private sealed record TestInstallation(EpicGameRemovalService Service,InstalledProgram Game,string Index);
-    private static TestInstallation Fixture(string root,bool running=false,string? installationId=null)
+    private sealed class InlineProgress(Action<string> report) : IProgress<string>
+    {
+        public void Report(string value) => report(value);
+    }
+    private static TestInstallation Fixture(string root,bool running=false,string? installationId=null,int assetBytes=0)
     {
         string gameRoot=Path.Combine(root,"Game"),metadata=Path.Combine(gameRoot,".egstore"),records=Path.Combine(root,"Manifests");Directory.CreateDirectory(metadata);Directory.CreateDirectory(records);Directory.CreateDirectory(Path.Combine(gameRoot,"saves"));
         var data=new Dictionary<string,byte[]>{{"Game.exe",Encoding.UTF8.GetBytes("disposable-executable")},{"asset.bin",Encoding.UTF8.GetBytes("disposable-asset")},{@"saves\slot.sav",Encoding.UTF8.GetBytes("test-save")}};
+        if (assetBytes > 0) data["asset.bin"] = new byte[assetBytes];
         foreach(var item in data)File.WriteAllBytes(Path.Combine(gameRoot,item.Key),item.Value);File.WriteAllText(Path.Combine(gameRoot,"personal.txt"),"test-personal");
         string app="fixture-app",catalog="fixture-catalog",guid=installationId??Guid.NewGuid().ToString("N"),itemPath=Path.Combine(records,guid+".item"),index=Path.Combine(root,"LauncherInstalled.dat");
         File.WriteAllBytes(Path.Combine(metadata,guid+".manifest"),Build(app,data));

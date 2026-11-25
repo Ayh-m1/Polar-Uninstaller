@@ -1,20 +1,21 @@
 using System.IO;
-using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Text;
 using Microsoft.Win32;
 
 namespace PolarUninstallerWpf.Services;
 
 /// <summary>
 /// Result of one launcher-specific installation-state probe.
-/// Confirmed is only true when the launcher no longer records the game and
-/// the captured installation folder is gone/empty. Opening a launcher or a
-/// process exit never confirms anything on its own.
+/// Confirmation requires launcher and payload evidence. Steam can confirm
+/// removal with preserved auxiliary files. Launch or process exit alone is insufficient.
 /// </summary>
 public sealed record RemovalProbe(bool Confirmed, bool LauncherRecordPresent, bool InstallationFolderPresent, string Detail, bool MainExecutablePresent = false)
 {
     public bool RetainedSteamAssets { get; init; }
+    internal bool AwaitingSteamPayload { get; init; }
+    internal bool SteamPayloadTimedOut { get; init; }
 }
 
 /// <summary>
@@ -36,7 +37,11 @@ public static class UninstallMonitorService
 
     /// <summary>Waits for the official process, then retries live evidence while registration catches up.</summary>
     public static async Task<RemovalProbe> MonitorAsync(Func<RemovalProbe> probe,
-        Task? officialExit, bool isGame, IProgress<RemovalProbe>? progress, CancellationToken token)
+        Task? officialExit, bool isGame, IProgress<RemovalProbe>? progress, CancellationToken token) =>
+        await MonitorAsync(probe, officialExit, isGame, progress, token, TimeProvider.System).ConfigureAwait(false);
+
+    internal static async Task<RemovalProbe> MonitorAsync(Func<RemovalProbe> probe,
+        Task? officialExit, bool isGame, IProgress<RemovalProbe>? progress, CancellationToken token, TimeProvider clock)
     {
         if (officialExit != null)
         {
@@ -44,7 +49,8 @@ public static class UninstallMonitorService
             await officialExit.WaitAsync(token).ConfigureAwait(false);
         }
 
-        var clock = Stopwatch.StartNew();
+        long start = clock.GetTimestamp();
+        long? steamPayloadStart = null;
         int attempt = 0;
         while (true)
         {
@@ -53,8 +59,21 @@ public static class UninstallMonitorService
             token.ThrowIfCancellationRequested();
             if (result.Confirmed) return result;
             var (window, delay) = PollingPolicy(isGame, officialExit != null, result, attempt++);
-            var remaining = window - clock.Elapsed;
-            if (remaining <= TimeSpan.Zero) return result;
+            var remaining = window - clock.GetElapsedTime(start);
+            if (result.AwaitingSteamPayload)
+            {
+                steamPayloadStart ??= clock.GetTimestamp();
+                var settleRemaining = TimeSpan.FromSeconds(30) - clock.GetElapsedTime(steamPayloadStart.Value);
+                if (settleRemaining < remaining) remaining = settleRemaining;
+            }
+            if (remaining <= TimeSpan.Zero)
+                return result.AwaitingSteamPayload
+                    ? result with
+                    {
+                        SteamPayloadTimedOut = true,
+                        Detail = "Steam removed the installation record, but game files could not be verified as removed. Review the remaining folder or refresh after Steam finishes."
+                    }
+                    : result;
             progress?.Report(result);
             await Task.Delay(delay < remaining ? delay : remaining, token).ConfigureAwait(false);
         }
@@ -125,9 +144,9 @@ public static class UninstallMonitorService
             || SteamRoots(program.Location).Any(root => ManifestPresent(Path.Combine(root, "steamapps", manifestName)));
         bool folder = FolderHasFiles(program.Location);
         if (record) return new(false, true, folder, $"Steam still records App ID {appId}.", executable);
-        if (!executable && folder && OnlyPassiveSteamFilesRemain(program.Location))
-            return new(true, false, true, "Steam manifest removed; only non-executable images or logs remain. These files were preserved.") { RetainedSteamAssets = true };
-        if (folder) return new(false, false, true, "Steam manifest removed; the game folder still exists.", executable);
+        if (!executable && folder && OnlyAuxiliarySteamFilesRemain(program.Location))
+            return new(true, false, true, "Steam installation record and game payload are gone. The remaining auxiliary files were preserved.") { RetainedSteamAssets = true };
+        if (folder) return new(false, false, true, "Steam manifest removed; the game folder still exists.", executable) { AwaitingSteamPayload = true };
         if (executable) return new(false, false, false, "A captured game executable is still present.", true);
         return new(true, false, false, "Steam manifest and installation folder are gone.", false);
     }
@@ -139,7 +158,7 @@ public static class UninstallMonitorService
         catch (DirectoryNotFoundException) { return false; }
     }
 
-    private static bool OnlyPassiveSteamFilesRemain(string location)
+    private static bool OnlyAuxiliarySteamFilesRemain(string location)
     {
         if (!Path.IsPathFullyQualified(location)) return false;
         var root = new DirectoryInfo(location);
@@ -152,16 +171,53 @@ public static class UninstallMonitorService
         var pending = new Stack<DirectoryInfo>();
         pending.Push(root);
         int inspected = 0;
+        long textBytes = 0;
         while (pending.TryPop(out var directory))
         {
+            bool hasScript = false;
+            bool hasOptions = false;
             foreach (var item in directory.EnumerateFileSystemInfos())
             {
                 if (++inspected > 4096 || (item.Attributes & FileAttributes.ReparsePoint) != 0) return false;
                 if (item is DirectoryInfo child) pending.Push(child);
-                else if (item.Extension.ToLowerInvariant() is not (".png" or ".jpg" or ".jpeg" or ".webp" or ".log")) return false;
+                else if (item is FileInfo file)
+                {
+                    var extension = file.Extension.ToLowerInvariant();
+                    if (extension is ".png" or ".jpg" or ".jpeg" or ".webp" or ".log") continue;
+                    bool auxiliaryText = extension is ".ini" or ".cfg" or ".json" or ".txt" or ".xml";
+                    bool nestedTool = directory != root && extension is (".bat" or ".cmd" or "");
+                    bool options = nestedTool && file.Name.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase);
+                    if (!(auxiliaryText || nestedTool) || !IsSmallSteamAuxiliaryFile(file, ref textBytes, options))
+                        return false;
+                    hasScript |= nestedTool && extension.Length > 0;
+                    hasOptions |= options;
+                }
+                else return false;
             }
+            // A small legacy OPTIONS blob next to a retained helper script
+            // is auxiliary data. A standalone opaque file stays unverified.
+            if (hasOptions && !hasScript) return false;
         }
         return inspected > 0 && DirectRemovalService.RunningProcesses(location).Count == 0;
+    }
+
+    private static bool IsSmallSteamAuxiliaryFile(FileInfo file, ref long textBytes, bool options)
+    {
+        const int maxFileBytes = 64 * 1024;
+        const int maxTotalBytes = 256 * 1024;
+        using var stream = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read);
+        if (stream.Length > maxFileBytes || textBytes + stream.Length > maxTotalBytes) return false;
+        var bytes = new byte[(int)stream.Length];
+        stream.ReadExactly(bytes);
+        textBytes += bytes.Length;
+        if (options)
+            return bytes.Length <= 4096 && !bytes.AsSpan().StartsWith("MZ"u8) && !bytes.AsSpan().StartsWith("\u007fELF"u8);
+        try
+        {
+            using var reader = new StreamReader(new MemoryStream(bytes), new UTF8Encoding(false, true));
+            return reader.ReadToEnd().All(c => !char.IsControl(c) || c is '\r' or '\n' or '\t');
+        }
+        catch (DecoderFallbackException) { return false; }
     }
 
     private static IEnumerable<string> SteamRoots(string location)

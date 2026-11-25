@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Microsoft.Win32.SafeHandles;
 
 namespace PolarUninstallerWpf.Services;
 
@@ -17,6 +19,21 @@ public sealed record EpicRemovalResult(bool Confirmed,int Removed,int Preserved,
 /// after all eligible payloads are absent, with exact-byte backups and rechecks.</summary>
 public sealed class EpicGameRemovalService
 {
+    private const long LargeFileBytes = 16L * 1024 * 1024;
+    private const int MaxVerifiedFileHandles = 256;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private readonly record struct FileIdentity(ulong Volume, ulong IdLow, ulong IdHigh);
+
+    [DllImport("kernel32.dll", ExactSpelling = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetFileInformationByHandleEx(
+        SafeFileHandle handle, int infoClass, out FileIdentity identity, uint size);
+
+    private static bool TryGetFileIdentity(FileStream stream, out FileIdentity identity) =>
+        GetFileInformationByHandleEx(stream.SafeFileHandle, 18 /* FileIdInfo */, out identity, 24) &&
+        (identity.IdLow != 0 || identity.IdHigh != 0);
+
     public static bool Enabled=>true;
     private readonly Func<IEnumerable<string>> manifests;
     private readonly Func<IEnumerable<string>> indexes;
@@ -178,6 +195,8 @@ public sealed class EpicGameRemovalService
         CheckMetadata();
         var clock=Stopwatch.StartNew();var phase=Stopwatch.StartNew();
         var leases=new List<FileStream>();
+        var verifiedFiles = new Dictionary<string, (FileStream Stream, FileIdentity Identity)>(StringComparer.OrdinalIgnoreCase);
+        int reusedHashes = 0;
         void ReleaseLeases(){foreach(var stream in leases)stream.Dispose();leases.Clear();}
         try
         {
@@ -186,16 +205,35 @@ public sealed class EpicGameRemovalService
         CheckMetadata();
         // Preflight every installed file before deleting anything. Changed copies
         // are never authority to erase user modifications or invalidate the install.
-        async Task<bool> Original(EpicInstalledFile file)
+        async Task<bool> Original(EpicInstalledFile file, bool keepVerifiedHandle)
         {
-            string path=Path.Combine(plan.Root,file.RelativePath);Physical(path,plan.Root);
+            string path=Path.Combine(plan.Root,file.RelativePath);
+            Physical(path,plan.Root);
+            FileStream? stream = null;
             try
             {
-                await using var stream=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.Read,131072,true);
-                if(stream.Length!=file.Size)return false;
-                return Convert.ToHexString(await SHA1.HashDataAsync(stream,token)).Equals(file.Sha1,StringComparison.OrdinalIgnoreCase);
+                stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 131072,
+                    FileOptions.Asynchronous | FileOptions.SequentialScan);
+                if (stream.Length != file.Size) return false;
+                // A live read-only share denies writers and replacement between passes.
+                // Also match the newly opened path to that handle before trusting its hash.
+                if (verifiedFiles.TryGetValue(path, out var verified) &&
+                    TryGetFileIdentity(stream, out var currentIdentity) && currentIdentity == verified.Identity)
+                {
+                    reusedHashes++;
+                    return true;
+                }
+                if (!Convert.ToHexString(await SHA1.HashDataAsync(stream, token)).Equals(file.Sha1, StringComparison.OrdinalIgnoreCase))
+                    return false;
+                if (keepVerifiedHandle && TryGetFileIdentity(stream, out var identity))
+                {
+                    verifiedFiles.Add(path, (stream, identity));
+                    stream = null;
+                }
+                return true;
             }
             catch(FileNotFoundException){return true;}catch(DirectoryNotFoundException){return true;}
+            finally { stream?.Dispose(); }
         }
         var eligible=(plan.RecordsOnly?Array.Empty<EpicInstalledFile>():plan.Files.Where(f=>!Personal(f.RelativePath))).OrderBy(f=>Same(Path.Combine(plan.Root,f.RelativePath),plan.LaunchPath)?1:0).ToArray();
         var progressClock = Stopwatch.StartNew();
@@ -206,7 +244,13 @@ public sealed class EpicGameRemovalService
             progressClock.Restart();
         }
         if (eligible.Length > 0) progress?.Report("Verifying: "+eligible[0].RelativePath);
-        foreach(var file in eligible){token.ThrowIfCancellationRequested();Report("Verifying: ",file.RelativePath);if(!await Original(file))throw new IOException("A game file was modified; it was preserved: "+file.RelativePath);}
+        foreach (var file in eligible)
+        {
+            token.ThrowIfCancellationRequested();
+            Report("Verifying: ",file.RelativePath);
+            bool keepHandle = file.Size >= LargeFileBytes && verifiedFiles.Count < MaxVerifiedFileHandles;
+            if (!await Original(file, keepHandle)) throw new IOException("A game file was modified; it was preserved: "+file.RelativePath);
+        }
         messages.Add("Epic content preflight: "+phase.ElapsedMilliseconds+" ms");phase.Restart();
         string backup=Path.Combine(backupRoot,DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")+"-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(backup);
         File.WriteAllBytes(Path.Combine(backup,"Epic.item"),plan.ItemBytes);File.WriteAllBytes(Path.Combine(backup,"Build.manifest"),plan.BuildBytes);
@@ -217,12 +261,14 @@ public sealed class EpicGameRemovalService
         foreach(var file in eligible)
         {
             token.ThrowIfCancellationRequested();Idle(false);string path=Path.Combine(plan.Root,file.RelativePath);Physical(path,plan.Root);
-            if(!await Original(file))throw new IOException("Game file changed during removal; remaining files and metadata were preserved: "+file.RelativePath);
+            if(!await Original(file, false))throw new IOException("Game file changed during removal; remaining files and metadata were preserved: "+file.RelativePath);
+            if (verifiedFiles.Remove(path, out var verified)) verified.Stream.Dispose();
             try{File.GetAttributes(path);}catch(FileNotFoundException){continue;}catch(DirectoryNotFoundException){continue;}
             File.Delete(path);BrowserOperationsService.VerifyAbsent(path);changes.Add(path,file.Size);removed++;Report("Removed: ",file.RelativePath);
         }
         token.ThrowIfCancellationRequested();Idle();CheckMetadata();
         messages.Add("Epic payload removal: "+phase.ElapsedMilliseconds+" ms");ReleaseLeases();
+        messages.Add("Epic large files verified without a second content read: " + reusedHashes);
         if(File.Exists(plan.LaunchPath)||eligible.Any(f=>File.Exists(Path.Combine(plan.Root,f.RelativePath))))
             return new(false,removed,preserved,backup,new[]{"Some game payloads remain. Epic installation records were retained."});
         // Commit only captured records for this exact AppName/root. Preserve all
@@ -279,6 +325,10 @@ public sealed class EpicGameRemovalService
         messages.Add("Epic total removal: "+clock.ElapsedMilliseconds+" ms; full process scans limited to stage boundaries.");
         return new EpicRemovalResult(confirmed,removed,preserved,backup,messages);
         }
-        finally{ReleaseLeases();}
+        finally
+        {
+            foreach (var verified in verifiedFiles.Values) verified.Stream.Dispose();
+            ReleaseLeases();
+        }
     },token);
 }

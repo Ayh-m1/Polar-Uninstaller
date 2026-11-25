@@ -1,5 +1,18 @@
 [
   {
+    "version": "1.0.153",
+    "en": [
+      "Fixes: Deep Uninstaller finishes Steam removal when the installation record and game payload are gone and only recognized auxiliary files remain. Those files are preserved and the stale game entry is removed.",
+      "Fixes: If Steam removes the installation record but Polar cannot confirm that the game payload is gone, monitoring ends with a manual follow-up result. In a batch, the next selected game can proceed.",
+      "Improvements: Game removal skips the history-only folder size scan. Direct Epic removal avoids rereading large files when Windows can verify the same file remained protected from writes."
+    ],
+    "ar": [
+      "إصلاحات: تكتمل إزالة لعبة Steam عند زوال سجل التثبيت وملفات اللعبة الأساسية وبقاء ملفات إضافية معروفة فقط. يحتفظ Polar بهذه الملفات ويزيل الإدخال القديم من القائمة.",
+      "إصلاحات: إذا أزال Steam سجل التثبيت وتعذر التحقق من زوال ملفات اللعبة، تنتهي المراقبة وتظهر الحاجة إلى مراجعة يدوية. وعند إزالة عدة ألعاب تنتقل الدفعة إلى اللعبة التالية.",
+      "تحسينات: تبدأ إزالة الألعاب دون انتظار فحص حجم المجلد المخصص للسجل. وتتجنب إزالة Epic المباشرة قراءة الملفات الكبيرة مرة أخرى عندما يستطيع Windows التأكد من بقاء الملف نفسه محميًا من الكتابة."
+    ]
+  },
+  {
     "version": "1.0.152",
     "en": [
       "Fixes: Deep Uninstall checks both Windows Start Menu Programs folders and both desktops for verified leftover shortcuts, including MSI shortcuts matched by product code.",

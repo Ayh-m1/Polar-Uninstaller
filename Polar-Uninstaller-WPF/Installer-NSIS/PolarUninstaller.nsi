@@ -4,7 +4,7 @@
 ; The defaults match the current source version.
 
 !ifndef VERSION
-!define VERSION "1.0.152"
+!define VERSION "1.0.153"
 !endif
 !ifndef OUTFILE
 !define OUTFILE "PolarUninstaller-Setup-v${VERSION}.exe"

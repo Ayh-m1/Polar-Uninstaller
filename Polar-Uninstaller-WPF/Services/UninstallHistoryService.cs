@@ -123,14 +123,17 @@ public sealed class UninstallHistoryService
         InstalledProgram program,
         string? operationId = null,
         bool includeIcon = true,
-        CancellationToken token = default)
+        CancellationToken token = default,
+        bool measureFolder = true)
     {
         string id = string.IsNullOrWhiteSpace(operationId) ? Guid.NewGuid().ToString("N") : operationId;
         long? size = null;
         string iconFile = "";
         try
         {
-            var sizeTask = TryMeasureSizeAsync(program, token);
+            var sizeTask = measureFolder
+                ? TryMeasureSizeAsync(program, token)
+                : Task.FromResult<long?>(ReportedSize(program));
             var iconTask = includeIcon ? SaveIconAsync(program, token) : Task.FromResult("");
             await Task.WhenAll(sizeTask, iconTask);
             size = sizeTask.Result;
@@ -280,8 +283,7 @@ public sealed class UninstallHistoryService
     /// </summary>
     public static async Task<long?> TryMeasureSizeAsync(InstalledProgram program, CancellationToken token = default)
     {
-        if (program.SizeKb is long kilobytes && kilobytes > 0)
-            return kilobytes * 1024L;
+        if (ReportedSize(program) is long bytes) return bytes;
         if (string.IsNullOrWhiteSpace(program.Location)) return null;
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
@@ -293,6 +295,11 @@ public sealed class UninstallHistoryService
         catch (OperationCanceledException) when (!token.IsCancellationRequested) { return null; }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or ArgumentException) { return null; }
     }
+
+    private static long? ReportedSize(InstalledProgram program) =>
+        program.SizeKb is > 0 and <= (long.MaxValue / 1024)
+            ? program.SizeKb.Value * 1024L
+            : null;
 
     private IReadOnlyList<UninstallHistoryEntry> LoadCore()
     {

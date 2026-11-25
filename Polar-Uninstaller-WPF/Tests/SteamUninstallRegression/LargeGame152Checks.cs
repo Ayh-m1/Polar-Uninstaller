@@ -49,6 +49,13 @@ internal static class LargeGame152Checks
         }
         Check(UninstallMonitorService.PollingPolicy(false, true, new(false, false, true, "App files"), 0).Window == TimeSpan.FromSeconds(8),
             "The tracked application timing remains unchanged");
+        var history = new UninstallHistoryService();
+        File.WriteAllText(Path.Combine(fixture, "payload.txt"), "Unknown size fixture.");
+        var unknown = new InstalledProgram("Unknown Game Size", "Fixture", "1", fixture, Identifier: "steam:1998123456");
+        var fast = await history.CaptureAsync(unknown, includeIcon: false, measureFolder: false);
+        var reported = await history.CaptureAsync(unknown with { SizeKb = 32768 }, includeIcon: false, measureFolder: false);
+        Check(fast.SizeBytes is null && reported.SizeBytes == 32L * 1024 * 1024,
+            "Game history uses launcher size when available and does not measure a folder with unknown size");
         Console.WriteLine($"LargeGames152: {checks} checks passed.");
         return 0;
     }

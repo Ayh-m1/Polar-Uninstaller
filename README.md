@@ -25,14 +25,11 @@ Polar Uninstaller is a C# / WPF utility for 64-bit Windows 10 and 11. It removes
 
 Use **?** or **F1** outside a text field for shortcut help in File Browser and Duplicate Finder. **Ctrl+F** focuses search. With the results list focused, **Ctrl+A** selects all and **Ctrl+D** or **Esc** clears the selection. **Delete** moves selected items to the Recycle Bin, and **Shift+Delete** requests permanent deletion.
 
-### What's new in v1.0.152
+### What's new in v1.0.153
 
-- Deep Uninstall checks both Windows Start Menu Programs folders and both desktops for verified leftover shortcuts, including MSI shortcuts matched by product code.
-- Deep Uninstall verifies shortcut removal, clears empty application-specific Start Menu folders, and notifies Windows of both changes.
-- Large game removals get more time across supported launchers and are checked more frequently after installation records or files go away. Epic file verification updates progress without flooding the interface.
-- Quick Cleanup finds broken shortcuts backed by verified uninstall history and lets you review them before removal.
-- Quick Cleanup measures standby RAM and can release it on request. RAM results are reported separately from disk space.
-- The theme background extends behind the unified title bar, which places language, theme, and update controls beside the window controls.
+- Deep Uninstaller finishes Steam removal when the installation record and game payload are gone and only recognized auxiliary files remain. Those files are preserved and the stale game entry is removed.
+- If Steam removes the installation record but Polar cannot confirm that the game payload is gone, monitoring ends with a manual follow-up result. In a batch, the next selected game can proceed.
+- Game removal skips the history-only folder size scan. Direct Epic removal avoids rereading large files when Windows can verify the same file remained protected from writes.
 
 See [GitHub Releases](https://github.com/Ayh-m1/Polar-Uninstaller/releases) for older versions.
 
@@ -43,7 +40,7 @@ Download the latest C# / WPF release from the [Releases page](https://github.com
 | File | How to run |
 | --- | --- |
 | `PolarUninstaller.exe` | Run the standalone portable executable directly. |
-| `PolarUninstaller-Setup-v1.0.152.exe` | Run Setup to install. |
+| `PolarUninstaller-Setup-v1.0.153.exe` | Run Setup to install. |
 
 The app includes the required runtime and asks for administrator permission, so Windows shows a User Account Control prompt. Releases are not code-signed yet, so Windows SmartScreen may warn you the first time you run a file. Verify your download first. Older Python releases are separate builds.
 
@@ -110,14 +107,11 @@ GitHub Actions builds and checks the Windows EXE and Setup, then uploads both wi
 
 تجد مساعدة الاختصارات في متصفح الملفات والبحث عن المكررات عبر زر **?** أو مفتاح ⁦F1⁩ خارج حقول النص. استخدم ⁦Ctrl+F⁩ للانتقال إلى البحث. عندما تكون قائمة النتائج نشطة، يحدد ⁦Ctrl+A⁩ الكل، ويلغي ⁦Ctrl+D⁩ أو ⁦Esc⁩ التحديد. ينقل ⁦Delete⁩ العناصر المحددة إلى السلة، ويطلب ⁦Shift+Delete⁩ حذفها نهائيًا.
 
-### ما الجديد في ⁦v1.0.152⁩
+### ما الجديد في ⁦v1.0.153⁩
 
-- تفحص الإزالة العميقة مجلدات البرامج في قائمة ابدأ وسطح المكتب للمستخدم ولجميع المستخدمين. ويطابق ⁦Polar⁩ اختصارات ⁦MSI⁩ مع معرّف المنتج.
-- تتحقق الإزالة العميقة من حذف الاختصارات، وتزيل مجلدات قائمة ابدأ الفارغة الخاصة بالبرنامج، وتخطر ⁦Windows⁩ بالتغييرين.
-- تحصل إزالة الألعاب الكبيرة على مهلة أطول في المشغّلات المدعومة، ويزداد معدّل التحقق بعد زوال سجل التثبيت أو الملفات. ويُعرض تقدّم فحص ملفات ⁦Epic⁩ دون إغراق الواجهة بالتحديثات.
-- يعثر التنظيف السريع على الاختصارات المعطلة التي يثبت سجل الإزالة ارتباطها ببرنامج أُزيل، ويتيح مراجعتها قبل الحذف.
-- يقيس التنظيف السريع ذاكرة الاستعداد ويحررها عند الطلب، ويعرض نتيجتها بشكل مستقل عن مساحة القرص.
-- تمتد خلفية المظهر خلف شريط العنوان الموحّد، الذي يجمع أزرار اللغة والمظهر والتحديث مع أزرار التحكم بالنافذة.
+- تكتمل إزالة لعبة ⁦Steam⁩ عند زوال سجل التثبيت وملفات اللعبة الأساسية وبقاء ملفات إضافية معروفة فقط. يحتفظ ⁦Polar⁩ بهذه الملفات ويزيل الإدخال القديم من القائمة.
+- إذا أزال ⁦Steam⁩ سجل التثبيت وتعذر التحقق من زوال ملفات اللعبة، تنتهي المراقبة وتظهر الحاجة إلى مراجعة يدوية. وعند إزالة عدة ألعاب تنتقل الدفعة إلى اللعبة التالية.
+- تبدأ إزالة الألعاب دون انتظار فحص حجم المجلد المخصص للسجل. وتتجنب إزالة ⁦Epic⁩ المباشرة قراءة الملفات الكبيرة مرة أخرى عندما يستطيع ⁦Windows⁩ التأكد من بقاء الملف نفسه محميًا من الكتابة.
 
 راجع [إصدارات GitHub](https://github.com/Ayh-m1/Polar-Uninstaller/releases) للاطلاع على الإصدارات السابقة.
 
@@ -126,7 +120,7 @@ GitHub Actions builds and checks the Windows EXE and Setup, then uploads both wi
 نزّل أحدث إصدار ⁦C# / WPF⁩ من [صفحة الإصدارات](https://github.com/Ayh-m1/Polar-Uninstaller/releases):
 
 - ⁦`PolarUninstaller.exe`⁩ — ملف تنفيذي محمول ومستقل، شغّله مباشرة.
-- ⁦`PolarUninstaller-Setup-v1.0.152.exe`⁩ — شغّله لتثبيت البرنامج.
+- ⁦`PolarUninstaller-Setup-v1.0.153.exe`⁩ — شغّله لتثبيت البرنامج.
 
 يتضمن البرنامج بيئة التشغيل المطلوبة، ويطلب صلاحيات المسؤول، لذلك ستظهر نافذة التحكم بحساب المستخدم (⁦UAC⁩). الإصدارات غير موقّعة رقميًا بعد، فقد يعرض ⁦Windows SmartScreen⁩ تحذيرًا عند أول تشغيل، فتحقق من الملف قبل تشغيله. إصدارات ⁦Python⁩ القديمة منفصلة عن هذه النسخة.
 

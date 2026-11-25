@@ -165,7 +165,7 @@ public static class UninstallReportService
         bool cleanupUnverified = false)
     {
         var remainingPaths = (cleanup?.RemainingPaths ?? Array.Empty<string>())
-            .Concat(probe.RetainedSteamAssets ? new[] { program.Location } : Array.Empty<string>())
+            .Concat(probe.RetainedSteamAssets || probe.SteamPayloadTimedOut ? new[] { program.Location } : Array.Empty<string>())
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
         bool registered = probe.LauncherRecordPresent;
@@ -180,7 +180,7 @@ public static class UninstallReportService
         // verified leftover pass also succeeded. Any remaining or failed
         // leftover keeps the report at "Removed with Leftovers", and a cleanup
         // that could not run at all is reported as unverified instead of success.
-        if(probe.Detail.StartsWith("Probe error:",StringComparison.Ordinal)) outcome=UninstallOutcome.VerificationIncomplete;
+        if(probe.SteamPayloadTimedOut || probe.Detail.StartsWith("Probe error:",StringComparison.Ordinal)) outcome=UninstallOutcome.VerificationIncomplete;
         else if (executable) outcome = UninstallOutcome.UninstallFailed;
         else if (probe.Confirmed)
             outcome = leftovers ? UninstallOutcome.RemovedWithLeftovers

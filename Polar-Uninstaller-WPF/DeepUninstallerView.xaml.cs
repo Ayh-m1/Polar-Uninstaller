@@ -658,8 +658,10 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
             ? "تعذر قراءة بيانات التثبيت؛ لم يمكن تأكيد الإزالة."
         : probe.Detail=="The launched official uninstaller process is still running."
             ? "ما زال مزيل التثبيت الرسمي الذي بدأه Polar قيد التشغيل."
+            : probe.SteamPayloadTimedOut
+                ? "أزال Steam سجل التثبيت، لكن تعذر التأكد من زوال ملفات اللعبة. راجع المجلد المتبقي أو حدّث القائمة بعد انتهاء Steam."
             : probe.RetainedSteamAssets
-                ? "أزال Steam سجل تثبيت اللعبة، وبقيت صور أو سجلات لا تُشغّل اللعبة. احتُفظ بهذه الملفات."
+                ? "أُزيل سجل التثبيت وملفات اللعبة الأساسية من Steam. احتُفظ بالملفات الإضافية المتبقية."
         : probe.LauncherRecordPresent
             ? "ما زال سجل التثبيت المحدد موجودًا."
             : probe.InstallationFolderPresent
@@ -680,6 +682,14 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
         RemovalPlan? plan=officialPlan;
         try
         {
+            if (probe.SteamPayloadTimedOut)
+            {
+                operationOutcome = BatchItemOutcome.Manual;
+                var pending = UninstallReportService.FromProbe(card.Program, probe, null, probe.Detail);
+                WriteReport(pending);
+                SetStatus(lang => pending.Summary(lang) + " · " + LocalizeProbe(probe, lang));
+                return;
+            }
             SetStatus("Verifying removal…","جارٍ التحقق من الإزالة…");
             var current=await ReadRemovalInventoryAsync(token);
             if(probe.Confirmed)probe=await Task.Run(()=>UninstallMonitorService.Probe(card.Program,original),token);
@@ -849,7 +859,7 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
                     var plan=await service.PrepareAsync(card.Program,current,epicCancellation.Token);
                     var progress=new Progress<string>(message=>SetStatus(lang => BidiText.Localize(lang,"Epic direct removal: ","إزالة Epic المباشرة: ") + DisplayFormat.Directional(message,lang)));
                     activity.Write("INFO",L("Epic direct removal authorized; preserving saves and files outside the installed build: ","تم تفويض إزالة Epic المباشرة مع حفظ بيانات الحفظ والملفات خارج قائمة التثبيت: ")+card.Name);
-                    var epicCapture=await history.CaptureAsync(card.Program,token:epicCancellation.Token);
+                    var epicCapture=await history.CaptureAsync(card.Program,token:epicCancellation.Token,measureFolder:false);
                     var result=await service.RemoveAsync(plan,current,progress,epicCancellation.Token);
                     foreach(var message in result.Messages)activity.Write(result.Confirmed?"INFO":"WARNING",message);
                     activity.Write("INFO",L("Epic metadata backup: ","نسخة بيانات Epic الاحتياطية: ")+result.Backup);
@@ -868,8 +878,13 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
                 finally{directCancellation=preparation;SetRemovalControl(true);}
                 return;
             }
-            var capture=await history.CaptureAsync(card.Program,token:token);
-            var snapshot=await new SharedLeftoverScanner().CaptureAsync(card.Program,token);preparedSnapshot=snapshot;
+            var captureTask = history.CaptureAsync(card.Program, token: token, measureFolder: !decision.GamesEnabled);
+            var snapshotTask = new SharedLeftoverScanner().CaptureAsync(card.Program, token);
+            await Task.WhenAll(captureTask, snapshotTask);
+            token.ThrowIfCancellationRequested();
+            var capture = await captureTask;
+            var snapshot = await snapshotTask;
+            preparedSnapshot = snapshot;
             officialPlan=await new RemovalEngine().PlanAsync(snapshot,current,deep&&!decision.UsesOfficialUninstaller,token);
             advancedCard=null;advancedPlan=null;
             if(deep&&!decision.UsesOfficialUninstaller)
