@@ -33,6 +33,7 @@ internal static class Program
         if(args.Contains("--hidden148")){Environment.ExitCode=Parts146Checks.RunHidden148();return;}
         if(args.Contains("--deep149")){Environment.ExitCode=Parts146Checks.RunDeep149();return;}
         if(args.Contains("--deep150")){Environment.ExitCode=Parts146Checks.RunDeep150();return;}
+        if(args.Contains("--caption152")){Environment.ExitCode=Parts146Checks.RunCaption152();return;}
         if(args.Contains("--themes150")){Environment.ExitCode=Parts146Checks.RunThemes150();return;}
         if(args.Contains("--rtl-layout147")){Environment.ExitCode=Parts146Checks.RunRtlLayout147();return;}
         if(args.Contains("--locale147")){Environment.ExitCode=Parts146Checks.RunLocale147();return;}

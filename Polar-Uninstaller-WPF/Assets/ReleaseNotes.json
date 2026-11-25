@@ -1,5 +1,24 @@
 [
   {
+    "version": "1.0.152",
+    "en": [
+      "Fixes: Deep Uninstall checks both Windows Start Menu Programs folders and both desktops for verified leftover shortcuts, including MSI shortcuts matched by product code.",
+      "Fixes: Deep Uninstall verifies shortcut removal, clears empty application-specific Start Menu folders, and notifies Windows of both changes.",
+      "Improvements: Large game removals get more time across supported launchers and are checked more frequently after installation records or files go away. Epic file verification updates progress without flooding the interface.",
+      "New Features: Quick Cleanup finds broken shortcuts backed by verified uninstall history and lets you review them before removal.",
+      "New Features: Quick Cleanup measures standby RAM and can release it on request. RAM results are reported separately from disk space.",
+      "Improvements: The theme background extends behind the unified title bar, which places language, theme, and update controls beside the window controls."
+    ],
+    "ar": [
+      "إصلاحات: تفحص الإزالة العميقة مجلدات البرامج في قائمة ابدأ وسطح المكتب للمستخدم ولجميع المستخدمين. ويطابق Polar اختصارات MSI مع معرّف المنتج.",
+      "إصلاحات: تتحقق الإزالة العميقة من حذف الاختصارات، وتزيل مجلدات قائمة ابدأ الفارغة الخاصة بالبرنامج، وتخطر Windows بالتغييرين.",
+      "تحسينات: تحصل إزالة الألعاب الكبيرة على مهلة أطول في المشغّلات المدعومة، ويزداد معدّل التحقق بعد زوال سجل التثبيت أو الملفات. ويُعرض تقدّم فحص ملفات Epic دون إغراق الواجهة بالتحديثات.",
+      "إضافات جديدة: يعثر التنظيف السريع على الاختصارات المعطلة التي يثبت سجل الإزالة ارتباطها ببرنامج أُزيل، ويتيح مراجعتها قبل الحذف.",
+      "إضافات جديدة: يقيس التنظيف السريع ذاكرة الاستعداد ويحررها عند الطلب، ويعرض نتيجتها بشكل مستقل عن مساحة القرص.",
+      "تحسينات: تمتد خلفية المظهر خلف شريط العنوان الموحّد، الذي يجمع أزرار اللغة والمظهر والتحديث مع أزرار التحكم بالنافذة."
+    ]
+  },
+  {
     "version": "1.0.151",
     "en": [
       "Improvements: Deep Uninstaller checks Steam game files about once a second after Steam clears the installation record. Large removals get more time and the status explains what is still pending.",

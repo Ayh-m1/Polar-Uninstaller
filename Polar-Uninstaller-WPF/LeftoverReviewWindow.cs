@@ -8,10 +8,10 @@ public sealed class LeftoverReviewWindow:Window
 {
     private readonly List<(CheckBox Check,LeftoverChoice Choice)> choices=new();
     public IReadOnlyList<LeftoverChoice> Selected=>choices.Where(c=>c.Check.IsChecked==true).Select(c=>c.Choice).ToArray();
-    public LeftoverReviewWindow(bool arabic,IReadOnlyList<LeftoverChoice> items)
+    public LeftoverReviewWindow(bool arabic,IReadOnlyList<LeftoverChoice> items,bool shortcutsOnly=false)
     {
         string L(string en,string ar)=> BidiText.Localize(arabic,en,ar);
-        Title=L("Review application leftovers","مراجعة بقايا البرنامج");Width=760;Height=520;MinWidth=500;MinHeight=340;WindowStartupLocation=WindowStartupLocation.CenterOwner;
+        Title=shortcutsOnly ? L("Review broken shortcuts","مراجعة الاختصارات المعطلة") : L("Review application leftovers","مراجعة بقايا البرنامج");Width=760;Height=520;MinWidth=500;MinHeight=340;WindowStartupLocation=WindowStartupLocation.CenterOwner;
         FlowDirection=arabic?FlowDirection.RightToLeft:FlowDirection.LeftToRight;
         SetResourceReference(BackgroundProperty,"ChromeBackground");SetResourceReference(ForegroundProperty,"ChromeText");SetResourceReference(FontFamilyProperty,"InterfaceFont");
         var root=new DockPanel{Margin=new Thickness(20)};Content=root;
@@ -29,7 +29,8 @@ public sealed class LeftoverReviewWindow:Window
             if(identity==approvedSelection){DialogResult=true;return;}
             approvedSelection=identity;
             remove.Content=L($"Confirm removal ({Selected.Count})",$"تأكيد حذف ({Selected.Count})");
-            title.Text=L("Confirm selected cleanup; Registry entries will be backed up.","أكّد تنظيف المحدد؛ ستُنسخ إدخالات الريجستري احتياطيًا.");
+            title.Text=shortcutsOnly ? L("The selected shortcuts will be permanently deleted.","ستُحذف الاختصارات المحددة نهائيًا.")
+                : L("Confirm selected cleanup; Registry entries will be backed up.","أكّد تنظيف المحدد؛ ستُنسخ إدخالات الريجستري احتياطيًا.");
             title.FontSize=16;
         };
         actions.Children.Add(remove);

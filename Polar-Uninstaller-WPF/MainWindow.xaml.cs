@@ -53,6 +53,7 @@ public partial class MainWindow : Window
     {
         this.settingsService=settingsService;this.metrics=metrics;
         InitializeComponent();
+        InitializeCaption();
         LogClearButton.Background = Brushes.Transparent; LogClearButton.BorderBrush = Brushes.Transparent;
         LogToggleButton.Background = Brushes.Transparent; LogToggleButton.BorderBrush = Brushes.Transparent;
         Log.ItemContainerStyle = (Style)Application.Current.Resources["LogEntryContainer"];
@@ -89,12 +90,11 @@ public partial class MainWindow : Window
         ready = true;
         SourceInitialized += (_, _) => ApplyNativeTitleBar();
         var backgroundLayer = new Grid { IsHitTestVisible = false };
-        Grid.SetColumnSpan(backgroundLayer, 2);
         backgroundLayer.Children.Add(backgroundBase);
         backgroundLayer.Children.Add(backgroundCenter);
         backgroundLayer.Children.Add(backgroundTopLeft);
         backgroundLayer.Children.Add(backgroundBottomRight);
-        Root.Children.Insert(0, backgroundLayer);
+        WindowSurface.Children.Insert(0, backgroundLayer);
         Render();
         ContentRendered += async (_, _) => await StartupUpdateCheckAsync();
         activity.Write("INFO", AppInfo.Name+" v"+AppInfo.Version+" started.");
@@ -275,6 +275,7 @@ public partial class MainWindow : Window
         System.Windows.Automation.AutomationProperties.SetName(SidebarVersion,PreviewLabel.Text+" · "+Services.BrowserText.Get("SidebarWhatsNew",arabic));
         LangButton.Content = arabic ? "English" : "العربية";
         ThemeButtonLabel.Text = L("  Theme  ▾", "  المظهر  ▾");
+        RefreshCaptionLabels();
         System.Windows.Automation.AutomationProperties.SetName(ThemeButton, L("Theme", "المظهر"));
         LogTitle.Text = L("Activity Log", "سجل النشاط");
         LogClearButton.Content = L("Clear", "مسح");
@@ -529,7 +530,9 @@ public partial class MainWindow : Window
         outer.Children.Add(introduction);
         language.Text(introduction,"Scans temporary files of all ages. Locked and inaccessible items are skipped. Prefetch cleanup is optional and generally unnecessary.", "يشمل الفحص الملفات المؤقتة بجميع أعمارها، مع تجاوز الملفات المقفلة أو التي يتعذر الوصول إليها. تنظيف Prefetch اختياري وغير ضروري عادةً.");
         var grid = new UniformGrid { Columns = 2, Margin = new Thickness(0, 8, 0, 8) };
-        var categories = new[] { (TempCleanerService.Category.UserTemp, "User Temp", "ملفات المستخدم المؤقتة", "◈"), (TempCleanerService.Category.SystemTemp, "System Temp", "ملفات النظام المؤقتة", "⚙"), (TempCleanerService.Category.Prefetch, "Windows Prefetch", "ملفات Prefetch", "✦"), (TempCleanerService.Category.RecycleBin, "Recycle Bin", "سلة المحذوفات", "♲") };
+        var categories = new[] { (TempCleanerService.Category.UserTemp, "User Temp", "ملفات المستخدم المؤقتة", "◈"), (TempCleanerService.Category.SystemTemp, "System Temp", "ملفات النظام المؤقتة", "⚙"), (TempCleanerService.Category.Prefetch, "Windows Prefetch", "ملفات Prefetch", "✦"), (TempCleanerService.Category.RecycleBin, "Recycle Bin", "سلة المحذوفات", "♲"),
+            (TempCleanerService.Category.BrokenShortcuts, "Broken Shortcuts", "الاختصارات المعطلة", "↗"),
+            (TempCleanerService.Category.RamCache, "RAM Cache", "ذاكرة الرام المؤقتة", "◈") };
         var controls = new Dictionary<TempCleanerService.Category, (CheckBox Check, SelectableText Summary)>();
         foreach (var (kind, en, ar, icon) in categories)
         {
@@ -538,7 +541,18 @@ public partial class MainWindow : Window
             language.Set(check,ContentControl.ContentProperty,lang=>$"{icon}   {BidiText.Localize(lang,en,ar)}");
             var summary = CleanerText(12);
             language.Text(summary,"Not scanned","لم يُفحص"); summary.Margin = new Thickness(0, 12, 0, 2);
-            content.Children.Add(check); content.Children.Add(summary); grid.Children.Add(CleanerCard(content)); controls[kind] = (check, summary);
+            content.Children.Add(check);
+            content.Children.Add(summary);
+            if (kind == TempCleanerService.Category.RamCache)
+            {
+                var warning = CleanerText(11);
+                warning.Margin = new Thickness(0, 4, 0, 0);
+                language.Text(warning, "Windows manages cached memory automatically. Frequent RAM cache cleaning is unnecessary and may temporarily reduce system performance.",
+                    "يدير ويندوز ذاكرة التخزين المؤقت تلقائيًا. لا يُنصح بتنظيف ذاكرة الرام بشكل متكرر، فقد يؤدي ذلك إلى انخفاض مؤقت في أداء النظام.");
+                content.Children.Add(warning);
+            }
+            grid.Children.Add(CleanerCard(content));
+            controls[kind] = (check, summary);
         }
         outer.Children.Add(grid);
         var status = CleanerText(13);
@@ -547,6 +561,8 @@ public partial class MainWindow : Window
         cleanButton.SetResourceReference(Control.BackgroundProperty, "HomeCardBrush"); cleanButton.SetResourceReference(Control.BorderBrushProperty, "HomeBorderBrush");
         outer.Children.Add(cleanButton); outer.Children.Add(status);
         var service = new TempCleanerService(); CancellationTokenSource? running = null;
+        var history = new UninstallHistoryService();
+        IReadOnlyList<BrokenShortcutCleaner.Candidate> shortcutCandidates = [];
         var scanned = new HashSet<TempCleanerService.Category>();
         var estimatedBytes = new Dictionary<TempCleanerService.Category,long>();
         bool scanComplete = false;
@@ -560,8 +576,9 @@ public partial class MainWindow : Window
         {
             cleanButton.IsEnabled = running is null && scanComplete && controls.Any(c => c.Value.Check.IsChecked == true);
             long estimate=CleanerSelection.EstimatedBytes(controls.Where(c=>c.Value.Check.IsChecked==true).Select(c=>c.Key),estimatedBytes);
+            bool includesDisk = controls.Any(item => item.Key != TempCleanerService.Category.RamCache && item.Value.Check.IsChecked == true);
             cleanButton.Content=L("✦   One-Click Quick Clean   ✦","✦   التنظيف السريع   ✦")+
-                (scanComplete?L("  ·  Estimated: ","  ·  المتوقع: ")+DisplayFormat.Size(estimate,arabic):"");
+                (scanComplete && includesDisk ? L("  ·  Estimated: ","  ·  المتوقع: ")+DisplayFormat.Size(estimate,arabic):"");
         }
         foreach (var entry in controls.Values)
         {
@@ -579,13 +596,39 @@ public partial class MainWindow : Window
         {
             if (running != null || cleanerOperationActive) { if (!silent) status.Text = L("A cleanup operation is already running.", "توجد عملية تنظيف جارية بالفعل."); return; }
             var selected = controls.Where(pair => !delete || pair.Value.Check.IsChecked == true).Select(pair => pair.Key).ToArray();
+            var reviewedShortcuts = Array.Empty<BrokenShortcutCleaner.Candidate>();
             if (selected.Length == 0) { if (!silent) status.Text = L("Select at least one category.", "اختر فئة واحدة على الأقل."); return; }
             if (delete && selected.Any(kind => !scanned.Contains(kind))) { if (!silent) status.Text = L("A selected category could not be scanned and cannot be cleaned.", "تعذر فحص فئة محددة، لذلك لا يمكن تنظيفها."); return; }
+            if (delete)
+            {
+                if (selected.Contains(TempCleanerService.Category.BrokenShortcuts) && shortcutCandidates.Count > 0)
+                {
+                    var choices = shortcutCandidates.Select(candidate => new LeftoverChoice(
+                        L("Broken shortcut", "اختصار معطّل"), DisplayFormat.Directional(candidate.Link.Path, arabic),
+                        DisplayFormat.Size(candidate.Bytes, arabic), candidate.Owner.Name, () => Task.FromResult<IReadOnlyList<string>>([]))).ToArray();
+                    var review = new LeftoverReviewWindow(arabic, choices, shortcutsOnly: true) { Owner = this };
+                    if (review.ShowDialog() == true)
+                        reviewedShortcuts = shortcutCandidates.Where((_, index) => review.Selected.Contains(choices[index])).ToArray();
+                }
+                if (reviewedShortcuts.Length == 0)
+                    selected = selected.Where(kind => kind != TempCleanerService.Category.BrokenShortcuts).ToArray();
+                if (selected.Length == 0) return;
+                var confirmations = new List<string>();
+                if (selected.Contains(TempCleanerService.Category.RecycleBin))
+                    confirmations.Add(L("Permanently empty the Recycle Bin.", "إفراغ سلة المحذوفات نهائيًا."));
+                if (selected.Contains(TempCleanerService.Category.RamCache))
+                    confirmations.Add(L("Release standby memory now. Windows may rebuild this cache.", "تحرير ذاكرة الاستعداد الآن. قد يعيد Windows بناءها."));
+                if (confirmations.Count > 0 && MessageBox.Show(this, string.Join("\n", confirmations),
+                    L("Confirm Quick Cleanup", "تأكيد التنظيف السريع"), MessageBoxButton.OKCancel,
+                    MessageBoxImage.Warning, MessageBoxResult.Cancel, arabic ? MessageBoxOptions.RtlReading | MessageBoxOptions.RightAlign : 0) != MessageBoxResult.OK)
+                    return;
+            }
             using var cts = new CancellationTokenSource(); running = cts; cleanerOperationActive = true; cleanButton.IsEnabled = false;
             if (!delete){scanned.Clear();estimatedBytes.Clear();}
             foreach (var entry in controls.Values) entry.Check.IsEnabled = false;
             activity.WriteBilingual("INFO",delete?"Quick cleanup started.":"Quick cleanup scan started.",delete?"بدأ التنظيف السريع.":"بدأ فحص التنظيف السريع.");
             long cleanedBytes = 0; int cleanedFiles = 0, cleanedDirectories = 0, skippedTotal = 0, failedCategories = 0;
+            StandbyMemoryCleaner.Result? releasedRam = null;
             try
             {
                 var progress = new Progress<int>(n => { if (!silent && ReferenceEquals(running,cts)) language.Text(status,$"Processed {DisplayFormat.Number(n)} files…", $"تمت معالجة {DisplayFormat.Isolate(DisplayFormat.Number(n))} ملف…"); });
@@ -593,7 +636,40 @@ public partial class MainWindow : Window
                 {
                     try
                     {
-                        var result = await service.RunCategoryAsync(kind, delete, progress, cts.Token);
+                        if (kind == TempCleanerService.Category.RamCache)
+                        {
+                            long standby;
+                            if (delete)
+                            {
+                                releasedRam = await StandbyMemoryCleaner.ReleaseAsync(cts.Token);
+                                standby = releasedRam.Value.After;
+                                var ram = releasedRam.Value;
+                                activity.WriteBilingual("INFO", RamOutcome(ram, false), RamOutcome(ram, true));
+                            }
+                            else standby = await StandbyMemoryCleaner.ScanAsync(cts.Token);
+                            language.Text(controls[kind].Summary, lang => BidiText.Localize(lang,"Standby memory: ","ذاكرة الاستعداد: ") + DisplayFormat.Size(standby,lang));
+                            scanned.Add(kind);
+                            continue;
+                        }
+                        TempCleanerService.Result result;
+                        if (kind == TempCleanerService.Category.BrokenShortcuts)
+                        {
+                            if (delete)
+                            {
+                                var inventory = await applicationInventory.RefreshAsync(cts.Token);
+                                var log = new Progress<string>(message => activity.Write(message.StartsWith("Removed",StringComparison.Ordinal) ? "INFO" : "WARNING",message));
+                                result = await BrokenShortcutCleaner.CleanAsync(reviewedShortcuts, inventory, log, cts.Token);
+                            }
+                            else
+                            {
+                                shortcutCandidates = [];
+                                var entries = await history.LoadAsync(cts.Token);
+                                if (entries.Count > 0)
+                                    shortcutCandidates = await BrokenShortcutCleaner.ScanAsync(entries, await applicationInventory.RefreshAsync(cts.Token), cts.Token);
+                                result = new(shortcutCandidates.Count, shortcutCandidates.Sum(item => item.Bytes), 0);
+                            }
+                        }
+                        else result = await service.RunCategoryAsync(kind, delete, progress, cts.Token);
                         language.Text(controls[kind].Summary,lang=>DisplayFormat.CategorySummary(result.Files,result.Directories,result.Bytes,result.Skipped,delete,lang));
                         if (!delete){scanned.Add(kind);estimatedBytes[kind]=result.Bytes;UpdateCleanEnabled();}
                         else { cleanedBytes += result.Bytes; cleanedFiles += result.Files; cleanedDirectories += result.Directories; }
@@ -601,7 +677,7 @@ public partial class MainWindow : Window
                     }
                     catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or System.Runtime.InteropServices.ExternalException or ArgumentException or NotSupportedException)
                     {
-                        controls[kind].Summary.Text = ex is UnauthorizedAccessException or System.Security.SecurityException ? L("Windows denied access · run as administrator to scan this category", "رفض Windows الوصول · شغّل كمسؤول لفحص هذه الفئة") : L("Unavailable or access denied", "غير متاح أو تعذر الوصول");
+                        language.Text(controls[kind].Summary,"Unavailable or access denied","غير متاح أو تعذر الوصول");
                         failedCategories++;
                         activity.Write("WARNING", $"Quick Cleaner {kind}: {ex.GetType().Name} · 0x{ex.HResult:X8} · {ex.Message}");
                         CrashDiagnostics.Record("Quick Cleaner "+kind,ex);
@@ -616,8 +692,14 @@ public partial class MainWindow : Window
                 else
                 {
                     if(cleanedBytes>0)await SpaceFreedService.Instance.AddAsync(cleanedBytes,"clean:"+Guid.NewGuid().ToString("N"));
-                    var summary = DisplayFormat.CleanOutcomeSummary(cleanedBytes, cleanedFiles, cleanedDirectories, skippedTotal, failedCategories, arabic);
-                    language.Text(status,lang=>DisplayFormat.CleanOutcomeSummary(cleanedBytes,cleanedFiles,cleanedDirectories,skippedTotal,failedCategories,lang));
+                    string Summary(bool lang)
+                    {
+                        string disk = selected.Any(kind => kind != TempCleanerService.Category.RamCache) || failedCategories > 0
+                            ? DisplayFormat.CleanOutcomeSummary(cleanedBytes,cleanedFiles,cleanedDirectories,skippedTotal,failedCategories,lang) : "";
+                        return releasedRam is { } ram ? (disk.Length == 0 ? "" : disk + "\n") + RamOutcome(ram, lang) : disk;
+                    }
+                    string summary = Summary(arabic);
+                    language.Text(status, Summary);
                     status.SetResourceReference(TextBlock.ForegroundProperty,cleanedFiles>0||cleanedBytes>0?"ChromeAccent":"HomeDimBrush");
                     activity.Write(failedCategories>0||skippedTotal>0 ? "WARNING" : cleanedFiles > 0 || cleanedBytes > 0 ? "SUCCESS" : "INFO", summary);
                 }
@@ -629,8 +711,12 @@ public partial class MainWindow : Window
             if (delete && outer.IsLoaded) await Run(false, true);
         }
         outer.Loaded += async (_, _) => await Run(false);  cleanButton.Click += async (_, _) => await Run(true);
-        return outer;
+        return new ScrollViewer { Content = outer, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     }
+    private static string RamOutcome(StandbyMemoryCleaner.Result ram,bool arabic) =>
+        BidiText.Localize(arabic,"Standby RAM released: ","ذاكرة الرام المحرّرة: ") + DisplayFormat.Size(ram.Released,arabic)
+        + BidiText.Localize(arabic," · Before: "," · قبل التنظيف: ") + DisplayFormat.Size(ram.Before,arabic)
+        + BidiText.Localize(arabic," · After: "," · بعد التنظيف: ") + DisplayFormat.Size(ram.After,arabic);
     private Border CleanerCard(UIElement content) => new() { Background = Brushes.Transparent, BorderBrush = Brushes.Transparent, BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(14), Padding = new Thickness(18), Margin = new Thickness(5), Child = content };
     private void NavigateTo(string key)
     {

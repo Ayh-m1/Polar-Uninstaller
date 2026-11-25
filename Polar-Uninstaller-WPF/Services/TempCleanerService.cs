@@ -6,7 +6,7 @@ namespace PolarUninstallerWpf.Services;
 // Only enumerates the predefined cleanup locations, skipping links and inaccessible entries.
 public sealed class TempCleanerService
 {
-    public enum Category { UserTemp, SystemTemp, Prefetch, RecycleBin }
+    public enum Category { UserTemp, SystemTemp, Prefetch, RecycleBin, BrokenShortcuts, RamCache }
     public sealed record Result(int Files, long Bytes, int Skipped, int Directories = 0);
 
     public Task<Result> RunAsync(bool delete, IProgress<int>? progress, CancellationToken token) =>

@@ -129,7 +129,7 @@ internal static partial class Parts146Checks
             Check(Only(gameRow)&&gameCheckbox.IsChecked==true&&programCheckbox.IsChecked==false,
                 $"{arabic}: pressing the game checkbox replaces the program selection");
         }
-        Check(AppInfo.Version=="1.0.151"&&ReleaseNotesService.LoadCurrent(false)?.Entries.Count==3&&ReleaseNotesService.LoadCurrent(true)?.Entries.Count==3,"All v1.0.151 changes are embedded in both languages");
+        Check(AppInfo.Version=="1.0.152"&&ReleaseNotesService.LoadCurrent(false)?.Entries.Count==6&&ReleaseNotesService.LoadCurrent(true)?.Entries.Count==6,"All v1.0.152 changes are embedded in both languages");
         Check(((TextBlock)main.FindName("PreviewLabel")).FontSize==11,"Sidebar credit is slightly larger");
         return Finish("Deep150");
     }

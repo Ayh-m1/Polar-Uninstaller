@@ -198,19 +198,28 @@ public sealed class EpicGameRemovalService
             catch(FileNotFoundException){return true;}catch(DirectoryNotFoundException){return true;}
         }
         var eligible=(plan.RecordsOnly?Array.Empty<EpicInstalledFile>():plan.Files.Where(f=>!Personal(f.RelativePath))).OrderBy(f=>Same(Path.Combine(plan.Root,f.RelativePath),plan.LaunchPath)?1:0).ToArray();
-        foreach(var file in eligible){token.ThrowIfCancellationRequested();progress?.Report("Verifying: "+file.RelativePath);if(!await Original(file))throw new IOException("A game file was modified; it was preserved: "+file.RelativePath);}
+        var progressClock = Stopwatch.StartNew();
+        void Report(string action, string path)
+        {
+            if (progressClock.ElapsedMilliseconds < 150) return;
+            progress?.Report(action + path);
+            progressClock.Restart();
+        }
+        if (eligible.Length > 0) progress?.Report("Verifying: "+eligible[0].RelativePath);
+        foreach(var file in eligible){token.ThrowIfCancellationRequested();Report("Verifying: ",file.RelativePath);if(!await Original(file))throw new IOException("A game file was modified; it was preserved: "+file.RelativePath);}
         messages.Add("Epic content preflight: "+phase.ElapsedMilliseconds+" ms");phase.Restart();
         string backup=Path.Combine(backupRoot,DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")+"-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(backup);
         File.WriteAllBytes(Path.Combine(backup,"Epic.item"),plan.ItemBytes);File.WriteAllBytes(Path.Combine(backup,"Build.manifest"),plan.BuildBytes);
         int number=0;foreach(var index in plan.Indexes)File.WriteAllBytes(Path.Combine(backup,"Index-"+(number++)+".json"),index.Value);
         File.WriteAllText(Path.Combine(backup,"Identity.json"),JsonSerializer.Serialize(new{plan.Root,plan.AppName,plan.CatalogId,plan.Namespace,plan.ItemPath,plan.BuildPath,Indexes=plan.Indexes.Keys}));
         var shortcuts=await ShortcutLeftoverService.ScanAsync(plan.Game,token);
+        if (eligible.Length > 0) progress?.Report("Removing: "+eligible[0].RelativePath);
         foreach(var file in eligible)
         {
             token.ThrowIfCancellationRequested();Idle(false);string path=Path.Combine(plan.Root,file.RelativePath);Physical(path,plan.Root);
             if(!await Original(file))throw new IOException("Game file changed during removal; remaining files and metadata were preserved: "+file.RelativePath);
             try{File.GetAttributes(path);}catch(FileNotFoundException){continue;}catch(DirectoryNotFoundException){continue;}
-            File.Delete(path);BrowserOperationsService.VerifyAbsent(path);changes.Add(path,file.Size);removed++;progress?.Report("Removed: "+file.RelativePath);
+            File.Delete(path);BrowserOperationsService.VerifyAbsent(path);changes.Add(path,file.Size);removed++;Report("Removed: ",file.RelativePath);
         }
         token.ThrowIfCancellationRequested();Idle();CheckMetadata();
         messages.Add("Epic payload removal: "+phase.ElapsedMilliseconds+" ms");ReleaseLeases();

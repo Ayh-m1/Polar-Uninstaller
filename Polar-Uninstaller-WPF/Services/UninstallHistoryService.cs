@@ -19,6 +19,7 @@ public sealed record UninstallHistoryEntry
     public long? SizeBytes { get; init; }
     public DateTimeOffset RemovedAt { get; init; }
     public string IconFile { get; init; } = "";
+    public Guid? MsiProduct { get; init; }
 }
 
 /// <summary>
@@ -33,7 +34,10 @@ public sealed record UninstallHistoryCapture(
     string Identifier,
     string Location,
     long? SizeBytes,
-    string IconFile);
+    string IconFile)
+{
+    public Guid? MsiProduct { get; init; }
+}
 
 public static class UninstallHistoryFormat
 {
@@ -145,7 +149,10 @@ public sealed class UninstallHistoryService
             program.Identifier ?? "",
             program.Location ?? "",
             size,
-            iconFile);
+            iconFile)
+        {
+            MsiProduct = ShortcutLeftoverService.UsesApplicationChecks(program) ? ShortcutLeftoverService.MsiProductCode(program) : null
+        };
     }
 
     /// <summary>
@@ -177,7 +184,8 @@ public sealed class UninstallHistoryService
                 Location = capture.Location,
                 SizeBytes = capture.SizeBytes,
                 RemovedAt = at,
-                IconFile = capture.IconFile
+                IconFile = capture.IconFile,
+                MsiProduct = capture.MsiProduct
             });
 
             entries = entries

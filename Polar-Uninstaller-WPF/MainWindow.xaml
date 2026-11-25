@@ -1,4 +1,4 @@
-<Window x:Class="PolarUninstallerWpf.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Polar Uninstaller" Width="1300" Height="850" MinWidth="850" MinHeight="620" WindowStartupLocation="CenterScreen" Icon="Assets/Polar.ico" FontFamily="{DynamicResource InterfaceFont}">
+<Window x:Class="PolarUninstallerWpf.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework" Title="Polar Uninstaller" Width="1300" Height="850" MinWidth="850" MinHeight="620" WindowStartupLocation="CenterScreen" Icon="Assets/Polar.ico" FontFamily="{DynamicResource InterfaceFont}">
   <Window.Resources>
     <Style xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Key="SidebarCreditFocus" TargetType="Control">
       <Setter Property="Template">
@@ -9,7 +9,74 @@
         </Setter.Value>
       </Setter>
     </Style>
+    <Style x:Key="CaptionButton" TargetType="Button">
+      <Setter Property="Width" Value="44"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="{DynamicResource ChromeText}"/>
+      <Setter Property="shell:WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="CaptionSurface" Background="{TemplateBinding Background}" BorderThickness="1">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="CaptionSurface" Property="Background" Value="{DynamicResource CalmHoverFill}"/></Trigger>
+              <Trigger Property="Tag" Value="NativeHover"><Setter TargetName="CaptionSurface" Property="Background" Value="{DynamicResource CalmHoverFill}"/></Trigger>
+              <Trigger Property="IsPressed" Value="True"><Setter TargetName="CaptionSurface" Property="Background" Value="{DynamicResource CalmSelectedHoverFill}"/></Trigger>
+              <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="CaptionSurface" Property="BorderBrush" Value="{DynamicResource CalmFocusBrush}"/></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
   </Window.Resources>
+  <Grid x:Name="WindowSurface">
+  <DockPanel LastChildFill="True">
+    <Grid x:Name="Header" DockPanel.Dock="Top" Height="42" Background="Transparent">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="42" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <StackPanel Orientation="Horizontal" Margin="8,5,0,0" VerticalAlignment="Center">
+        <Button x:Name="CaptionMenu" Style="{StaticResource CaptionButton}" Width="25" Height="26" Click="CaptionMenuClick">
+          <Image Source="{Binding Icon, RelativeSource={RelativeSource AncestorType=Window}}" Width="16" Height="16"/>
+        </Button>
+        <TextBlock Text="Polar Uninstaller" Foreground="{DynamicResource ChromeText}" VerticalAlignment="Center" Margin="4,0,0,0"/>
+      </StackPanel>
+      <Image Grid.Column="1" Width="29" Height="29" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" FlowDirection="LeftToRight" Source="{DynamicResource PolarLogoImage}" Stretch="Uniform" />
+      <DockPanel Grid.Column="2" Margin="0,5,6,0">
+        <StackPanel Orientation="Horizontal" DockPanel.Dock="Right">
+          <Button x:Name="CaptionMinimize" Style="{StaticResource CaptionButton}" Click="CaptionMinimizeClick">
+            <Path Data="M 0,5 H 10" Stroke="{DynamicResource ChromeText}" StrokeThickness="1"/>
+          </Button>
+          <Button x:Name="CaptionMaximize" Style="{StaticResource CaptionButton}" Click="CaptionMaximizeClick">
+            <Path x:Name="CaptionMaximizeGlyph" Data="M 0,0 H 10 V 10 H 0 Z" Stroke="{DynamicResource ChromeText}" StrokeThickness="1"/>
+          </Button>
+          <Button x:Name="CaptionClose" Style="{StaticResource CaptionButton}" Click="CaptionCloseClick">
+            <Path Data="M 0,0 L 10,10 M 10,0 L 0,10" Stroke="{DynamicResource ChromeText}" StrokeThickness="1"/>
+          </Button>
+        </StackPanel>
+        <Viewbox Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Right" Margin="0,0,4,0">
+          <StackPanel x:Name="HeaderCommands" Orientation="Horizontal">
+            <Button x:Name="LangButton" Content="العربية" Margin="3,0" Background="Transparent" BorderBrush="Transparent" Style="{StaticResource ChromeButton}" Click="SwitchLanguage" shell:WindowChrome.IsHitTestVisibleInChrome="True"/>
+            <ComboBox x:Name="ThemePicker" Visibility="Collapsed" SelectionChanged="ChangeTheme" />
+            <Button x:Name="ThemeButton" Margin="3,0" Background="Transparent" BorderBrush="Transparent" Style="{StaticResource ChromeButton}" Click="ToggleThemeGallery" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+              <TextBlock>
+                <InlineUIContainer BaselineAlignment="Center">
+                  <Path Width="11" Height="11" Stretch="Uniform" StrokeThickness="1" Stroke="{DynamicResource ChromeText}"
+                        Data="M 16,2 C 8,2 2,8 2,15 C 2,22 8,27 14,27 C 17,27 18,24 17,22 C 15,19 18,17 21,18 C 27,19 30,15 28,10 C 26,5 22,2 16,2 Z M 8,12 A 1,1 0 1 1 10,12 A 1,1 0 1 1 8,12 M 13,7 A 1,1 0 1 1 15,7 A 1,1 0 1 1 13,7 M 20,8 A 1,1 0 1 1 22,8 A 1,1 0 1 1 20,8"/>
+                </InlineUIContainer><Run x:Name="ThemeButtonLabel"/>
+              </TextBlock>
+            </Button>
+            <Button x:Name="UpdateButton" Style="{StaticResource ChromeButton}" BorderBrush="{DynamicResource ChromeAccent}" Padding="14,5" Margin="3,0" Click="OpenUpdateCenter" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+              <TextBlock x:Name="UpdateText" VerticalAlignment="Center" FontSize="11" />
+            </Button>
+          </StackPanel>
+        </Viewbox>
+      </DockPanel>
+    </Grid>
   <Grid x:Name="Root">
     <Grid.ColumnDefinitions>
       <ColumnDefinition x:Name="SideColumn" Width="220" />
@@ -44,36 +111,11 @@
     </Border>
     <Grid x:Name="ContentArea" Grid.Column="1">
       <Grid.RowDefinitions>
-        <RowDefinition Height="58" />
         <RowDefinition Height="*" />
         <RowDefinition x:Name="LogRow" Height="170" />
       </Grid.RowDefinitions>
-      <Grid x:Name="Header" Grid.Row="0" Margin="24,0">
-        <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="*" />
-          <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
-        <Image Grid.ColumnSpan="2" Width="34" Height="34" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" FlowDirection="LeftToRight" Source="{DynamicResource PolarLogoImage}" Stretch="Uniform" />
-        <Viewbox Grid.Column="1" Margin="28,0,0,0" Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Right">
-          <StackPanel Orientation="Horizontal">
-            <Button x:Name="LangButton" Content="العربية" Margin="5" Background="Transparent" BorderBrush="Transparent" Style="{StaticResource ChromeButton}" Click="SwitchLanguage" />
-            <ComboBox x:Name="ThemePicker" Visibility="Collapsed" SelectionChanged="ChangeTheme" />
-            <Button x:Name="ThemeButton" Margin="5" Background="Transparent" BorderBrush="Transparent" Style="{StaticResource ChromeButton}" Click="ToggleThemeGallery">
-              <TextBlock>
-                <InlineUIContainer BaselineAlignment="Center">
-                  <Path Width="11" Height="11" Stretch="Uniform" StrokeThickness="1" Stroke="{DynamicResource ChromeText}"
-                        Data="M 16,2 C 8,2 2,8 2,15 C 2,22 8,27 14,27 C 17,27 18,24 17,22 C 15,19 18,17 21,18 C 27,19 30,15 28,10 C 26,5 22,2 16,2 Z M 8,12 A 1,1 0 1 1 10,12 A 1,1 0 1 1 8,12 M 13,7 A 1,1 0 1 1 15,7 A 1,1 0 1 1 13,7 M 20,8 A 1,1 0 1 1 22,8 A 1,1 0 1 1 20,8"/>
-                </InlineUIContainer><Run x:Name="ThemeButtonLabel"/>
-              </TextBlock>
-            </Button>
-            <Button x:Name="UpdateButton" Style="{StaticResource ChromeButton}" BorderBrush="{DynamicResource ChromeAccent}" Padding="14,5" Margin="5" Click="OpenUpdateCenter">
-              <TextBlock x:Name="UpdateText" VerticalAlignment="Center" FontSize="11" />
-            </Button>
-          </StackPanel>
-        </Viewbox>
-      </Grid>
-      <ContentControl x:Name="PageContent" Grid.Row="1" Margin="24,12,24,8" />
-      <Border x:Name="LogBorder" Grid.Row="2" Margin="24,0,24,18" CornerRadius="12" BorderThickness="1" Padding="12">
+      <ContentControl x:Name="PageContent" Margin="24,12,24,8" />
+      <Border x:Name="LogBorder" Grid.Row="1" Margin="24,0,24,18" CornerRadius="12" BorderThickness="1" Padding="12">
         <DockPanel>
           <DockPanel DockPanel.Dock="Top" Margin="0,0,0,4" MinHeight="32" VerticalAlignment="Center">
             <Button x:Name="LogToggleButton" DockPanel.Dock="Right" Content="⌃" Padding="6,2" MinWidth="30" MinHeight="24" VerticalAlignment="Center" Style="{StaticResource ChromeButton}" Click="ToggleLog" />
@@ -108,5 +150,7 @@
       </Border>
     </Grid>
     <ContentControl x:Name="ThemeGalleryHost" Grid.Column="0" Grid.ColumnSpan="2" Panel.ZIndex="100" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Visibility="Collapsed" />
+  </Grid>
+  </DockPanel>
   </Grid>
 </Window>

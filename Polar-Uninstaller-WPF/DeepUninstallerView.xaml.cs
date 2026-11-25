@@ -503,9 +503,10 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
 
     private async Task<IReadOnlyList<InstalledProgram>> ReadRemovalInventoryAsync(CancellationToken token)
     {
-        var windows=await new WindowsInventoryService().GetInstalledAsync(token);
-        var games=await new LauncherInventoryService().GetInstalledAsync(token);
-        return InventoryMerger.Merge(windows.Concat(games));
+        var windows = new WindowsInventoryService().GetInstalledAsync(token);
+        var games = new LauncherInventoryService().GetInstalledAsync(token);
+        await Task.WhenAll(windows, games);
+        return await Task.Run(() => InventoryMerger.Merge(windows.Result.Concat(games.Result), token), token);
     }
 
     private async Task RetainEligibleContextAsync(ProgramCard card,RemovalPlan plan)
@@ -619,17 +620,17 @@ DockPanel.SetDock(advancedDeepRemoval,Dock.Right);((DockPanel)Deep.Parent).Child
         {
             SetStatus("Waiting for the official uninstaller to finish…","بانتظار انتهاء مزيل التثبيت الرسمي…");
             activity.Write("INFO", "Automatic removal monitoring started: " + card.Program.Name);
-            bool isSteam = IsVerifiedSteamGame(card.Program);
+            bool isGame = IsGame(card.Program);
             var progress = new Progress<RemovalProbe>(probe =>
             {
                 if (token.IsCancellationRequested || !ReferenceEquals(monitorCancellation, cts)) return;
-                if (isSteam && !probe.LauncherRecordPresent && probe.InstallationFolderPresent)
-                    SetStatus("Steam removed the installation record. Waiting for the game files to finish clearing…",
-                        "أزال Steam سجل التثبيت. بانتظار اكتمال إزالة ملفات اللعبة…");
+                if (isGame && !probe.LauncherRecordPresent && probe.InstallationFolderPresent)
+                    SetStatus("The installation record is gone. Verifying the remaining game files…",
+                        "أُزيل سجل التثبيت. جارٍ التحقق من ملفات اللعبة المتبقية…");
                 else SetStatus(lang => BidiText.Localize(lang,"Checking removal progress… ", "جارٍ التحقق من تقدم الإزالة… ") + LocalizeProbe(probe,lang));
             });
             var result = await UninstallMonitorService.MonitorAsync(
-                () => UninstallMonitorService.Probe(card.Program, snapshot), officialProcessExit, isSteam, progress, token);
+                () => UninstallMonitorService.Probe(card.Program, snapshot), officialProcessExit, isGame, progress, token);
             token.ThrowIfCancellationRequested();
             await CompleteRemovalAsync(card, result, historyCapture, snapshot, token);
         }

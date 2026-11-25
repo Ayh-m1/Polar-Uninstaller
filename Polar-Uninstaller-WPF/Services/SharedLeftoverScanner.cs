@@ -169,15 +169,38 @@ public sealed class SharedLeftoverScanner
         progress?.Report("Shortcuts");
         if(!protectedComponent)
         {
-            var currentLinks=await ShortcutLeftoverService.ScanAsync(before.Program,token);
-            string originalRoot=InventoryMerger.NormalizePath(before.Program.Location);
-            bool sharedInstallation=originalRoot.Length>0&&inventory.Any(p=>!UninstallVerificationService.Matches(before.Program,p)&&(LeftoverService.EqualPath(p.Location,originalRoot)||InventoryMerger.NormalizePath(p.Location).StartsWith(originalRoot+"\\",StringComparison.OrdinalIgnoreCase)));
-            if(!sharedInstallation)foreach(var link in before.Shortcuts.Concat(currentLinks).DistinctBy(l=>l.Path,StringComparer.OrdinalIgnoreCase))
+            bool application = ShortcutLeftoverService.UsesApplicationChecks(before.Program);
+            string originalRoot = InventoryMerger.NormalizePath(before.Program.Location);
+            bool sharedInstallation = originalRoot.Length > 0 && inventory.Any(p =>
             {
-                token.ThrowIfCancellationRequested();
-                if(!File.Exists(link.Path))continue;
-                if(RiotGameService.IsSharedPath(link.Path))continue;
-                result.Add(new("Shortcut",link.Path,new FileInfo(link.Path).Length,"Verified target / game ID; location and fingerprint revalidated; permanent shortcut-only cleanup",()=>Task.Run<IReadOnlyList<string>>(()=>new[]{ShortcutLeftoverService.Remove(link,before.Program)}),()=>File.Exists(link.Path)));
+                if (UninstallVerificationService.Matches(before.Program, p)) return false;
+                string other = InventoryMerger.NormalizePath(p.Location);
+                return other.Length > 0 && (LeftoverService.EqualPath(other, originalRoot)
+                    || other.StartsWith(originalRoot + "\\", StringComparison.OrdinalIgnoreCase)
+                    || (application && originalRoot.StartsWith(other + "\\", StringComparison.OrdinalIgnoreCase)));
+            });
+            if (!sharedInstallation)
+            {
+                var currentLinks = await ShortcutLeftoverService.ScanAsync(before.Program, token);
+                foreach (var link in before.Shortcuts.Concat(currentLinks).DistinctBy(l => l.Path, StringComparer.OrdinalIgnoreCase))
+                {
+                    token.ThrowIfCancellationRequested();
+                    if (RiotGameService.IsSharedPath(link.Path)) continue;
+                    try
+                    {
+                        var file = new FileInfo(link.Path);
+                        if (application)
+                        {
+                            if (ShortcutLeftoverService.IsAbsent(link.Path) || !ShortcutLeftoverService.IsStaleApplicationShortcut(link)) continue;
+                        }
+                        else if (!file.Exists) continue;
+                        result.Add(new("Shortcut", link.Path, file.Length,
+                            "Verified application target or exact installation identity; fingerprint checked before deletion",
+                            () => Task.Run(() => ShortcutLeftoverService.RemoveForCleanup(link, before.Program)),
+                            () => !ShortcutLeftoverService.IsAbsent(link.Path)));
+                    }
+                    catch (Exception ex) when (RemovalEngine.IsItemError(ex)) { }
+                }
             }
         }
         return result.Where(candidate=>includePersonalData||!candidate.RequiresSeparateDataConsent).ToArray();

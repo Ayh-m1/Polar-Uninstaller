@@ -23,7 +23,7 @@ public sealed record RemovalProbe(bool Confirmed, bool LauncherRecordPresent, bo
 /// </summary>
 public static class UninstallMonitorService
 {
-    /// <summary>Total background monitoring window. The UI stays responsive the whole time.</summary>
+    /// <summary>Default monitoring window for untracked application removal.</summary>
     public static TimeSpan TotalWindow => TimeSpan.FromMinutes(5);
 
     /// <summary>Adaptive polling: fast right after launch, slower later. No fixed blocking wait.</summary>
@@ -36,7 +36,7 @@ public static class UninstallMonitorService
 
     /// <summary>Waits for the official process, then retries live evidence while registration catches up.</summary>
     public static async Task<RemovalProbe> MonitorAsync(Func<RemovalProbe> probe,
-        Task? officialExit, bool isSteam, IProgress<RemovalProbe>? progress, CancellationToken token)
+        Task? officialExit, bool isGame, IProgress<RemovalProbe>? progress, CancellationToken token)
     {
         if (officialExit != null)
         {
@@ -45,8 +45,6 @@ public static class UninstallMonitorService
         }
 
         var clock = Stopwatch.StartNew();
-        var deadline = officialExit == null ? TotalWindow : TimeSpan.FromSeconds(8);
-        var steamCleanupWindow = TimeSpan.FromMinutes(15);
         int attempt = 0;
         while (true)
         {
@@ -54,13 +52,21 @@ public static class UninstallMonitorService
             var result = await Task.Run(probe, token).ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
             if (result.Confirmed) return result;
-            bool steamCleanup = isSteam && !result.LauncherRecordPresent && result.InstallationFolderPresent;
-            var remaining = (steamCleanup ? steamCleanupWindow : deadline) - clock.Elapsed;
+            var (window, delay) = PollingPolicy(isGame, officialExit != null, result, attempt++);
+            var remaining = window - clock.Elapsed;
             if (remaining <= TimeSpan.Zero) return result;
             progress?.Report(result);
-            var delay = steamCleanup ? TimeSpan.FromSeconds(1) : IntervalFor(attempt++);
             await Task.Delay(delay < remaining ? delay : remaining, token).ConfigureAwait(false);
         }
+    }
+
+    internal static (TimeSpan Window, TimeSpan Delay) PollingPolicy(bool isGame, bool tracked,
+        RemovalProbe result, int attempt)
+    {
+        bool changed = !result.LauncherRecordPresent || !result.InstallationFolderPresent;
+        var window = isGame && (!tracked || changed) ? TimeSpan.FromMinutes(15)
+            : tracked ? TimeSpan.FromSeconds(isGame ? 20 : 8) : TotalWindow;
+        return (window, isGame && changed ? TimeSpan.FromSeconds(1) : IntervalFor(attempt));
     }
 
     public static RemovalProbe Probe(InstalledProgram program, UninstallSnapshot? snapshot)
@@ -70,6 +76,9 @@ public static class UninstallMonitorService
             bool executable = snapshot!=null&&UninstallVerificationService.AnyExecutablePresent(snapshot.Executables);
             RemovalProbe WithCapturedEvidence(RemovalProbe result)
             {
+                if (result.Confirmed && executable)
+                    return result with { Confirmed = false, MainExecutablePresent = true,
+                        Detail = "A captured game executable is still present." };
                 // A removed main payload with absent authoritative launcher
                 // records can leave logs/shortcuts behind. Such remnants are
                 // not proof of a still-installed game. Unknown identity stays blocked.
